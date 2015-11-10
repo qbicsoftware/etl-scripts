@@ -183,40 +183,56 @@ class DropboxhandlerFile(object):
 
         name_of_new_incoming_file
             name_of_new_incoming_file.RAW
-            name_of_new_incoming_file.sha256sum
+            name_of_new_incoming_file.RAW.sha256sum
+            name_of_new_incoming_file.RAW.origlabfilename
             meta.json
 
     If the name of the file contained a qbic barcode, that will be
     written to the beginning of the new file name.
 
-    This class provides an interface to this data and allows some
-    queries to openbis.
-
     Attributes
     ----------
-    bio_sample: Openbis sample
+    barcode: str or None
         If there was a barcode found in the file name, this will
         search the openbis db for a sample with this barcode and
         return the openbis object.
+    project: str or None
+        The part of the barcode representing the project (including
+        the leading Q).
     datapath: str
         The path to the actual data file.
     dataname: str
-        The name of the data file.
-    meta: dic
+        The name of the data file with extension.
+    meta: dict
         A dictionary containing metadata about the dataset. Taken
         from `meta.json`.
+    checksum_path: str
+        The path to the checksum file.
     """
 
     def __init__(path, require_barcode=True):
         self.path = path
         self.name = os.path.basename(path)
+        if not os.path.isdir(self.path):
+            raise ValueError("Invalid path. Not a directory: %s" % self.path)
+
+        self.datapath = os.path.join(self.path, self.name)
+        if not os.path.exists(self.datapath):
+            raise ValueError("Could not find data file %s" % self.datapath)
+        self.dataname = os.path.basename(self.datapath)
+        self.checksum_path = self.datapath + '.sha256sum'
+        if not os.path.exists(self.checksum_path):
+            raise ValueError(
+                "Could not find checksum file %s" % self.checksum_path
+            )
+
         try:
-            self.barcode, self.project_code = extract_barcode(path)
+            self.barcode = extract_barcode(path)
+            self.project = self.barcode[:5]
         except ValueError:
             if require_barcode:
                 raise
-
-        self.datafile = os.path.join(self.path)
+            self.barcode, self.project = None, None
 
     def write_metadata(self, measurement=None, run=None, dataset=None):
         """Write metadata to openbis experiments / samples as appropriate."""
@@ -232,11 +248,6 @@ class DropboxhandlerFile(object):
                 with open(meta_fn) as meta_file:
                     self._meta.update(json.load(meta_file))
         return self._meta
-
-    @property
-    def checksum_file(self):
-        """The output of sha256sum on `datapath` as string."""
-        chsum_fn = os.path.join(self.path, self.dataname)
 
 
 class QBisTransaction(object):
