@@ -67,9 +67,9 @@ def check_output(cmd, timeout=None, **kwargs):
     def alarm_handler(signum, frame):
         raise _Alarm()
 
-    signal.signal(signal.SIGALRM, alarm_handler)
     if timeout:
-        signal.alarm(timeout)
+        old_handler = signal.signal(signal.SIGALRM, alarm_handler)
+        old_alarm = signal.alarm(timeout)
     try:
         out, err = popen.communicate()
         retcode = popen.returncode
@@ -85,8 +85,9 @@ def check_output(cmd, timeout=None, **kwargs):
         _ = popen.communicate()
         raise TimeoutError()
     finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, signal.SIG_DFL)
+        if timeout:
+            signal.alarm(old_alarm)
+            signal.signal(signal.SIGALRM, old_handler)
 
 
 def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
