@@ -6,7 +6,7 @@ from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
 
-class TestGoodMyModule(TestCase):
+class TestMSConvert(TestCase):
     def setUp(self):
         self._ch = MagicMock()
         self._apiv2 = (
@@ -47,7 +47,7 @@ class TestGoodMyModule(TestCase):
             )
 
         with self.assertRaises(subprocess.CalledProcessError):
-            etl_msconvert.call_ssh(['blubb'], 'localhost', timeout=1)
+            etl_msconvert.call_ssh(['i-dont-exist'], 'localhost', timeout=1)
 
     def test_rsync(self):
         import etl_msconvert
