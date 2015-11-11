@@ -136,10 +136,10 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
 
     remote_dir, _ = ssh(['mktemp', '-dq', '-p', remote_base])
     try:
-        remote_dir = remote_dir.decode().strip()
-    except AttributeError:
-        remote_dir = remote_dir.strip()
-    try:
+        try:
+            remote_dir = remote_dir.decode().strip()
+        except AttributeError:
+            remote_dir = remote_dir.strip()
         remote_file = os.path.join(remote_dir, os.path.basename(raw_path))
         rsync_to(source=raw_path, dest=remote_file)
 
@@ -250,16 +250,17 @@ class DropboxhandlerFile(object):
         return self._meta
 
 
-class QBisTransaction(object):
+class QBisRegistration(object):
     """QBiC specific api for registering data at openbis."""
-    def __init__(self, transaction):
+    def __init__(self, transaction, barcode):
         self._transaction = transaction
+        self.barcode = barcode
+        self.space, self.project, self.bio_sample = self._bio_sample(barcode)
 
-    def bio_sample(self, barcode):
+    def _bio_sample(self, barcode):
         """Find a sample in openbis by it's barcode.
 
-        This will raise a ValueError if it could not find a sample.
-        Since we use the barcode an unique identifier, There should never
+        Since we use the barcode an unique identifier, there should never
         be more than one sample with a given barcode.
         """
         search = self._transaction.getSearchService()
@@ -277,57 +278,160 @@ class QBisTransaction(object):
             raise ValueError(
                 "Could not find a sample for barcode %s" % barcode
             )
-        return samples[0]
+        sample = samples[0]
+        return sample.getSpace(), self.barcode[:5], sample
 
     def measurement(self, force_create=False, allow_create=False):
-        if force_create and allow_create:
-            raise ValueError("Only one of force_create and allow_create can "
-                             "be specified at once.")
-        raise NotImplemented
+        for measurement in self.measurements():
+            for run in self.runs():
+                if measurement.getExperimentIdentifier() == run.
 
     def run(self, force_create=False, allow_create=False):
         pass
 
+    def runs(self):
+        """Return *all* runs in the db.
+
+        TODO this is madness!! At least, this should only return
+        runs in this project.
+        """
+        search = self.transaction.getSearchService()
+        criteria = SearchCriteria()
+        criteria.addMatchClause(
+            SearchCriteria.MatchClause.createAttributeMatch(
+                SearchCriteria.MatchClauseAttribute.TYPE,
+                'Q_MS_RUN'
+            )
+        )
+        return search.searchForSamples(criteria)
+
+    def measurements(self):
+        """Return all measurements in this project."""
+        exp_type = 'Q_MS_MEASUREMENT'
+        path = "/%s/%s" % (space, project)
+        search = self.transaction.getSearchService()
+        exps = search.listExperiments(path)
+        return [exp for exp in exps if exp.getExperimentType() == exp_type]
+
+
+def isCurrentMSRun(tr, parentExpID, msExpID):
+    """Ask Andreas"""
+    search_service = tr.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(
+        SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.TYPE, "Q_MS_RUN"
+        )
+    )
+    foundSamples = search_service.searchForSamples(sc)
+    for samp in foundSamples:
+        currentMSExp = samp.getExperiment()
+        if currentMSExp.getExperimentIdentifier() == msExpID:
+            for parID in samp.getParentSampleIdentifiers():
+                parExp = (tr.getSampleForUpdate(parID)
+                            .getExperiment()
+                            .getExperimentIdentifier())
+                if parExp == parentExpID:
+                    return True
+    return False
+
 
 def process(transaction):
+    """Ask Andreas"""
     convert = partial(convert_raw,
                       remote_base=REMOTE_BASE,
                       host=MSCONVERT_HOST,
                       timeout=CONVERSION_TIMEOUT,
                       remote_user=MSCONVERT_USER)
 
-    incoming_path = transaction.getIncoming().getAbsolutePath()
-    incoming = DropboxhandlerFile(incoming_path, require_barcode=True)
+    context = transaction.getRegistrationContext().getPersistentMap()
 
-    name_root, ext = os.path.splitext(incoming.filename)
-    if not ext.lower() == '.raw':
-        raise ValueError("Not a raw file: %s" % incoming.datapath)
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
 
-    qtransaction = QBisTransaction(transaction)
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
 
-    tmpdir = tempfile.mkdtemp()
+    # Convert the raw file and write it to an mzml dropbox.
+    # Sadly, I can not see a way to make this part of the transaction.
+    tmpdir = tmpfile.mkdtemp()
     try:
-        mzml_path = os.path.join(tmpdir, incoming.stem + '.mzML')
-        convert(incoming.datapath, mzml_path)
+        stem, ext = os.path.splitext(name)
+        if ext != '.RAW':
+            raise ValueError("Invalid incoming file %s" % incomingPath)
+        mzml_path = os.path.join(tmpdir, stem + '.mzML')
+        raw_path = os.path.join(incomingPath, name)
+        convert(raw_path, mzml_path)
 
-        measurement = incoming.measurement(allow_create=True)
-        run = create_run(transaction, space, barcode,
-                         measurement=measurement,
-                         parent=sample_id)
-        dataset_raw = create_dataset(transaction, sample, "Q_MS_RAW_DATA")
-
-        incoming.write_metadata(
-            dataset=dataset_raw,
-            measurement=measurement,
-            run=run
-        )
-
-        converted_name = os.path.basename(converted_path)
-        mzml_dest = os.path.join(MZML_DROPBOX, converted_name)
-        mzml_marker = os.path.join(MZML_DROPBOX, MARKER + converted_name)
+        mzml_name = os.path.basename(mzml_path)
+        mzml_dest = os.path.join(MZML_DROPBOX, mzml_name)
+        mzml_marker = os.path.join(MZML_DROPBOX, MARKER + mzml_name)
         os.rename(mzml_path, mzml_dest)
         open(mzml_marker, "w").close()
-
-        transaction.moveFile(incoming_path, dataset_raw)
     finally:
         shutil.rmtree(tmpdir)
+
+    code = pattern.findall(name)[0]
+    if isExpected(code):
+        project = code[:5]
+    else:
+        raise ValueError("Invalid barcode: %s" % code)
+
+    # Find the test sample
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, code))
+    foundSamples = search_service.searchForSamples(sc)
+
+    sampleIdentifier = foundSamples[0].getSampleIdentifier()
+    space = foundSamples[0].getSpace()
+    sa = transaction.getSampleForUpdate(sampleIdentifier)
+
+    # get or create MS-specific experiment/sample and
+    # attach to the test sample
+    expType = "Q_MS_MEASUREMENT"
+    MSRawExperiment = None
+    experiments = search_service.listExperiments("/" + space + "/" + project)
+    experimentIDs = []
+    for exp in experiments:
+        experimentIDs.append(exp.getExperimentIdentifier())
+        if exp.getExperimentType() == expType:
+            if isCurrentMSRun(
+                transaction,
+                sa.getExperiment().getExperimentIdentifier(),
+                exp.getExperimentIdentifier()
+            ):
+                MSRawExperiment = exp
+    # no existing experiment for samples of this sample preparation found
+    if not MSRawExperiment:
+        expID = experimentIDs[0]
+        i = 0
+        while expID in experimentIDs:
+            i += 1
+            expNum = len(experiments) + i
+            expID = '/' + space + '/' + project + \
+                '/' + project + 'E' + str(expNum)
+        MSRawExperiment = transaction.createNewExperiment(expID, expType)
+
+    newMSSample = transaction.createNewSample(
+        '/' + space + '/' + 'MS' + code, "Q_MS_RUN")
+    newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+    newMSSample.setExperiment(MSRawExperiment)
+
+    # create new dataset
+    dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+    dataSet.setMeasuredData(False)
+    dataSet.setSample(sa)
+
+
+    f = "source_dropbox.txt"
+    sourceLabFile = open(os.path.join(incomingPath, f))
+    sourceLab = sourceLabFile.readline().strip()
+    sourceLabFile.close()
+    os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+
+    for f in os.listdir(incomingPath):
+        if ".testorig" in f:
+            os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+    transaction.moveFile(incomingPath, dataSet)
