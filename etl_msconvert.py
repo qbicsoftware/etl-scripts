@@ -284,7 +284,8 @@ class QBisRegistration(object):
     def measurement(self, force_create=False, allow_create=False):
         for measurement in self.measurements():
             for run in self.runs():
-                if measurement.getExperimentIdentifier() == run.
+                if measurement.getExperimentIdentifier() == run:
+                    return
 
     def run(self, force_create=False, allow_create=False):
         pass
