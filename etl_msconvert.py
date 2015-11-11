@@ -245,8 +245,11 @@ class DropboxhandlerFile(object):
             self._meta = {}
             meta_fn = os.path.join(self.path, 'meta.json')
             if os.path.exists(meta_fn):
-                with open(meta_fn) as meta_file:
+                meta_file = open(meta_fn)
+                try:
                     self._meta.update(json.load(meta_file))
+                finally:
+                    meta_file.close()
         return self._meta
 
 
