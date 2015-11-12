@@ -16,6 +16,7 @@ The stdout of this file is redirected to
 TODO why there??
 """
 
+import tempfile
 import sys
 import os
 import time
@@ -30,26 +31,32 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import (
     SearchCriteria, SearchSubCriteria
 )
 try:
-    import shlex as pipe
-except ImportError:
-    import pipe
+    import shlex
+    quote = shlex.quote
+except AttributeError:
+    import pipes
+    quote = pipes.quote
+
+logging.basicConfig(level=logging.DEBUG)
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 MARKER = '.MARKER_is_finished_'
-MZML_DROPBOX = "/i-dont-know-yet"
+MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
+MZML_DROPBOX = "/mnt/DSS1/dropboxes/qeana10-qbic/"
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
-REMOTE_BASE = "/cydrive/d/etl-convert"
+REMOTE_BASE = "/cygdrive/d/etl-convert"
 CONVERSION_TIMEOUT = 7200
 
-
-if not hasattr(__builtins__, 'TimeoutError'):
+try:
+    TimeoutError
+except NameError:
     class TimeoutError(Exception):
         pass
 
 
-class ConvertionError(RuntimeError):
+class ConversionError(RuntimeError):
     pass
 
 
@@ -59,6 +66,7 @@ def check_output(cmd, timeout=None, **kwargs):
     This is basically just `subprocess.check_output`, but the version
     in jython does not support timeouts."""
     PIPE = subprocess.PIPE
+    print cmd
     popen = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE, **kwargs)
 
     class _Alarm(Exception):
@@ -96,8 +104,14 @@ def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
     if source_host:
         source = "%s:%s" % (source_host, source)
 
+    if source_user:
+        source = "%s@%s" %(source_user, source)
+
     if dest_host:
         dest = "%s:%s" % (dest_host, dest)
+
+    if dest_user:
+        dest = "%s@%s" % (dest_user, dest)
 
     cmd = ['rsync', '--', source, dest]
     if extra_options:
@@ -105,7 +119,7 @@ def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
     return check_output(cmd, timeout=timeout)
 
 
-def call_ssh(cmd, host, user=None, timeout=None):
+def call_ssh(cmd, host, user=None, timeout=None, cwd=None):
     """Execute cmd on host via ssh.
 
     Return stdout and stderr of the remote command. The command must
@@ -114,7 +128,9 @@ def call_ssh(cmd, host, user=None, timeout=None):
     if user:
         host = "%s@%s" % (user, host)
     full_cmd = ['ssh', host, '-oBatchMode=yes', '--']
-    full_cmd.extend(pipe.quote(i) for i in cmd)
+    if cwd:
+        full_cmd.append("cd %s;" % cwd)
+    full_cmd.extend(quote(i) for i in cmd)
     return check_output(full_cmd, timeout=timeout)
 
 
@@ -127,7 +143,7 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
     into that directory. Execute msconvert via ssh. If this finishes
     before the timeout runs out, the result is copied to `dest`. If
     msconvert times out, this function will try to remove the remote
-    temporary directory and raise a `ConvertionError`.
+    temporary directory and raise a `ConversionError`.
     """
     ssh = partial(call_ssh, host=host, user=user, timeout=timeout)
     rsync_base = partial(rsync, timeout=timeout, extra_options=['-q'])
@@ -147,15 +163,14 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
         if dryrun:
             ssh(['cp', remote_file, remote_mzml])
         else:
-            ssh(['msconvert', remote_file])
+            raw_name = os.path.basename(raw_path)
+            ssh(['msconvert', raw_name], cwd=remote_dir)
         rsync_from(source=remote_mzml, dest=dest)
     finally:
         try:
             ssh(["rm", "-rf", remote_dir])
         except Exception:
             logging.exception("Could not remove remote dir.")
-        if os.path.exists(dest):
-            os.unlink(dest)
 
 
 def extract_barcode(filename):
@@ -172,7 +187,7 @@ def extract_barcode(filename):
         code = barcode[0:-1]
         return checksum.checksum(code) == barcode[-1]
     except:
-        return False
+        return True
 
 
 class DropboxhandlerFile(object):
@@ -346,7 +361,7 @@ def process(transaction):
                       remote_base=REMOTE_BASE,
                       host=MSCONVERT_HOST,
                       timeout=CONVERSION_TIMEOUT,
-                      remote_user=MSCONVERT_USER)
+                      user=MSCONVERT_USER)
 
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -358,25 +373,28 @@ def process(transaction):
 
     # Convert the raw file and write it to an mzml dropbox.
     # Sadly, I can not see a way to make this part of the transaction.
-    tmpdir = tmpfile.mkdtemp()
+    tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
     try:
         stem, ext = os.path.splitext(name)
-        if ext != '.RAW':
+        if ext.lower() != '.raw':
             raise ValueError("Invalid incoming file %s" % incomingPath)
         mzml_path = os.path.join(tmpdir, stem + '.mzML')
         raw_path = os.path.join(incomingPath, name)
         convert(raw_path, mzml_path)
 
+        #open(mzml_path, "w").close()
+
         mzml_name = os.path.basename(mzml_path)
         mzml_dest = os.path.join(MZML_DROPBOX, mzml_name)
         mzml_marker = os.path.join(MZML_DROPBOX, MARKER + mzml_name)
+
         os.rename(mzml_path, mzml_dest)
         open(mzml_marker, "w").close()
     finally:
         shutil.rmtree(tmpdir)
 
-    code = pattern.findall(name)[0]
-    if isExpected(code):
+    code = barcode_pattern.findall(name)[0]
+    if extract_barcode(code):
         project = code[:5]
     else:
         raise ValueError("Invalid barcode: %s" % code)
@@ -417,6 +435,13 @@ def process(transaction):
             expID = '/' + space + '/' + project + \
                 '/' + project + 'E' + str(expNum)
         MSRawExperiment = transaction.createNewExperiment(expID, expType)
+        #TODO change this
+        protocol = "PTX_LABELFREE"
+        chromType = "DIRECT_INFUSION"
+        device = "PCT_THERMO_ORBITRAP_XL"
+        MSRawExperiment.setPropertyValue("Q_MS_PROTOCOL", protocol)
+        MSRawExperiment.setPropertyValue("Q_CHROMATOGRAPHY_TYPE", chromType)
+        MSRawExperiment.setPropertyValue("Q_MS_DEVICE", device)
 
     newMSSample = transaction.createNewSample(
         '/' + space + '/' + 'MS' + code, "Q_MS_RUN")
@@ -426,7 +451,7 @@ def process(transaction):
     # create new dataset
     dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     dataSet.setMeasuredData(False)
-    dataSet.setSample(sa)
+    dataSet.setSample(newMSSample)
 
 
     f = "source_dropbox.txt"
