@@ -43,7 +43,7 @@ logging.basicConfig(level=logging.DEBUG)
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
-MZML_DROPBOX = "/mnt/DSS1/dropboxes/qeana10-qbic/"
+MZML_DROPBOX = "/mnt/DSS1/openbis_dss/QBiC-register-mzml-from-converter/"
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -435,13 +435,14 @@ def process(transaction):
             expID = '/' + space + '/' + project + \
                 '/' + project + 'E' + str(expNum)
         MSRawExperiment = transaction.createNewExperiment(expID, expType)
-        #TODO change this
-        protocol = "PTX_LABELFREE"
-        chromType = "DIRECT_INFUSION"
-        device = "PCT_THERMO_ORBITRAP_XL"
-        MSRawExperiment.setPropertyValue("Q_MS_PROTOCOL", protocol)
-        MSRawExperiment.setPropertyValue("Q_CHROMATOGRAPHY_TYPE", chromType)
-        MSRawExperiment.setPropertyValue("Q_MS_DEVICE", device)
+        #TODO this needs to be registered in the wizard, the script needs to be changed to find the existing experiment
+        #these properties were set to optional in openbis, because no data is better than wrong data
+        #protocol = "PTX_LABELFREE"
+        #chromType = "DIRECT_INFUSION"
+        #device = "PCT_THERMO_ORBITRAP_XL"
+        #MSRawExperiment.setPropertyValue("Q_MS_PROTOCOL", protocol)
+        #MSRawExperiment.setPropertyValue("Q_CHROMATOGRAPHY_TYPE", chromType)
+        #MSRawExperiment.setPropertyValue("Q_MS_DEVICE", device)
 
     newMSSample = transaction.createNewSample(
         '/' + space + '/' + 'MS' + code, "Q_MS_RUN")
