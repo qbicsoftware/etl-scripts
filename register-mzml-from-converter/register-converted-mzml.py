@@ -54,3 +54,5 @@ def process(transaction):
         dataSet = transaction.createNewDataSet("MZML")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
+
+        transaction.moveFile(incomingPath, dataSet)
