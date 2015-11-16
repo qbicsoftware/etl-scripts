@@ -54,22 +54,3 @@ def process(transaction):
         dataSet = transaction.createNewDataSet("MZML")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
-
-        # do something with this?
-        f = "source_dropbox.txt"
-        #sourceLabFile = open(os.path.join(incomingPath,f))
-       	#sourceLab = sourceLabFile.readline().strip() 
-        #sourceLabFile.close()
-        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        f = name+".origlabfilename"
-       	#nameFile = open(os.path.join(incomingPath,f))
-        #origName = nameFile.readline().strip()
-        #nameFile.close()
-
-        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        for f in os.listdir(incomingPath):
-		if ".testorig" in f:
-			os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-        transaction.moveFile(incomingPath, dataSet)
