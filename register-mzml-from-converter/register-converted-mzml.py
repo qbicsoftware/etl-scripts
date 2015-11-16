@@ -43,7 +43,7 @@ def process(transaction):
         
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
         foundSamples = search_service.searchForSamples(sc)
 
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
