@@ -16,7 +16,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
-pattern = re.compile('MSQ[A-Z]{4}\d{3}\w{2}')
+pattern = re.compile('Q[A-Z]{4}\d{3}\w{2}')
 
 def process(transaction):
         context = transaction.getRegistrationContext().getPersistentMap()
