@@ -9,6 +9,7 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
+import time
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -44,7 +45,15 @@ def process(transaction):
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
-        foundSamples = search_service.searchForSamples(sc)
+        
+        # wait for registration of ms sample to finish (done in raw dropbox after mzml marker is created)
+        timeout = 10
+        while timeout > 0:
+            timeout = timeout - 1
+            time.sleep(5)
+            foundSamples = search_service.searchForSamples(sc)
+            if foundSamples > 0:
+                break
 
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
         #space = foundSamples[0].getSpace()
