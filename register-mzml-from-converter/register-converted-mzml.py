@@ -60,7 +60,7 @@ def process(transaction):
         sa = transaction.getSampleForUpdate(sampleIdentifier)
 
         # create new dataset 
-        dataSet = transaction.createNewDataSet("MS_RAW_DATA")
+        dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
 
