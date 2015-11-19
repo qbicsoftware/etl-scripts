@@ -454,11 +454,10 @@ def process(transaction):
     dataSet.setMeasuredData(False)
     dataSet.setSample(newMSSample)
 
-
-    f = "source_dropbox.txt"
-    sourceLabFile = open(os.path.join(incomingPath, f))
-    sourceLab = sourceLabFile.readline().strip()
-    sourceLabFile.close()
+    #f = "source_dropbox.txt"
+    #sourceLabFile = open(os.path.join(incomingPath, f))
+    #sourceLab = sourceLabFile.readline().strip()
+    #sourceLabFile.close()
     os.remove(os.path.realpath(os.path.join(incomingPath, f)))
 
     for f in os.listdir(incomingPath):
