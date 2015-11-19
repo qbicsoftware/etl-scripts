@@ -458,7 +458,7 @@ def process(transaction):
     #sourceLabFile = open(os.path.join(incomingPath, f))
     #sourceLab = sourceLabFile.readline().strip()
     #sourceLabFile.close()
-    os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+    #os.remove(os.path.realpath(os.path.join(incomingPath, f)))
 
     for f in os.listdir(incomingPath):
         if ".testorig" in f:
