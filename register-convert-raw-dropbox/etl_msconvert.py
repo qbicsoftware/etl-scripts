@@ -443,11 +443,17 @@ def process(transaction):
         #MSRawExperiment.setPropertyValue("Q_MS_PROTOCOL", protocol)
         #MSRawExperiment.setPropertyValue("Q_CHROMATOGRAPHY_TYPE", chromType)
         #MSRawExperiment.setPropertyValue("Q_MS_DEVICE", device)
-
-    newMSSample = transaction.createNewSample(
-        '/' + space + '/' + 'MS' + code, "Q_MS_RUN")
-    newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-    newMSSample.setExperiment(MSRawExperiment)
+    # does MS sample already exist?
+    msCode = 'MS' + code
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, msCode))
+    foundSamples = search_service.searchForSamples(sc)
+    if len(foundSamples < 1):
+        newMSSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        newMSSample.setExperiment(MSRawExperiment)
+    # else check if dataset already exists - we should probably also do that before conversion
 
     # create new dataset
     dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
