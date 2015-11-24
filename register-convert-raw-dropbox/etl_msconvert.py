@@ -449,7 +449,7 @@ def process(transaction):
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, msCode))
     foundSamples = search_service.searchForSamples(sc)
-    if len(foundSamples < 1):
+    if len(foundSamples) < 1:
         newMSSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
         newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         newMSSample.setExperiment(MSRawExperiment)
