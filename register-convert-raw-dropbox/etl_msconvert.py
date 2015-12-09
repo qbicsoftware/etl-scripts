@@ -43,7 +43,7 @@ logging.basicConfig(level=logging.DEBUG)
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
-MZML_DROPBOX = "/mnt/DSS1/openbis_dss/QBiC-register-mzml-from-converter/"
+MZML_DROPBOX = "/mnt/DSS1/dropboxes/qeana08_qbic/incoming/"
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -354,35 +354,21 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
                     return True
     return False
 
-
-def process(transaction):
-    """Ask Andreas"""
-    convert = partial(convert_raw,
-                      remote_base=REMOTE_BASE,
-                      host=MSCONVERT_HOST,
-                      timeout=CONVERSION_TIMEOUT,
-                      user=MSCONVERT_USER)
-
-    context = transaction.getRegistrationContext().getPersistentMap()
-
-    # Get the incoming path of the transaction
-    incomingPath = transaction.getIncoming().getAbsolutePath()
-
-    # Get the name of the incoming file
-    name = transaction.getIncoming().getName()
-
+def tryConversion(incomingPath, stem, ext, name):
     # Convert the raw file and write it to an mzml dropbox.
     # Sadly, I can not see a way to make this part of the transaction.
     tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
     try:
-        stem, ext = os.path.splitext(name)
+        convert = partial(convert_raw,
+                  remote_base=REMOTE_BASE,
+                  host=MSCONVERT_HOST,
+                  timeout=CONVERSION_TIMEOUT,
+                  user=MSCONVERT_USER)
         if ext.lower() != '.raw':
             raise ValueError("Invalid incoming file %s" % incomingPath)
         mzml_path = os.path.join(tmpdir, stem + '.mzML')
         raw_path = os.path.join(incomingPath, name)
         convert(raw_path, mzml_path)
-
-        #open(mzml_path, "w").close()
 
         mzml_name = os.path.basename(mzml_path)
         mzml_dest = os.path.join(MZML_DROPBOX, mzml_name)
@@ -393,80 +379,102 @@ def process(transaction):
     finally:
         shutil.rmtree(tmpdir)
 
+def process(transaction):
+    """Ask Andreas"""
+    context = transaction.getRegistrationContext().getPersistentMap()
+
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
+
     code = barcode_pattern.findall(name)[0]
+    msCode = 'MS' + code
     if extract_barcode(code):
         project = code[:5]
     else:
         raise ValueError("Invalid barcode: %s" % code)
-
-    # Find the test sample
+    
+    stem, ext = os.path.splitext(name)
     search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, code))
-    foundSamples = search_service.searchForSamples(sc)
 
-    sampleIdentifier = foundSamples[0].getSampleIdentifier()
-    space = foundSamples[0].getSpace()
-    sa = transaction.getSampleForUpdate(sampleIdentifier)
-
-    # get or create MS-specific experiment/sample and
-    # attach to the test sample
-    expType = "Q_MS_MEASUREMENT"
-    MSRawExperiment = None
-    experiments = search_service.listExperiments("/" + space + "/" + project)
-    experimentIDs = []
-    for exp in experiments:
-        experimentIDs.append(exp.getExperimentIdentifier())
-        if exp.getExperimentType() == expType:
-            if isCurrentMSRun(
-                transaction,
-                sa.getExperiment().getExperimentIdentifier(),
-                exp.getExperimentIdentifier()
-            ):
-                MSRawExperiment = exp
-    # no existing experiment for samples of this sample preparation found
-    if not MSRawExperiment:
-        expID = experimentIDs[0]
-        i = 0
-        while expID in experimentIDs:
-            i += 1
-            expNum = len(experiments) + i
-            expID = '/' + space + '/' + project + \
-                '/' + project + 'E' + str(expNum)
-        MSRawExperiment = transaction.createNewExperiment(expID, expType)
-        #TODO this needs to be registered in the wizard, the script needs to be changed to find the existing experiment
-        #these properties were set to optional in openbis, because no data is better than wrong data
-        #protocol = "PTX_LABELFREE"
-        #chromType = "DIRECT_INFUSION"
-        #device = "PCT_THERMO_ORBITRAP_XL"
-        #MSRawExperiment.setPropertyValue("Q_MS_PROTOCOL", protocol)
-        #MSRawExperiment.setPropertyValue("Q_CHROMATOGRAPHY_TYPE", chromType)
-        #MSRawExperiment.setPropertyValue("Q_MS_DEVICE", device)
-    # does MS sample already exist?
-    msCode = 'MS' + code
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    # we only expect mzML or raw files. If the file is mzML and arrives here it has to be the result of a conversion,
+    # meaning we can expect the raw file registration to have been successful. if it wasn't we will get this mzML file
+    # again once the registration was successful. this means the sample in question (MS[parentcode]) exists at this point
+    # and is part of the right experiment
+    if ext.lower() == '.mzml':
+        # Find the ms sample
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, msCode))
-    foundSamples = search_service.searchForSamples(sc)
-    if len(foundSamples) < 1:
-        newMSSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
-        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newMSSample.setExperiment(MSRawExperiment)
-    # else check if dataset already exists - we should probably also do that before conversion
+        foundSamples = search_service.searchForSamples(sc)
+        msSample = foundSamples[0]
+        # create new dataset
+        dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
+        dataSet.setMeasuredData(False)
+        dataSet.setSample(msSample)
+    else:
+        tryConversion(incomingPath, stem, ext, name)
+        # Find the test sample
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.CODE, code))
+        foundSamples = search_service.searchForSamples(sc)
 
-    # create new dataset
-    dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-    dataSet.setMeasuredData(False)
-    dataSet.setSample(newMSSample)
+        sampleIdentifier = foundSamples[0].getSampleIdentifier()
+        space = foundSamples[0].getSpace()
+        sa = transaction.getSampleForUpdate(sampleIdentifier)
 
-    #f = "source_dropbox.txt"
-    #sourceLabFile = open(os.path.join(incomingPath, f))
-    #sourceLab = sourceLabFile.readline().strip()
-    #sourceLabFile.close()
-    #os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+        # get or create MS-specific experiment/sample and
+        # attach to the test sample
+        expType = "Q_MS_MEASUREMENT"
+        MSRawExperiment = None
+        experiments = search_service.listExperiments("/" + space + "/" + project)
+        experimentIDs = []
+        for exp in experiments:
+            experimentIDs.append(exp.getExperimentIdentifier())
+            if exp.getExperimentType() == expType:
+                if isCurrentMSRun(
+                    transaction,
+                    sa.getExperiment().getExperimentIdentifier(),
+                    exp.getExperimentIdentifier()
+                ):
+                    MSRawExperiment = exp
+        # no existing experiment for samples of this sample preparation found
+        if not MSRawExperiment:
+            expID = experimentIDs[0]
+            i = 0
+            while expID in experimentIDs:
+                i += 1
+                expNum = len(experiments) + i
+                expID = '/' + space + '/' + project + \
+                    '/' + project + 'E' + str(expNum)
+            MSRawExperiment = transaction.createNewExperiment(expID, expType)
+        # does MS sample already exist?
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.CODE, msCode))
+        foundSamples = search_service.searchForSamples(sc)
+        if len(foundSamples) < 1:
+            newMSSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+            newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+            newMSSample.setExperiment(MSRawExperiment)
+        # else check if dataset already exists - we should probably also do that before conversion
 
-    for f in os.listdir(incomingPath):
-        if ".testorig" in f:
-            os.remove(os.path.realpath(os.path.join(incomingPath, f)))
-    transaction.moveFile(incomingPath, dataSet)
+        # create new dataset
+        rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+        rawDataSet.setMeasuredData(False)
+        rawDataSet.setSample(newMSSample)
+
+        #f = "source_dropbox.txt"
+        #sourceLabFile = open(os.path.join(incomingPath, f))
+        #sourceLab = sourceLabFile.readline().strip()
+        #sourceLabFile.close()
+        #os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+
+        for f in os.listdir(incomingPath):
+            if ".testorig" in f:
+                os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+        transaction.moveFile(incomingPath, rawDataSet)
+        transaction.moveFile(MZML_TMP, mzmlDataSet)
