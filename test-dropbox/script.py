@@ -57,11 +57,7 @@ def process(transaction):
 
         identifier = pattern.findall(name)[0]
 	code = None
-        if isExpected(identifier):
-                project = identifier[:5]
-                code = identifier[:10]
-        else:
-             	print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+        code = identifier[:10]
         # Find the test sample
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
@@ -72,40 +68,8 @@ def process(transaction):
         space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(sampleIdentifier)
 
-        # get or create MS-specific experiment/sample and attach to the test sample
-        expType = "Q_MS_MEASUREMENT"
-        MSRawExperiment = None
-        experiments = search_service.listExperiments("/" + space + "/" + project)
-        experimentIDs = []
-        for exp in experiments:
-            experimentIDs.append(exp.getExperimentIdentifier())
-            if exp.getExperimentType() == expType:
-                # if we want to assume that a project can have multiple ms run experiments we need to check if other
-                # samples in the ms run come from parent samples in the same experiment as the sample carrying this barcode
-                if isCurrentMSRun(transaction, sa.getExperiment().getExperimentIdentifier(), exp.getExperimentIdentifier()):
-	        	MSRawExperiment = exp
-        # no existing experiment found        
-        if not MSRawExperiment:
-            expID = experimentIDs[0]
-            i = 0
-            while expID in experimentIDs:
-                i+=1
-                expNum = len(experiments)+i
-                expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
-            MSRawExperiment = transaction.createNewExperiment(expID, expType)
-	    #the following are placeholders that either need to be parsed from the filename/incoming dropbox/additional files or set later when the metadata is available
-	    protocol = "PTX_LABELFREE"
-	    chromType = "DIRECT_INFUSION"
-	    device = "PCT_THERMO_ORBITRAP_XL"
-            MSRawExperiment.setPropertyValue("Q_MS_PROTOCOL", protocol)
-            MSRawExperiment.setPropertyValue("Q_CHROMATOGRAPHY_TYPE", chromType)
-            MSRawExperiment.setPropertyValue("Q_MS_DEVICE", device)
-        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ code, "Q_MS_RUN")
-        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newMSSample.setExperiment(MSRawExperiment)
-        
         # create new dataset
-        dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+        dataSet = transaction.createNewDataSet("EXPRESSION_MATRIX")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
 
