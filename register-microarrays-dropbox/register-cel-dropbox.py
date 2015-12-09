@@ -36,7 +36,7 @@ def parseMetadata(file):
         numFlag = False
         code = None
         rinMap = {}
-        date = re.compile("[A-Z][a-z]{5,9}, [0-9]{1,2}. [A-Z][a-z]{2,8} 2[0-9]{3}")
+        date = re.compile("[A-Z][a-z]{5,9}, [0-9]{1,2}. [A-Z][a-z]{2,8} 2[0-9]{3}")#sorry, people living in the year 3000+
         order = None
 	for line in info:
                 line = line.strip()
@@ -78,6 +78,7 @@ def process(transaction):
         pdf = None
         newArrayExperiment = None
 	filesForID = {}
+	maps = None
         for name in os.listdir(incomingPath): #what should the folder be called? how will this work with checksum and origlabfilename etc. created by datahandler?
                 searchID = pattern.findall(name)
 		if len(searchID) > 0:
@@ -125,9 +126,10 @@ def process(transaction):
         	newArraySample.setExperiment(newArrayExperiment)
 
 	        # create new dataset
-		extID = mftPattern.findall(filesForID[identifier][0])[0]
+		extIDs = mftPattern.findall(filesForID[identifier][0])
         	dataSet = transaction.createNewDataSet("Q_MA_RAW_DATA")
-		dataSet.setPropertyValue("Q_EXTERNALDB_ID", extID)
+		if extIDs:
+			dataSet.setPropertyValue("Q_EXTERNALDB_ID", extIDs[0])
         	dataSet.setMeasuredData(False)
         	dataSet.setSample(newArraySample)
 
