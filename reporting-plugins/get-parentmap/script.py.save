@@ -1,0 +1,33 @@
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto.SearchCriteria import MatchClause
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto.SearchCriteria import MatchClauseAttribute
+
+CODE = "Child"
+PARENT = "Parent"
+
+def aggregate(parameters, tableBuilder):
+	codes = parameters.get("codes")
+
+	tableBuilder.addHeader(CODE)
+	tableBuilder.addHeader(PARENT)
+
+	for code in codes:
+		searchCriteria = SearchCriteria()
+		subCriteria = SearchCriteria()
+		subCriteria.addMatchClause(MatchClause.createAttributeMatch(MatchClauseAttribute.CODE, code))
+		searchCriteria.addSubCriteria(SearchSubCriteria.createExperimentCriteria(subCriteria))
+		sample = searchService.searchForSamples(searchCriteria)[0]
+		handleSample(sample, tableBuilder)
+
+def handleSample(node, dataSetCode, tableBuilder):
+	if node.isDirectory():
+		for child in node.getChildNodes():
+			handleNode(child, dataSetCode, tableBuilder)
+	else:
+		row = tableBuilder.addRow()
+		row.setCell(CODE, dataSetCode)
+		row.setCell(NAME, node.getName())
+		#row.setCell(PATH, node.getRelativePath())
+		#row.setCell(LAST_MODIFIED, Date(node.getLastModified()))
+		#row.setCell(SIZE, node.getFileLength())
