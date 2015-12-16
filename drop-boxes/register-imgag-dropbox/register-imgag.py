@@ -370,7 +370,7 @@ def process(transaction):
 			os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
 		transaction.moveFile(fastqFolder, fastqDataSet)
 	for vc in vcfs:
-		ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','')	
+		ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','')	
 		print ident
 		vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
 		vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
