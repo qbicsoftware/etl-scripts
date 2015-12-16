@@ -44,7 +44,7 @@ logging.basicConfig(level=logging.DEBUG)
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
-MZML_DROPBOX = "/mnt/DSS1/openbis_dss/QBiC-convert-register-raw/"
+#MZML_DROPBOX = "/mnt/DSS1/openbis_dss/QBiC-convert-register-raw/"
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -390,11 +390,11 @@ def process(transaction):
         convert(raw_path, mzml_path)
 
         mzml_name = os.path.basename(mzml_path)
-        mzml_dest = os.path.join(MZML_DROPBOX, mzml_name)
-        mzml_marker = os.path.join(MZML_DROPBOX, MARKER + mzml_name)
+        #mzml_dest = os.path.join(MZML_DROPBOX, mzml_name)
+        #mzml_marker = os.path.join(MZML_DROPBOX, MARKER + mzml_name)
 
-        os.rename(mzml_path, mzml_dest)
-        open(mzml_marker, "w").close()
+        #os.rename(mzml_path, mzml_dest)
+        #open(mzml_marker, "w").close()
     finally:
         shutil.rmtree(tmpdir)
 
@@ -465,4 +465,4 @@ def process(transaction):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
     transaction.moveFile(incomingPath, rawDataSet)
-    transaction.moveFile(mzml_dest, mzmlDataSet)
+    transaction.moveFile(mzml_path, mzmlDataSet)
