@@ -35,7 +35,10 @@ def fetchSource(id, sampleMap, terms):
 	sources = []
 	top = set(top)
 	for sample in top:
-		id = sample.getCode().split('-')[1]
+		try:
+			id = sample.getCode().split('-')[1]
+		except:
+			id = sample.getCode()
 		organism = sample.getPropertyValue("Q_NCBI_ORGANISM")
 		for term in terms:
 			if organism == term.getCode():
