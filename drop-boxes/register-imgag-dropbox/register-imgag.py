@@ -34,15 +34,15 @@ def parse_metadata_file(filePath):
 	return data
 
 def isExpected(identifier):
-        #try:
-        id = identifier[0:9]
-        #also checks for old checksums with lower case letters
+		#try:
+		id = identifier[0:9]
+		#also checks for old checksums with lower case letters
 	print "id: "+identifier
 	print "id without checksum: "+id
 	print "checksum: "+checksum.checksum(id)
-        return checksum.checksum(id)==identifier[9]
-        #except:
-        #       return False
+		return checksum.checksum(id)==identifier[9]
+		#except:
+		#	   return False
 
 numberOfExperiments = 0
 newTestSamples = {}
@@ -71,15 +71,15 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
 				varcodekey = key
 			
 			
-        expType = jsonContent["type"]
+		expType = jsonContent["type"]
 
-        project = qbicBarcodes[0][:5]
+		project = qbicBarcodes[0][:5]
 
 	search_service = transaction.getSearchService()
-        sc = SearchCriteria()
-        pc = SearchCriteria()
-        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+		sc = SearchCriteria()
+		pc = SearchCriteria()
+		pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+		sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
 
 	foundSamples = search_service.searchForSamples(sc)
 	space = foundSamples[0].getSpace()
@@ -88,7 +88,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
 	sampleFound = False
 
 	parentIdentifiers = []
-        testParentIdentifiers = []
+		testParentIdentifiers = []
 
 
 	global numberOfExperiments
@@ -100,17 +100,17 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
 		print somaticIdent
 		if somaticIdent == varcode:
 			for i, parentBarcode in enumerate(qbicBarcodes):
-                		additionalInfo += '%s %s Tumor: %s \n' % (qbicBarcodes[i], geneticIDS[i], sampleSource[i])
-                	secName += somaticIdent
+						additionalInfo += '%s %s Tumor: %s \n' % (qbicBarcodes[i], geneticIDS[i], sampleSource[i])
+					secName += somaticIdent
 			for barcode, geneticID in zip(qbicBarcodes, geneticIDS):
 				if geneticID in newNGSSamples:
 					parentIdentifiers.append(newNGSSamples[geneticID])
 					testParentIdentifiers.append(oldTestSamples[geneticID])
 				else:
-	        			for samp in foundSamples:
+						for samp in foundSamples:
 						qbicBarcodeID = '/' + space + '/' + barcode
-                				if qbicBarcodeID in samp.getParentSampleIdentifiers():
-                        				testParentID = samp.getSampleIdentifier()
+								if qbicBarcodeID in samp.getParentSampleIdentifiers():
+										testParentID = samp.getSampleIdentifier()
 							for s in foundSamples:
 								sampleType = s.getSampleType()
 								secName = s.getPropertyValue("Q_SECONDARY_NAME")
@@ -229,7 +229,7 @@ def find_and_register_ngs(transaction, jsonContent):
 				print "searching: "+idGenetics.split('_')[0]
 				print samp.getPropertyValue("Q_EXTERNALDB_ID")
 			if (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") == idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0])):
-	    		sampleIdent = samp.getSampleIdentifier()
+				sampleIdent = samp.getSampleIdentifier()
 				testSampleCode = samp.getCode()
 				oldTestSamples[idGenetics] = sampleIdent
 	if not sampleIdent:
@@ -253,10 +253,10 @@ def find_and_register_ngs(transaction, jsonContent):
 		# There is already a registered NGS run
 		if (s.getSampleType() == "Q_NGS_SINGLE_SAMPLE_RUN") and (sampleIdent in s.getParentSampleIdentifiers() and (s.getPropertyValue("Q_SECONDARY_NAME") in idGenetics)):
 			sa = transaction.getSampleForUpdate(s.getSampleIdentifier())
-	    	sa.setPropertyValue("Q_SECONDARY_NAME", idGenetics)
+			sa.setPropertyValue("Q_SECONDARY_NAME", idGenetics)
 					
-	    	datasetSample = sa
-	    	sampleFound = True
+			datasetSample = sa
+			sampleFound = True
 
 	if not sampleFound:
 		# register new experiment and sample
@@ -290,39 +290,39 @@ def find_and_register_ngs(transaction, jsonContent):
 	return datasetSample
 
 def process(transaction):
-        context = transaction.getRegistrationContext().getPersistentMap()
+	context = transaction.getRegistrationContext().getPersistentMap()
 
-        # Get the incoming path of the transaction
-        incomingPath = transaction.getIncoming().getAbsolutePath()
+	# Get the incoming path of the transaction
+	incomingPath = transaction.getIncoming().getAbsolutePath()
 
-        key = context.get("RETRY_COUNT")
-        if (key == None):
-                key = 1
+	key = context.get("RETRY_COUNT")
+	if (key == None):
+		key = 1
 
-        # Get the name of the incoming folder
-        name = transaction.getIncoming().getName()
+	# Get the name of the incoming folder
+	name = transaction.getIncoming().getName()
 
-        identifier = pattern.findall(name)[0]
-        if isExpected(identifier):
+	identifier = pattern.findall(name)[0]
+	if isExpected(identifier):
 		pass
-                #experiment = identifier[1:5]
-                #parentCode = identifier[:10]
-        else:
-                print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+				#experiment = identifier[1:5]
+				#parentCode = identifier[:10]
+		else:
+				print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
 
-	project = identifier[:5]       
+	project = identifier[:5]	   
 	search_service = transaction.getSearchService()
-        sc = SearchCriteria()
-        pc = SearchCriteria()
-        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-        foundSamples = search_service.searchForSamples(sc)
-        space = foundSamples[0].getSpace()
+	sc = SearchCriteria()
+	pc = SearchCriteria()
+	pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+	sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+	foundSamples = search_service.searchForSamples(sc)
+	space = foundSamples[0].getSpace()
 	global numberOfExperiments
-        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
+	numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
 
 	src = os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt'))
-        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
+	numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
 
 	src = os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt'))
 	if os.path.isfile(src):
@@ -330,8 +330,8 @@ def process(transaction):
 	
 	print "start registration"
 	#dataSet = None
-        for f in os.listdir(os.path.join(incomingPath,name)):
-        		if f.endswith('metadata'):
+		for f in os.listdir(os.path.join(incomingPath,name)):
+			if f.endswith('metadata'):
 				jsonContent = parse_metadata_file(os.path.realpath(os.path.join(os.path.join(incomingPath, name),f)))
 				rawFiles = jsonContent["files"]
 				vcfs = []
@@ -357,9 +357,9 @@ def process(transaction):
 				#	datasetSample = find_and_register_ngs(transaction, jsonContent)
 
 				#	dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
-        			#	dataSet.setSample(datasetSample)
+					#	dataSet.setSample(datasetSample)
 
-        			#os.remove(os.path.realpath(os.path.join(os.path.join(incomingPath,name),f)))
+					#os.remove(os.path.realpath(os.path.join(os.path.join(incomingPath,name),f)))
 			else:
 				pass
 	folder = os.path.join(incomingPath, name)
@@ -379,9 +379,9 @@ def process(transaction):
 		vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
 		vcfDataSet.setSample(vcfSample)
 		vcfFolder = os.path.join(folder, "vcf")
-                os.mkdir(vcfFolder)
-                os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
-               	
+		os.mkdir(vcfFolder)
+		os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
+			   	
 		for g in gsvars:
 			if(ident == g.split('.')[0]):	
 				os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
