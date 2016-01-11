@@ -183,8 +183,8 @@ def createNewBarcode(project, tr):
 		n = str(len(newTestSamples)+1+offset) #for future programmers: sorry if this reaches > 999 !
 		code = project+n.zfill(3)+"X" # should go to other letters in that case
 		code = code+checksum.checksum(code)
-	    	pc = SearchCriteria()
-    		pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+		pc = SearchCriteria()
+		pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
 		found = search_service.searchForSamples(pc)
 		print found
 		if len(found) == 0:
@@ -202,36 +202,36 @@ def find_and_register_ngs(transaction, jsonContent):
 	tumor = jsonContent["sample1"]["tumor"]
 	expType = jsonContent["type"]
 
-    	project = qbicBarcode[:5]
+	project = qbicBarcode[:5]
 
 	search_service = transaction.getSearchService()
-    	sc = SearchCriteria()
-    	pc = SearchCriteria()
-    	pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
-    	sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+	sc = SearchCriteria()
+	pc = SearchCriteria()
+	pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+	sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
 	foundSamples = search_service.searchForSamples(sc)
 
-    	datasetSample = None
-    	sampleFound = False
+	datasetSample = None
+  	sampleFound = False
 	sampleIdent = None
 	space = foundSamples[0].getSpace()
 	testSampleCode = None
 
 	knownCodes = []
 
-    	for samp in foundSamples:
+    for samp in foundSamples:
 		qbicBarcodeID = '/' + samp.getSpace() + '/' + qbicBarcode
 		knownCodes.append(samp.getCode())
 		print "code: "+samp.getCode()
 		if qbicBarcodeID in samp.getParentSampleIdentifiers() or qbicBarcode == samp.getCode():
 			sampleType = samp.getSampleType()
-	    		if sampleType == "Q_TEST_SAMPLE":
+			if sampleType == "Q_TEST_SAMPLE":
 				print "searching: "+idGenetics.split('_')[0]
 				print samp.getPropertyValue("Q_EXTERNALDB_ID")
-				if (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") == idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0])):
-	    				sampleIdent = samp.getSampleIdentifier()
-					testSampleCode = samp.getCode()
-					oldTestSamples[idGenetics] = sampleIdent
+			if (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") == idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0])):
+	    		sampleIdent = samp.getSampleIdentifier()
+				testSampleCode = samp.getCode()
+				oldTestSamples[idGenetics] = sampleIdent
 	if not sampleIdent:
 		if not idGenetics in newTestSamples:
 			for samp in foundSamples:
@@ -253,10 +253,10 @@ def find_and_register_ngs(transaction, jsonContent):
 		# There is already a registered NGS run
 		if (s.getSampleType() == "Q_NGS_SINGLE_SAMPLE_RUN") and (sampleIdent in s.getParentSampleIdentifiers() and (s.getPropertyValue("Q_SECONDARY_NAME") in idGenetics)):
 			sa = transaction.getSampleForUpdate(s.getSampleIdentifier())
-	    		sa.setPropertyValue("Q_SECONDARY_NAME", idGenetics)
+	    	sa.setPropertyValue("Q_SECONDARY_NAME", idGenetics)
 					
-	    		datasetSample = sa
-	    		sampleFound = True
+	    	datasetSample = sa
+	    	sampleFound = True
 
 	if not sampleFound:
 		# register new experiment and sample
@@ -267,6 +267,9 @@ def find_and_register_ngs(transaction, jsonContent):
 		newNGSMeasurementExp.setPropertyValue('Q_SEQUENCER_DEVICE', 'IMGAG_ILLUMINA_HISEQ_2500')
 		newNGSMeasurementExp.setPropertyValue('Q_ADDITIONAL_INFO', system)
 		newNGSMeasurementExp.setPropertyValue('Q_SEQUENCING_TYPE', typesDict[expType])
+		print space
+		print idGenetics.split('_')[-1]
+		print testSampleCode
 		newNGSID = '/' + space + '/' + 'NGS'+ idGenetics.split('_')[-1] + testSampleCode
 		newNGSrunSample = transaction.createNewSample(newNGSID, "Q_NGS_SINGLE_SAMPLE_RUN")
 		newNGSrunSample.setParentSampleIdentifiers([sampleIdent])
