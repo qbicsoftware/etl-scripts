@@ -219,7 +219,7 @@ def find_and_register_ngs(transaction, jsonContent):
 
 	knownCodes = []
 
-    for samp in foundSamples:
+	for samp in foundSamples:
 		qbicBarcodeID = '/' + samp.getSpace() + '/' + qbicBarcode
 		knownCodes.append(samp.getCode())
 		print "code: "+samp.getCode()
@@ -365,8 +365,8 @@ def process(transaction):
 	folder = os.path.join(incomingPath, name)
 	if len(fastqs) > 0:
 		fastqSample = find_and_register_ngs(transaction, jsonContent)
-                fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
-                fastqDataSet.setSample(fastqSample)
+		fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
+		fastqDataSet.setSample(fastqSample)
 		fastqFolder = os.path.join(folder, "raw")
 		os.mkdir(fastqFolder)
 		for f in fastqs:
