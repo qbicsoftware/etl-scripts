@@ -143,7 +143,19 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
     #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
     #TEST
     numberOfExperiments += 1
-    newVCExp = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
+    existingExperimentIDs = []
+    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    
+    for eexp in existingExperiments:
+        existingExperimentIDs.append(eexp.getExperimentIdentifier())
+
+    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+    while newExpID in existingExperimentIDs:
+        numberOfExperiments += 1 
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+        
+    newVCExp = transaction.createNewExperiment(newExpID, "Q_NGS_VARIANT_CALLING")
     identString = varcode
     #for genID in geneticIDS:
     #	identString += genID.split('_')[-1]
@@ -242,8 +254,21 @@ def find_and_register_ngs(transaction, jsonContent):
                     testSample.setPropertyValue('Q_SECONDARY_NAME', idGenetics.split('_')[0])
                     testSample.setPropertyValue('Q_SAMPLE_TYPE', typesDict[expType])
                     global numberOfExperiments
+                    
                     numberOfExperiments += 1
-                    newTestSampleExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments), "Q_SAMPLE_PREPARATION")
+                    existingExperimentIDs = []
+                    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+                    
+                    for eexp in existingExperiments:
+                        existingExperimentIDs.append(eexp.getExperimentIdentifier())
+
+                    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+                    while newExpID in existingExperimentIDs:
+                        numberOfExperiments += 1 
+                        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+                    newTestSampleExperiment = transaction.createNewExperiment(newExpID, "Q_SAMPLE_PREPARATION")
                     testSample.setExperiment(newTestSampleExperiment)
                     newTestSamples[idGenetics] = sampleIdent
 
@@ -259,7 +284,19 @@ def find_and_register_ngs(transaction, jsonContent):
     if not sampleFound:
         # register new experiment and sample
         numberOfExperiments += 1
-        newNGSMeasurementExp = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_MEASUREMENT")
+        existingExperimentIDs = []
+        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+        
+        for eexp in existingExperiments:
+            existingExperimentIDs.append(eexp.getExperimentIdentifier())
+
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+        while newExpID in existingExperimentIDs:
+            numberOfExperiments += 1 
+            newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+        newNGSMeasurementExp = transaction.createNewExperiment(newExpID, "Q_NGS_MEASUREMENT")
         newNGSMeasurementExp.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
         newNGSMeasurementExp.setPropertyValue('Q_SEQUENCING_MODE', 'PAIRED_END')
         newNGSMeasurementExp.setPropertyValue('Q_SEQUENCER_DEVICE', 'IMGAG_ILLUMINA_HISEQ_2500')
