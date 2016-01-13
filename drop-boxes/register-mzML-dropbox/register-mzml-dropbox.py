@@ -57,9 +57,9 @@ def process(transaction):
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(sampleIdentifier)
-        
+
         # create new dataset 
-        dataSet = transaction.createNewDataSet("MZML")
+        dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
 
