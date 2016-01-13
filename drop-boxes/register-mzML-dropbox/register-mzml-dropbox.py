@@ -47,25 +47,19 @@ def process(transaction):
                 project = identifier[:5]
                 #parentCode = identifier[:10]
         else:
-                print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+                print "The identifier "+identifier+" did not match the pattern MSQ[A-Z]{4}\d{3}\w{2} or checksum"
         
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, identifier))
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+identifier))
         foundSamples = search_service.searchForSamples(sc)
 
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(sampleIdentifier)
-        #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-        #newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
 
-        #newVariantCallingSample = transaction.createNewSample('/' + space + '/' + 'VC'+ parentCode, "Q_NGS_VARIANT_CALLING")
-        #newVariantCallingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
-	#newVariantCallingSample.setExperiment(newVariantCallingExperiment) 
         # create new dataset 
-        dataSet = transaction.createNewDataSet("MZML")
+        dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
 
