@@ -132,6 +132,6 @@ def process(transaction):
         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         for f in os.listdir(incomingPath):
-            if ".testorig" in f:
+            if ".origlabfilename" in f:
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         transaction.moveFile(incomingPath, rawDataSet)
