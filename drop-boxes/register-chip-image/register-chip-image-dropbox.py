@@ -59,4 +59,6 @@ def process(transaction):
             dataSet.setMeasuredData(False)
             dataSet.setSample(sa)
 
-            transaction.moveFile(incomingPath, dataSet)
+            iamge = os.path.realpath(os.path.join(incomingPath,name))
+
+            transaction.moveFile(image, dataSet)
