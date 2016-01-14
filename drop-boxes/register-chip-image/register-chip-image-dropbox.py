@@ -55,7 +55,7 @@ def process(transaction):
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
 
                 # create new dataset 
-                dataSet = transaction.createNewDataSet("CHIP_IMAGE")
+                dataSet = transaction.createNewDataSet("Q_MA_CHIP_IMAGE")
                 dataSet.setMeasuredData(False)
                 dataSet.setSample(sa)
 
