@@ -141,7 +141,7 @@ def process(transaction):
                                 pass
                 newArraySample.setPropertyValue("Q_PROPERTIES", sa.getPropertyValue("Q_PROPERTIES"))
                 newArraySample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-                newArraySample.setExperiment(arr)
+                newArraySample.setExperiment(arrayExperiment)
 
                 # create new dataset
                 extIDs = mftPattern.findall(filesForID[identifier][0])
