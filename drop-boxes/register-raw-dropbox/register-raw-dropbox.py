@@ -70,6 +70,7 @@ def process(transaction):
         else:
                 print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
         
+        code = identifier
         search_service = transaction.getSearchService()
         sc = SearchCriteria()    # Find the test sample
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
