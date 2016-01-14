@@ -18,6 +18,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 mftPattern = re.compile('I[0-9]{2}R[0-9]{3}[a-z][0-9]{2}')
+expType = "Q_MICROARRAY_MEASUREMENT"
 
 def isExpected(identifier):
         try:
@@ -35,7 +36,6 @@ def parseMetadata(file):
         rinFlag = False
         numFlag = False
         code = None
-        expType = "Q_MICROARRAY_MEASUREMENT"
         rinMap = {}
         date = re.compile("[A-Z][a-z]{5,9}, [0-9]{1,2}. [A-Z][a-z]{2,8} 2[0-9]{3}")#sorry, people living in the year 3000+
         order = None
