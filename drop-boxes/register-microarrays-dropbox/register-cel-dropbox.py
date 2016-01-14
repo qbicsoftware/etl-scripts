@@ -28,17 +28,18 @@ def isExpected(identifier):
                 return False
 
 def parseMetadata(file):
-	os.system("pdftotext "+file)
+        os.system("pdftotext "+file)
         txt = ".".join(file.split(".")[:-1])+".txt"
         info = open(txt)
         orderFlag = False
         rinFlag = False
         numFlag = False
         code = None
+        expType = "Q_MICROARRAY_MEASUREMENT"
         rinMap = {}
         date = re.compile("[A-Z][a-z]{5,9}, [0-9]{1,2}. [A-Z][a-z]{2,8} 2[0-9]{3}")#sorry, people living in the year 3000+
         order = None
-	for line in info:
+        for line in info:
                 line = line.strip()
                 if orderFlag and line.startswith("I"):
                         auftragFlag = False
@@ -59,7 +60,7 @@ def parseMetadata(file):
                 elif "RIN Nummer" in line:
                         rinFlag = True
         info.close()
-	return [auftrag, rinMap]
+        return [auftrag, rinMap]
 
 def process(transaction):
         context = transaction.getRegistrationContext().getPersistentMap()
@@ -76,68 +77,85 @@ def process(transaction):
         #name = transaction.getIncoming().getName()
 
         pdf = None
-        newArrayExperiment = None
-	filesForID = {}
-	maps = None
+        arrayExperiment = None
+        filesForID = {}
+        maps = None
         for name in os.listdir(incomingPath): #what should the folder be called? how will this work with checksum and origlabfilename etc. created by datahandler?
                 searchID = pattern.findall(name)
-		if len(searchID) > 0:
-			identifier = searchID[0]
-			if identifier in filesForID:
-				filesForID[identifier] = filesForID[identifier] + [name]
-			else:
-				filesForID[identifier] = [name]
+                if len(searchID) > 0:
+                        identifier = searchID[0]
+                        if identifier in filesForID:
+                                filesForID[identifier] = filesForID[identifier] + [name]
+                        else:
+                                filesForID[identifier] = [name]
                 if name.lower().endswith(".pdf"):
                         pdf = os.path.join(incomingPath, name)
-	        if(pdf):
-	                maps = parseMetadata(pdf)
-        	        auftrag = maps[0]
-                	rins = maps[1]
+                if(pdf):
+                        maps = parseMetadata(pdf)
+                        auftrag = maps[0]
+                        rins = maps[1]
 
-	for identifier in filesForID:
-	        if isExpected(identifier):
-	                project = identifier[:5]
-        	        parentCode = identifier[:10]
-        	else:
-                	print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
-	        search_service = transaction.getSearchService()
-        	sc = SearchCriteria()
-        	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
-        	foundSamples = search_service.searchForSamples(sc)
+        space = None
+        project = None
+        for identifier in filesForID:
+                if isExpected(identifier):
+                        project = identifier[:5]
+                        parentCode = identifier[:10]
+                else:
+                        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+                search_service = transaction.getSearchService()
+                sc = SearchCriteria()
+                sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+                foundSamples = search_service.searchForSamples(sc)
 
-	        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
-        	space = foundSamples[0].getSpace()
-	        sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+                parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
+                space = foundSamples[0].getSpace()
+                sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
-        	# register new experiment and sample
-	        if not newArrayExperiment:
-        	        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-                	newArrayExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_MICROARRAY_MEASUREMENT")
+        try:
+                experiments = search_service.listExperiments("/" + space + "/" + project)
+        except:
+                print "space or project could not be found, because there was no known registered barcode in any file name of the input data"
+        experimentIDs = []
+        for exp in experiments:
+        experimentIDs.append(exp.getExperimentIdentifier())
+        if exp.getExperimentType() == expType:
+                arrayExperiment = exp
+        # no existing experiment for samples of this sample preparation found
+        if not arrayExperiment:
+                expID = experimentIDs[0]
+                i = 0
+                while expID in experimentIDs:
+                        i += 1
+                        expNum = len(experiments) + i
+                        expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
+                arrayExperiment = transaction.createNewExperiment(expID, expType)
+        # now that we have an experiment we go back to the samples + data
+        for identifier in filesForID:
+                newArraySample = transaction.createNewSample('/' + space + '/' + 'MA'+ parentCode, "Q_MICROARRAY_RUN")
+                if maps:
+                        try:
+                                newArraySample.setPropertyValue('Q_RNA_INTEGRITY_NUMBER', rins[parentCode])
+                                arrayExperiment.setPropertyValue("Q_EXTERNALDB_ID", auftrag)
+                        except:
+                                pass
+                newArraySample.setPropertyValue("Q_PROPERTIES", sa.getPropertyValue("Q_PROPERTIES"))
+                newArraySample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+                newArraySample.setExperiment(arr)
 
-	        newArraySample = transaction.createNewSample('/' + space + '/' + 'MA'+ parentCode, "Q_MICROARRAY_RUN")
-        	if maps:
-	                try:
-				newArraySample.setPropertyValue('Q_RNA_INTEGRITY_NUMBER', rins[parentCode])
-				newArrayExperiment.setPropertyValue("Q_EXTERNALDB_ID", auftrag)
-			except:
-				pass
-		newArraySample.setPropertyValue("Q_PROPERTIES", sa.getPropertyValue("Q_PROPERTIES"))
-        	newArraySample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        	newArraySample.setExperiment(newArrayExperiment)
+                # create new dataset
+                extIDs = mftPattern.findall(filesForID[identifier][0])
+                dataSet = transaction.createNewDataSet("Q_MA_RAW_DATA")
+                if extIDs:
+                        dataSet.setPropertyValue("Q_EXTERNALDB_ID", extIDs[0])
+                dataSet.setMeasuredData(False)
+                dataSet.setSample(newArraySample)
 
-	        # create new dataset
-		extIDs = mftPattern.findall(filesForID[identifier][0])
-        	dataSet = transaction.createNewDataSet("Q_MA_RAW_DATA")
-		if extIDs:
-			dataSet.setPropertyValue("Q_EXTERNALDB_ID", extIDs[0])
-        	dataSet.setMeasuredData(False)
-        	dataSet.setSample(newArraySample)
-
-		dataFolder = os.path.realpath(os.path.join(incomingPath,identifier))
-		os.mkdir(dataFolder)
-		for f in filesForID[identifier]:
-			os.rename(os.path.join(incomingPath, f), os.path.join(dataFolder, f))
-	        transaction.moveFile(dataFolder, dataSet)
+                dataFolder = os.path.realpath(os.path.join(incomingPath,identifier))
+                os.mkdir(dataFolder)
+                for f in filesForID[identifier]:
+                        os.rename(os.path.join(incomingPath, f), os.path.join(dataFolder, f))
+                transaction.moveFile(dataFolder, dataSet)
 
         for f in os.listdir(incomingPath):
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
