@@ -75,18 +75,18 @@ def process(transaction):
         newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
     newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
-	newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+    newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
     newHLATypingSample = transaction.createNewSample('/' + space + '/' + 'HLA'+ parentCode, "Q_NGS_HLATYPING")
     newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-	newHLATypingSample.setExperiment(newHLATypingExperiment)
+    newHLATypingSample.setExperiment(newHLATypingExperiment)
 
     for root, subFolders, files in os.walk(incomingPath):
-    if subFolders:
-        subFolder = subFolders[0]
-    for f in files:
-        if f.endswith('.alleles'):
-            resultFile = open(os.path.join(root, f), 'r')
+        if subFolders:
+            subFolder = subFolders[0]
+        for f in files:
+            if f.endswith('.alleles'):
+                resultFile = open(os.path.join(root, f), 'r')
 
     resultContent = resultFile.read()
     newHLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
