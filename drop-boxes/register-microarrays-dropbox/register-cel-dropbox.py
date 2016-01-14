@@ -118,9 +118,9 @@ def process(transaction):
                 print "space or project could not be found, because there was no known registered barcode in any file name of the input data"
         experimentIDs = []
         for exp in experiments:
-        experimentIDs.append(exp.getExperimentIdentifier())
-        if exp.getExperimentType() == expType:
-                arrayExperiment = exp
+                experimentIDs.append(exp.getExperimentIdentifier())
+                if exp.getExperimentType() == expType:
+                        arrayExperiment = exp
         # no existing experiment for samples of this sample preparation found
         if not arrayExperiment:
                 expID = experimentIDs[0]
