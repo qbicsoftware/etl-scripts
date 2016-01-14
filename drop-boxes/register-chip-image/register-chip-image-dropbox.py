@@ -54,11 +54,10 @@ def process(transaction):
                 space = foundSamples[0].getSpace()
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
 
-            # create new dataset 
-            dataSet = transaction.createNewDataSet("CHIP_IMAGE")
-            dataSet.setMeasuredData(False)
-            dataSet.setSample(sa)
+                # create new dataset 
+                dataSet = transaction.createNewDataSet("CHIP_IMAGE")
+                dataSet.setMeasuredData(False)
+                dataSet.setSample(sa)
 
-            iamge = os.path.realpath(os.path.join(incomingPath,name))
-
-            transaction.moveFile(image, dataSet)
+                image = os.path.realpath(os.path.join(incomingPath,name))
+                transaction.moveFile(image, dataSet)
