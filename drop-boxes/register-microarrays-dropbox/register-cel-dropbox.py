@@ -137,16 +137,22 @@ def process(transaction):
                 j += 1
                 sa = parents[j]
                 parentCode = sa.getCode()
-                newArraySample = transaction.createNewSample('/' + space + '/' + 'MA'+ parentCode, "Q_MICROARRAY_RUN")
-                if maps:
-                        try:
-                                newArraySample.setPropertyValue('Q_RNA_INTEGRITY_NUMBER', rins[parentCode])
-                                arrayExperiment.setPropertyValue("Q_EXTERNALDB_ID", auftrag)
-                        except:
-                                pass
-                newArraySample.setPropertyValue("Q_PROPERTIES", sa.getPropertyValue("Q_PROPERTIES"))
-                newArraySample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-                newArraySample.setExperiment(arrayExperiment)
+
+                arraySampleID = '/' + space + '/' + 'MA'+ parentCode
+
+                arraySample = transaction.getSampleForUpdate(arraySampleID)
+
+                if not arraySample:
+                        arraySample = transaction.createNewSample(arraySampleID, "Q_MICROARRAY_RUN")
+                        if maps:
+                                try:
+                                        arraySample.setPropertyValue('Q_RNA_INTEGRITY_NUMBER', rins[parentCode])
+                                        arrayExperiment.setPropertyValue("Q_EXTERNALDB_ID", auftrag)
+                                except:
+                                        pass
+                        arraySample.setPropertyValue("Q_PROPERTIES", sa.getPropertyValue("Q_PROPERTIES"))
+                        arraySample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+                        arraySample.setExperiment(arrayExperiment)
 
                 # create new dataset
                 extIDs = mftPattern.findall(filesForID[identifier][0])
@@ -154,7 +160,7 @@ def process(transaction):
                 if extIDs:
                         dataSet.setPropertyValue("Q_EXTERNALDB_ID", extIDs[0])
                 dataSet.setMeasuredData(False)
-                dataSet.setSample(newArraySample)
+                dataSet.setSample(arraySample)
 
                 dataFolder = os.path.realpath(os.path.join(incomingPath,identifier))
                 os.mkdir(dataFolder)
