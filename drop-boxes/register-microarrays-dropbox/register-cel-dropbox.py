@@ -97,6 +97,7 @@ def process(transaction):
 
         space = None
         project = None
+        parents = []
         for identifier in filesForID:
                 if isExpected(identifier):
                         project = identifier[:5]
@@ -110,7 +111,7 @@ def process(transaction):
 
                 parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
-                sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+                parents.append(transaction.getSampleForUpdate(parentSampleIdentifier))
 
         try:
                 experiments = search_service.listExperiments("/" + space + "/" + project)
@@ -131,7 +132,11 @@ def process(transaction):
                         expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
                 arrayExperiment = transaction.createNewExperiment(expID, expType)
         # now that we have an experiment we go back to the samples + data
+        j = -1
         for identifier in filesForID:
+                j += 1
+                sa = parents[j]
+                parentCode = sa.getCode()
                 newArraySample = transaction.createNewSample('/' + space + '/' + 'MA'+ parentCode, "Q_MICROARRAY_RUN")
                 if maps:
                         try:
