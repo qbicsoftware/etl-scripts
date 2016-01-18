@@ -15,11 +15,11 @@ def process(tr, parameters, tableBuilder):
       entity = tr.getExperimentForUpdate(parameters.get("Project")+"/"+id)
     else:
       sc = SearchCriteria()
-      sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, id.split("/")[-1]))
+      sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, id))
       found = search_service.searchForSamples(sc)
       print "found: "+str(found)
       if len(found) > 0:
-        entity = tr.getSampleForUpdate(id)
+        entity = tr.getSampleForUpdate(found[0].getSampleIdentifier())
     if entity:
       for type in parameters.get("types"):
         print "handling type "+type
