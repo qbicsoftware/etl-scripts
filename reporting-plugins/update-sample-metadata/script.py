@@ -18,7 +18,7 @@ def process(tr, parameters, tableBuilder):
       sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, id))
       found = search_service.searchForSamples(sc)
       print "found: "+str(found)
-      if found.size() > 0:
+      if len(found) > 0:
         entity = tr.getSampleForUpdate(id)
     if entity:
       for type in parameters.get("types"):
