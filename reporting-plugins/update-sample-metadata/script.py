@@ -21,7 +21,7 @@ def process(tr, parameters, tableBuilder):
       entity = tr.getExperimentForUpdate(parameters.get("Project")+"/"+id)
     else:
       sc = SearchCriteria()
-      sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, id.split("/")[-1]))
+      sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, id))
       found = search_service.searchForSamples(sc)
       if found.size() > 0:
         entity = tr.getSampleForUpdate(id)
