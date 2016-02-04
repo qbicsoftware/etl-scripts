@@ -76,8 +76,7 @@ def process(transaction):
                         expNum = len(experiments) + i
                         expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
                 mapExperiment = transaction.createNewExperiment(expID, expType)
-
-	mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+                mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
         newMappingSample = transaction.createNewSample('/' + space + '/' + 'MP'+ parentCode, "Q_NGS_MAPPING")
         newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
