@@ -77,6 +77,7 @@ def process(tr, parameters, tableBuilder):
 		sample = sampleMap[id]
 		if sample.getSampleType() in types:
 			code = sample.getCode()
+			print "adding sample info for "+code+" to table"
 			row = tableBuilder.addRow()
 			row.setCell(CODE, code)
 			row.setCell(SECONDARY_NAME, sample.getPropertyValue("Q_SECONDARY_NAME"))
