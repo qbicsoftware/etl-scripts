@@ -45,38 +45,43 @@ def process(transaction):
         identifier = pattern.findall(name)[0]
         if isExpected(identifier):
                 project = identifier[:5]
-                #parentCode = identifier[:10]
+                parentCode = identifier[:10]
         else:
-                print "The identifier "+identifier+" did not match the pattern MSQ[A-Z]{4}\d{3}\w{2} or checksum"
+                print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
         
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+identifier))
         foundSamples = search_service.searchForSamples(sc)
 
-        sampleIdentifier = foundSamples[0].getSampleIdentifier()
+        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
-        sa = transaction.getSampleForUpdate(sampleIdentifier)
+        sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+        # find or register new experiment
+        expType = "Q_MS_MEASUREMENT"
+        msExperiment = None
+        experiments = search_service.listExperiments("/" + space + "/" + project)
+        experimentIDs = []
+        for exp in experiments:
+                experimentIDs.append(exp.getExperimentIdentifier())
+                if exp.getExperimentType() == expType:
+                        msExperiment = exp
+        # no existing experiment for samples of this sample preparation found
+        if not msExperiment:
+                expID = experimentIDs[0]
+                i = 0
+                while expID in experimentIDs:
+                        i += 1
+                        expNum = len(experiments) + i
+                        expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
+                msExperiment = transaction.createNewExperiment(expID, expType)
 
+        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ parentCode, "Q_MS_RUN")
+        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        newMSSample.setExperiment(msExperiment) 
         # create new dataset 
         dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
         dataSet.setMeasuredData(False)
-        dataSet.setSample(sa)
+        dataSet.setSample(newMSSample)
 
-       	#cegat = False
-        f = "source_dropbox.txt"
-        sourceLabFile = open(os.path.join(incomingPath,f))
-       	sourceLab = sourceLabFile.readline().strip() 
-        sourceLabFile.close()
-        #if sourceLab == 'dmcegat':
-                #cegat = True
-        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        for f in os.listdir(incomingPath):
-		if ".testorig" in f:
-			os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-               	#elif f.endswith('vcf') and cegat:
-                        #secondaryName = f.split('_')[0]
-                       	#entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
-                       	#sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
         transaction.moveFile(incomingPath, dataSet)
