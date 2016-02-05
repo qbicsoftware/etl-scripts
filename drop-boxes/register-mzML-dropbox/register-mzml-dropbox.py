@@ -51,7 +51,7 @@ def process(transaction):
         
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+identifier))
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, identifier))
         foundSamples = search_service.searchForSamples(sc)
 
         parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
