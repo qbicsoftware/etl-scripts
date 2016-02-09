@@ -40,14 +40,17 @@ def fetchSource(id, sampleMap, terms):
 		except:
 			id = sample.getCode()
 		organism = sample.getPropertyValue("Q_NCBI_ORGANISM")
-		for term in terms:
-			if organism == term.getCode():
-				desc = term.getDescription()
-				if desc == None or len(desc) < 1:
-					desc = term.getLabel()
-		if desc == "human":
-			desc == "patient"
-		sources.append(desc+' '+id)
+		if organism:
+			for term in terms:
+				if organism == term.getCode():
+					desc = term.getDescription()
+					if desc == None or len(desc) < 1:
+						desc = term.getLabel()
+			if desc == "human":
+				desc == "patient"
+			sources.append(desc+' '+id)
+		else:
+			sources.append("unknown source")
 	return '+'.join(sources)
 
 def process(tr, parameters, tableBuilder):
@@ -74,6 +77,7 @@ def process(tr, parameters, tableBuilder):
 		sample = sampleMap[id]
 		if sample.getSampleType() in types:
 			code = sample.getCode()
+			print "adding sample info for "+code+" to table"
 			row = tableBuilder.addRow()
 			row.setCell(CODE, code)
 			row.setCell(SECONDARY_NAME, sample.getPropertyValue("Q_SECONDARY_NAME"))

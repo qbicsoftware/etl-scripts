@@ -28,6 +28,27 @@ def isExpected(identifier):
         except:
                 return False
 
+
+def isCurrentMSRun(tr, parentExpID, msExpID):
+    search_service = tr.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(
+        SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.TYPE, "Q_MS_RUN"
+        )
+    )
+    foundSamples = search_service.searchForSamples(sc)
+    for samp in foundSamples:
+        currentMSExp = samp.getExperiment()
+        if currentMSExp.getExperimentIdentifier() == msExpID:
+            for parID in samp.getParentSampleIdentifiers():
+                parExp = (tr.getSampleForUpdate(parID)
+                            .getExperiment()
+                            .getExperimentIdentifier())
+                if parExp == parentExpID:
+                    return True
+    return False
+
 def process(transaction):
         context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -49,41 +70,68 @@ def process(transaction):
         else:
                 print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
         
+        code = identifier
         search_service = transaction.getSearchService()
-        sc = SearchCriteria()
-        #sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, 'MS' + identifier))
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, identifier))
-	foundSamples = search_service.searchForSamples(sc)
+        sc = SearchCriteria()    # Find the test sample
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, code))
+        foundSamples = search_service.searchForSamples(sc)
 
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(sampleIdentifier)
-        #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-        #newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
 
-        #newVariantCallingSample = transaction.createNewSample('/' + space + '/' + 'VC'+ parentCode, "Q_NGS_VARIANT_CALLING")
-        #newVariantCallingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
-	#newVariantCallingSample.setExperiment(newVariantCallingExperiment) 
-        # create new dataset 
-        dataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-        dataSet.setMeasuredData(False)
-        dataSet.setSample(sa)
+        # get or create MS-specific experiment/sample and
+        # attach to the test sample
+        expType = "Q_MS_MEASUREMENT"
+        MSRawExperiment = None
+        experiments = search_service.listExperiments("/" + space + "/" + project)
+        experimentIDs = []
+        for exp in experiments:
+            experimentIDs.append(exp.getExperimentIdentifier())
+            if exp.getExperimentType() == expType:
+                if isCurrentMSRun(
+                    transaction,
+                    sa.getExperiment().getExperimentIdentifier(),
+                    exp.getExperimentIdentifier()
+                ):
+                    MSRawExperiment = exp
+        # no existing experiment for samples of this sample preparation found
+        if not MSRawExperiment:
+            expID = experimentIDs[0]
+            i = 0
+            while expID in experimentIDs:
+                i += 1
+                expNum = len(experiments) + i
+                expID = '/' + space + '/' + project + \
+                    '/' + project + 'E' + str(expNum)
+            MSRawExperiment = transaction.createNewExperiment(expID, expType)
+        # does MS sample already exist?
+        msCode = 'MS' + code
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.CODE, msCode))
+        foundSamples = search_service.searchForSamples(sc)
+        if len(foundSamples) < 1:
+            msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+            msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+            msSample.setExperiment(MSRawExperiment)
+        else:
+            msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+
+        # create new dataset
+        rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+        rawDataSet.setMeasuredData(False)
+        rawDataSet.setSample(msSample)
 
        	#cegat = False
         f = "source_dropbox.txt"
         sourceLabFile = open(os.path.join(incomingPath,f))
        	sourceLab = sourceLabFile.readline().strip() 
         sourceLabFile.close()
-        #if sourceLab == 'dmcegat':
-                #cegat = True
         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         for f in os.listdir(incomingPath):
-		if ".testorig" in f:
-			os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-               	#elif f.endswith('vcf') and cegat:
-                        #secondaryName = f.split('_')[0]
-                       	#entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
-                       	#sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-        transaction.moveFile(incomingPath, dataSet)
+            if ".origlabfilename" in f:
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+        transaction.moveFile(incomingPath, rawDataSet)

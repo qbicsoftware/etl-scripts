@@ -61,13 +61,16 @@ def process(transaction):
 	sample.setExperiment(experiment)
 
 	#Register files
+	if os.path.isdir(incomingPath+"/logs"):
+		dataSetLogs = transaction.createNewDataSet('Q_WF_NGS_VARIANT_CALLING_LOGS')
+		dataSetLogs.setMeasuredData(False)
+		dataSetLogs.setSample(sample)
+		transaction.moveFile(incomingPath+"/logs", dataSetLogs)
+
 	dataSetRes = transaction.createNewDataSet('Q_WF_NGS_VARIANT_CALLING_RESULTS')
 	dataSetRes.setMeasuredData(False)
-	dataSetLogs = transaction.createNewDataSet('Q_WF_NGS_VARIANT_CALLING_LOGS')
-	dataSetLogs.setMeasuredData(False)
-
 	dataSetRes.setSample(sample)
-	dataSetLogs.setSample(sample)
-
-	transaction.moveFile(incomingPath+"/result", dataSetRes)
-	transaction.moveFile(incomingPath+"/logs", dataSetLogs)
+	if os.path.isdir(incomingPath+"/result"):
+		transaction.moveFile(incomingPath+"/result", dataSetRes)
+	else:
+		transaction.moveFile(incomingPath, dataSetRes)
