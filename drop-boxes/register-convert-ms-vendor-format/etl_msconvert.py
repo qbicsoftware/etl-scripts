@@ -2,8 +2,8 @@
 This etl script converts proteomics raw files to mzML and registers
 both to the same openBIS sample.
 
-Incoming raw files are converted and the new mzML is copied
-to a temporary adress. After that both files are registered at
+Incoming raw files (of different vendor formats) are converted and the
+new mzML is copied to a temporary adress. After that both files are registered at
 openbis.
 
 To convert the raw files a virtual windows machine
@@ -44,7 +44,8 @@ logging.basicConfig(level=logging.DEBUG)
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
-MZML_DROPBOX = "/mnt/DSS1/openbis_dss/QBiC-convert-register-raw/"
+DROPBOX_PATH = "/mnt/DSS1/openbis_dss/QBiC-convert-register-ms-vendor-format/"
+VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER'}
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -67,14 +68,13 @@ def check_output(cmd, timeout=None, **kwargs):
     This is basically just `subprocess.check_output`, but the version
     in jython does not support timeouts."""
     PIPE = subprocess.PIPE
-    print cmd
     popen = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE, **kwargs)
 
     class _Alarm(Exception):
         pass
 
     def alarm_handler(signum, frame):
-        raise _Alarm()
+        raise _Alarm("Command timeout: %s" % cmd)
 
     if timeout:
         old_handler = signal.signal(signal.SIGALRM, alarm_handler)
@@ -147,7 +147,7 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
     temporary directory and raise a `ConversionError`.
     """
     ssh = partial(call_ssh, host=host, user=user, timeout=timeout)
-    rsync_base = partial(rsync, timeout=timeout, extra_options=['-q'])
+    rsync_base = partial(rsync, timeout=timeout, extra_options=['-qr'])
     rsync_to = partial(rsync_base, dest_user=user, dest_host=host)
     rsync_from = partial(rsync_base, source_host=host, source_user=user)
 
@@ -383,18 +383,19 @@ def process(transaction):
                   host=MSCONVERT_HOST,
                   timeout=CONVERSION_TIMEOUT,
                   user=MSCONVERT_USER)
-        if ext.lower() != '.raw':
+        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+        else:
             raise ValueError("Invalid incoming file %s" % incomingPath)
+
         mzml_path = os.path.join(tmpdir, stem + '.mzML')
         raw_path = os.path.join(incomingPath, name)
         convert(raw_path, mzml_path)
 
         mzml_name = os.path.basename(mzml_path)
-        mzml_dest = os.path.join(MZML_DROPBOX, mzml_name)
-        #mzml_marker = os.path.join(MZML_DROPBOX, MARKER + mzml_name)
+        mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
 
         os.rename(mzml_path, mzml_dest)
-        #open(mzml_marker, "w").close()
     finally:
         shutil.rmtree(tmpdir)
 
@@ -448,6 +449,7 @@ def process(transaction):
 
     # create new datasets
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+    rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", openbis_format_code)
     rawDataSet.setMeasuredData(False)
     rawDataSet.setSample(msSample)
 
