@@ -77,7 +77,25 @@ def process(transaction):
         	newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
 		newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
-	        vcSample = transaction.createNewSample('/' + space + '/' + 'VC'+ parentCode, "Q_NGS_VARIANT_CALLING")
+		vcNumber = 1
+		newSampleID = '/' + space + '/' + 'VC' + vcNumber + parentCode
+
+		search_service = transaction.getSearchService()
+		sc = SearchCriteria()
+		pc = SearchCriteria()
+		pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+		sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+		foundSamples2 = search_service.searchForSamples(sc)
+
+		existingSampleIDs = []
+		for samp in foundSamples2:
+			existingSampleIDs.append(samp.getSampleIdentifier())
+
+        	while newSampleID in existingSampleIDs:
+			vcNumber += 1
+			newSampleID = '/' + space + '/' + 'VC' + vcNumber + parentCode
+	        
+	        vcSample = transaction.createNewSample(newSampleID, "Q_NGS_VARIANT_CALLING")
 	       	vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
       
 		vcSample.setExperiment(newVariantCallingExperiment) 
