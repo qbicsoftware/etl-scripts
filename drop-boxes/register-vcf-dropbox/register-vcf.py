@@ -78,7 +78,7 @@ def process(transaction):
 		newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
 		vcNumber = 1
-		newSampleID = '/' + space + '/' + 'VC' + vcNumber + parentCode
+		newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
 
 		search_service = transaction.getSearchService()
 		sc = SearchCriteria()
@@ -93,7 +93,7 @@ def process(transaction):
 
         	while newSampleID in existingSampleIDs:
 			vcNumber += 1
-			newSampleID = '/' + space + '/' + 'VC' + vcNumber + parentCode
+			newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
 	        
 	        vcSample = transaction.createNewSample(newSampleID, "Q_NGS_VARIANT_CALLING")
 	       	vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
