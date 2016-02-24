@@ -35,4 +35,4 @@ def process(tr, parameters, tableBuilder):
       else:
         print prop
         print properties.get(prop)
-        exp.setPropertyValue(prop, properties.get(prop))
+        exp.setPropertyValue(prop, str(properties.get(prop)))
