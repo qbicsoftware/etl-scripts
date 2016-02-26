@@ -33,6 +33,4 @@ def process(tr, parameters, tableBuilder):
           material.setPropertyValue("Q_PROTEASE_"+str(i),e)
         exp.setPropertyValue("Q_PROTEASE_DIGESTION", matCode)
       else:
-        print prop
-        print properties.get(prop)
         exp.setPropertyValue(prop, str(properties.get(prop)))
