@@ -16,13 +16,11 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # Data import and registration
 # expected:
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
-#ePattern = re.compile('Q\w{4}E[0-9]+')
-#pPattern = re.compile('Q\w{4}')
+ePattern = re.compile('Q\w{4}E[0-9]+')
+pPattern = re.compile('Q\w{4}')
 
 # Fix - in space issue
 # Assumes that there are no dashes in samples/experiments/project codes
-ePattern = re.compile(‘-Q\w{4}E[0-9]+-’)
-pPattern = re.compile(‘-Q\w{4}-’)
 
 # project = pPattern.findall(name)[0]
 #experiment_id = ePattern.findall(name)[0]
