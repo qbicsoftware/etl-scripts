@@ -30,7 +30,7 @@ def process(tr, parameters, tableBuilder):
         i = 0
         for e in enzymes:
           i+=1
-	  material.setPropertyValue("Q_PROTEASE_"+str(i),e)
+          material.setPropertyValue("Q_PROTEASE_"+str(i),e)
         exp.setPropertyValue("Q_PROTEASE_DIGESTION", matCode)
       else:
-        exp.setPropertyValue(prop, properties.get(prop))
+        exp.setPropertyValue(prop, str(properties.get(prop)))
