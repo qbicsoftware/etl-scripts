@@ -19,6 +19,16 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 ePattern = re.compile('Q\w{4}E[0-9]+')
 pPattern = re.compile('Q\w{4}')
 
+# Fix - in space issue
+# Assumes that there are no dashes in samples/experiments/project codes
+
+# project = pPattern.findall(name)[0]
+#experiment_id = ePattern.findall(name)[0]
+# ICGC-DATA-QICGC-QICGCE13-QICGCE13R1
+# Assumes that there are no dashes in samples/experiments/project codes
+# space - check number of '-' if more than usual combine first and second split
+#
+
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -33,9 +43,19 @@ def process(transaction):
     name = transaction.getIncoming().getName()
 
     nameSplit = name.split("-")
-    space = nameSplit[0]
-    project = pPattern.findall(nameSplit[1])[0]
-    experiment_id = ePattern.findall(nameSplit[2])[0]
+    space_combination = ""
+    if(len(nameSplit) > 4):
+        for i in range(0,len(nameSplit) - 3):
+            space_combination += nameSplit[i] + '-'
+        space = space_combination[:-1]
+    else:
+        space = nameSplit[0]
+    
+    #space = nameSplit[0]
+    #project = pPattern.findall(nameSplit[1])[0]
+    #experiment_id = ePattern.findall(nameSplit[2])[0]
+    project = pPattern.findall(name)[0]
+    experiment_id = ePattern.findall(name)[0]
     sampleCode = nameSplit[-1]
     if not experiment_id:
             print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
