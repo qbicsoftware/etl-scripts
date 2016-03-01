@@ -15,6 +15,7 @@ import datetime
 import shutil
 import subprocess
 import simplejson as json
+import string
 
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
@@ -43,6 +44,14 @@ def isExpected(identifier):
     return checksum.checksum(id)==identifier[9]
     #except:
     #	   return False
+
+def getNextFreeBarcode(projectcode, numberOfBarcodes):
+    letters = string.ascii_uppercase
+    numberOfBarcodes += 1
+
+    currentLetter = letters[numberOfBarcodes / 999]
+    currentNumber = numberOfBarcodes % 999
+    return projectcode + str(currentNumber).zfill(3) + currentLetter
 
 numberOfExperiments = 0
 newTestSamples = {}
