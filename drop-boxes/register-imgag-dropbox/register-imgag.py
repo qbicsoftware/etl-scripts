@@ -22,6 +22,8 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+
+from shutil import copyfile
 # Data import and registration
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
@@ -429,7 +431,9 @@ def process(transaction):
         os.mkdir(fastqFolder)
         for f in fastqs:
             os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
-        shutil.copy(metadataPath, fastqFolder)
+
+        metadatafilename = metadataPath.split('/')[-1]
+        copyfile(metadataPath, os.path.join(fastqFolder,metadatafilename))
 
         transaction.moveFile(fastqFolder, fastqDataSet)
         #transaction.moveFile(folder, fastqDataSet)
@@ -447,7 +451,8 @@ def process(transaction):
             if(ident == g.split('.')[0]):
                 os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
-        shutil.copy(metadataPath, vcfFolder)
+        metadatafilename = metadataPath.split('/')[-1]
+        copyfile(metadataPath, os.path.join(vcfFolder,metadatafilename))
         #transaction.moveFile(folder, vcfDataSet)
         transaction.moveFile(vcfFolder, vcfDataSet)
 
