@@ -51,7 +51,8 @@ def getNextFreeBarcode(projectcode, numberOfBarcodes):
 
     currentLetter = letters[numberOfBarcodes / 999]
     currentNumber = numberOfBarcodes % 999
-    return projectcode + str(currentNumber).zfill(3) + currentLetter
+    code = projectcode + str(currentNumber).zfill(3) + currentLetter 
+    return code + checksum.checksum(code)
 
 numberOfExperiments = 0
 newTestSamples = {}
@@ -196,21 +197,30 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
 
 def createNewBarcode(project, tr):
     search_service = tr.getSearchService()
+    sc = SearchCriteria()
+    pc = SearchCriteria()
+    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+    foundSamples = search_service.searchForSamples(sc)
+
+    foundSamplesFilter = [s for s in foundSamples if 'ENTITY' not in s]
+
     offset = 0
     exists = True
     while exists:
-        n = str(len(newTestSamples)+1+offset) #for future programmers: sorry if this reaches > 999 !
-        code = project+n.zfill(3)+"X" # should go to other letters in that case
-        code = code+checksum.checksum(code)
+        # create new barcode
+        newBarcode = getNextFreeBarcode(project, len(foundSamplesFilter) + len(newTestSamples) + offset)
+
+        # check if barcode already exists in database
         pc = SearchCriteria()
-        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newBarcode))
         found = search_service.searchForSamples(pc)
-        print found
         if len(found) == 0:
             exists = False
         else:
             offset += 1
-    return code
+
+    return newBarcode
 
 def find_and_register_ngs(transaction, jsonContent):
     qcValues = jsonContent["sample1"]["qc"]
@@ -245,12 +255,13 @@ def find_and_register_ngs(transaction, jsonContent):
         if qbicBarcodeID in samp.getParentSampleIdentifiers() or qbicBarcode == samp.getCode():
             sampleType = samp.getSampleType()
             if sampleType == "Q_TEST_SAMPLE":
-                print "searching: "+idGenetics.split('_')[0]
-                print samp.getPropertyValue("Q_EXTERNALDB_ID")
-            if (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") == idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0])):
                 sampleIdent = samp.getSampleIdentifier()
                 testSampleCode = samp.getCode()
                 oldTestSamples[idGenetics] = sampleIdent
+                #print "searching: "+idGenetics.split('_')[0]
+                #print samp.getPropertyValue("Q_EXTERNALDB_ID")
+                #if (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") == idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0])):
+
     if not sampleIdent:
         print "found test sample"
         if not idGenetics in newTestSamples:
@@ -377,7 +388,8 @@ def process(transaction):
     #dataSet = None
     for f in os.listdir(os.path.join(incomingPath,name)):
         if f.endswith('metadata'):
-            jsonContent = parse_metadata_file(os.path.realpath(os.path.join(os.path.join(incomingPath, name),f)))
+            metadataPath = os.path.realpath(os.path.join(os.path.join(incomingPath, name),f))
+            jsonContent = parse_metadata_file(metadataPath)
             rawFiles = jsonContent["files"]
             vcfs = []
             fastqs = []
@@ -412,11 +424,15 @@ def process(transaction):
         fastqSample = find_and_register_ngs(transaction, jsonContent)
         fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
         fastqDataSet.setSample(fastqSample)
+
         fastqFolder = os.path.join(folder, "raw")
         os.mkdir(fastqFolder)
         for f in fastqs:
             os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
+        shutil.copy(metadataPath, fastqFolder)
+
         transaction.moveFile(fastqFolder, fastqDataSet)
+        #transaction.moveFile(folder, fastqDataSet)
     for vc in vcfs:
         ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','')
         print ident
@@ -430,6 +446,9 @@ def process(transaction):
         for g in gsvars:
             if(ident == g.split('.')[0]):
                 os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
+
+        shutil.copy(metadataPath, vcfFolder)
+        #transaction.moveFile(folder, vcfDataSet)
         transaction.moveFile(vcfFolder, vcfDataSet)
 
 
