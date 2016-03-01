@@ -37,7 +37,7 @@ def process(tr, parameters, tableBuilder):
       else:
         if prop == "Q_PREPARATION_DATE":
           time = properties.get(prop)
-          date = datetime.datetime.strptime(time, "%a %b %d %H:%M:%S %Z %Y").strftime('%Y-%m-%d %H:%M:%S')
+          date = datetime.datetime.strptime(time, "%d-%m-%Y").strftime('%Y-%m-%d %H:%M:%S')
           exp.setPropertyValue(prop, date)
         else:
           exp.setPropertyValue(prop, str(properties.get(prop)))
