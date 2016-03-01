@@ -243,6 +243,7 @@ def find_and_register_ngs(transaction, jsonContent):
                 testSampleCode = samp.getCode()
                 oldTestSamples[idGenetics] = sampleIdent
     if not sampleIdent:
+        print "found test sample"
         if not idGenetics in newTestSamples:
             for samp in foundSamples:
                 if qbicBarcode == samp.getCode():
