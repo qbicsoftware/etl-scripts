@@ -6,6 +6,10 @@ def process(tr, parameters, tableBuilder):
       Space Admin ID (or null): *
   """
 
+  user = parameters.get("registration_user")
+  if not user == None:
+    tr.setUserId(user)
+
   spaceCode = parameters.get("code")
   spaceAdmin = parameters.get("null")
   space = tr.createNewSpace(spaceCode,spaceAdmin)
