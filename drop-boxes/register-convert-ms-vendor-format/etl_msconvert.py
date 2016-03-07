@@ -355,12 +355,17 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
                     return True
     return False
 
-def process(transaction):
-    """Ask Andreas"""
+'''Script written by Chris, handles everything but conversion'''
+def handleImmunoFiles(transaction):
+
     context = transaction.getRegistrationContext().getPersistentMap()
 
     # Get the incoming path of the transaction
     incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    key = context.get("RETRY_COUNT")
+    if (key == None):
+        key = 1
 
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
@@ -368,103 +373,224 @@ def process(transaction):
     code = barcode_pattern.findall(name)[0]
     if extract_barcode(code):
         project = code[:5]
+        experiment = code[1:5]
+        parentCode = code[:10]
     else:
-        raise ValueError("Invalid barcode: %s" % code)
+        raise ValueError("Invalid barcode: %s" % code)        
+
+    for root, subFolders, files in os.walk(incomingPath):
+        if subFolders:
+            subFolder = subFolders[0]
+        for f in files:
+            if f.endswith('.tsv'):
+                metadataFile = open(os.path.join(root, f), 'r')
     
-    stem, ext = os.path.splitext(name)
-    search_service = transaction.getSearchService()
+    metadataFile.readline()
+    run = 1
+    for line in metadataFile:
+        splitted = line.split('\t')
+        fileName = splitted[0]
+        instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
+        date_input = splitted[2]
+        share = splitted[3]
+        comment = splitted[4]
+        method = splitted[5]
+        repl = splitted[6]
+        wf_type = splitted[7]
 
-    # Convert the raw file and write it to an mzml tmp folder.
-    # Sadly, I can not see a way to make this part of the transaction.
-    tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
-    try:
-        convert = partial(convert_raw,
-                  remote_base=REMOTE_BASE,
-                  host=MSCONVERT_HOST,
-                  timeout=CONVERSION_TIMEOUT,
-                  user=MSCONVERT_USER)
-        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-        else:
-            raise ValueError("Invalid incoming file %s" % incomingPath)
+        date = datetime.datetime.strptime(date_input, "%y%m%d").strftime('%Y-%m-%d')
 
-        mzml_path = os.path.join(tmpdir, stem + '.mzML')
-        raw_path = os.path.join(incomingPath, name)
-        convert(raw_path, mzml_path)
+        search_service = transaction.getSearchService()
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+        foundSamples = search_service.searchForSamples(sc)
 
-        mzml_name = os.path.basename(mzml_path)
-        mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
+        space = foundSamples[0].getSpace()
+        sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
-        os.rename(mzml_path, mzml_dest)
-    finally:
-        shutil.rmtree(tmpdir)
+         # register new experiment and sample
+        existingExperimentIDs = []
+        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+        
+        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
 
-    # Find the test sample
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, code))
-    foundSamples = search_service.searchForSamples(sc)
+        for eexp in existingExperiments:
+            existingExperimentIDs.append(eexp.getExperimentIdentifier())
 
-    sampleIdentifier = foundSamples[0].getSampleIdentifier()
-    space = foundSamples[0].getSpace()
-    sa = transaction.getSampleForUpdate(sampleIdentifier)
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
-    # get or create MS-specific experiment/sample and
-    # attach to the test sample
-    expType = "Q_MS_MEASUREMENT"
-    MSRawExperiment = None
-    experiments = search_service.listExperiments("/" + space + "/" + project)
-    experimentIDs = []
-    for exp in experiments:
-        experimentIDs.append(exp.getExperimentIdentifier())
-        if exp.getExperimentType() == expType:
-            if isCurrentMSRun(
-                transaction,
-                sa.getExperiment().getExperimentIdentifier(),
-                exp.getExperimentIdentifier()
-            ):
-                MSRawExperiment = exp
-    # no existing experiment for samples of this sample preparation found
-    if not MSRawExperiment:
-        expID = experimentIDs[0]
-        i = 0
-        while expID in experimentIDs:
-            i += 1
-            expNum = len(experiments) + i
-            expID = '/' + space + '/' + project + \
-                '/' + project + 'E' + str(expNum)
-        MSRawExperiment = transaction.createNewExperiment(expID, expType)
-    # does MS sample already exist?
-    msCode = 'MS' + code
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, msCode))
-    foundSamples = search_service.searchForSamples(sc)
-    if len(foundSamples) < 1:
-        msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
-        msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        msSample.setExperiment(MSRawExperiment)
-    else:
-        msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+        while newExpID in existingExperimentIDs:
+            numberOfExperiments += 1 
+            newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
-    # create new datasets
-    rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-    rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", openbis_format_code)
-    rawDataSet.setMeasuredData(False)
-    rawDataSet.setSample(msSample)
+        newMSExperiment = transaction.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
+        newMSExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+        newMSExperiment.setPropertyValue('Q_MS_DEVICE', instr)
+        newMSExperiment.setPropertyValue('Q_MEASUREMENT_FINISH_DATE', date)
+        newMSExperiment.setPropertyValue('Q_EXTRACT_SHARE', share)
+        newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
+        newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method)
 
-    mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
-    mzmlDataSet.setMeasuredData(False)
-    mzmlDataSet.setSample(msSample)
+        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
+        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        newMSSample.setExperiment(newMSExperiment)
+        properties = xmltemplate % (repl, wf_type)
+        newMSSample.setPropertyValue('Q_PROPERTIES', properties)
+        # conversion ?
+        newDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+        newDataSet.setSample(newMSSample)
 
-    #f = "source_dropbox.txt"
-    #sourceLabFile = open(os.path.join(incomingPath, f))
-    #sourceLab = sourceLabFile.readline().strip()
-    #sourceLabFile.close()
-    #os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+        newMZMLDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
+        newMZMLDataSet.setSample(newMSSample)
+        
+        run += 1
+        transaction.moveFile(os.path.join(incomingPath, fileName), newDataSet)
 
+        tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+        raw_path = os.path.join(incomingPath, fileName)
+        try:
+            convert = partial(convert_raw,
+                      remote_base=REMOTE_BASE,
+                      host=MSCONVERT_HOST,
+                      timeout=CONVERSION_TIMEOUT,
+                      user=MSCONVERT_USER)
+            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+            else:
+                raise ValueError("Invalid incoming file %s" % incomingPath)
+
+            mzml_path = os.path.join(tmpdir, stem + '.mzML')
+            #raw_path = os.path.join(incomingPath, name)
+            convert(raw_path, mzml_path)
+
+            mzml_name = os.path.basename(mzml_path)
+            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+
+            os.rename(mzml_path, mzml_dest)
+        finally:
+            shutil.rmtree(tmpdir)
+        transaction.moveFile(raw_path, newDataSet)
+        transaction.moveFile(mzml_dest, newMZMLDataSet)
+
+def process(transaction):
+    """Ask Andreas"""
+    context = transaction.getRegistrationContext().getPersistentMap()
+
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    # If special format from Immuno Dropbox handle separately
+    immuno = False 
     for f in os.listdir(incomingPath):
-        if ".testorig" in f:
-            os.remove(os.path.realpath(os.path.join(incomingPath, f)))
-    transaction.moveFile(incomingPath, rawDataSet)
-    transaction.moveFile(mzml_dest, mzmlDataSet)
+        if "source_dropbox.txt" in f:
+            if f.readline == "qeana18_immuno":
+                immuno = True
+                handleImmunoFiles(transaction)
+    if not immuno:
+        # Get the name of the incoming file
+        name = transaction.getIncoming().getName()
+
+        code = barcode_pattern.findall(name)[0]
+        if extract_barcode(code):
+            project = code[:5]
+        else:
+            raise ValueError("Invalid barcode: %s" % code)
+    
+        stem, ext = os.path.splitext(name)
+        search_service = transaction.getSearchService()
+
+        # Convert the raw file and write it to an mzml tmp folder.
+        # Sadly, I can not see a way to make this part of the transaction.
+        tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+        try:
+            convert = partial(convert_raw,
+                      remote_base=REMOTE_BASE,
+                      host=MSCONVERT_HOST,
+                      timeout=CONVERSION_TIMEOUT,
+                      user=MSCONVERT_USER)
+            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+            else:
+                raise ValueError("Invalid incoming file %s" % incomingPath)
+
+            mzml_path = os.path.join(tmpdir, stem + '.mzML')
+            raw_path = os.path.join(incomingPath, name)
+            convert(raw_path, mzml_path)
+
+            mzml_name = os.path.basename(mzml_path)
+            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+
+            os.rename(mzml_path, mzml_dest)
+        finally:
+            shutil.rmtree(tmpdir)
+
+        # Find the test sample
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.CODE, code))
+        foundSamples = search_service.searchForSamples(sc)
+
+        sampleIdentifier = foundSamples[0].getSampleIdentifier()
+        space = foundSamples[0].getSpace()
+        sa = transaction.getSampleForUpdate(sampleIdentifier)
+
+        # get or create MS-specific experiment/sample and
+        # attach to the test sample
+        expType = "Q_MS_MEASUREMENT"
+        MSRawExperiment = None
+        experiments = search_service.listExperiments("/" + space + "/" + project)
+        experimentIDs = []
+        for exp in experiments:
+            experimentIDs.append(exp.getExperimentIdentifier())
+            if exp.getExperimentType() == expType:
+                if isCurrentMSRun(
+                    transaction,
+                    sa.getExperiment().getExperimentIdentifier(),
+                    exp.getExperimentIdentifier()
+                ):
+                    MSRawExperiment = exp
+        # no existing experiment for samples of this sample preparation found
+        if not MSRawExperiment:
+            expID = experimentIDs[0]
+            i = 0
+            while expID in experimentIDs:
+                i += 1
+                expNum = len(experiments) + i
+                expID = '/' + space + '/' + project + \
+                    '/' + project + 'E' + str(expNum)
+            MSRawExperiment = transaction.createNewExperiment(expID, expType)
+        # does MS sample already exist?
+        msCode = 'MS' + code
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.CODE, msCode))
+        foundSamples = search_service.searchForSamples(sc)
+        if len(foundSamples) < 1:
+            msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+            msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+            msSample.setExperiment(MSRawExperiment)
+        else:
+            msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+
+        # create new datasets
+        rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+        rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", openbis_format_code)
+        rawDataSet.setMeasuredData(False)
+        rawDataSet.setSample(msSample)
+
+        mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
+        mzmlDataSet.setMeasuredData(False)
+        mzmlDataSet.setSample(msSample)
+
+        #f = "source_dropbox.txt"
+        #sourceLabFile = open(os.path.join(incomingPath, f))
+        #sourceLab = sourceLabFile.readline().strip()
+        #sourceLabFile.close()
+        #os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+
+        for f in os.listdir(incomingPath):
+            if ".testorig" in f:
+                os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+        transaction.moveFile(incomingPath, rawDataSet)
+        transaction.moveFile(mzml_dest, mzmlDataSet)
