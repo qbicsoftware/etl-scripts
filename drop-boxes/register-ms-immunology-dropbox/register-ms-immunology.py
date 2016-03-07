@@ -109,7 +109,7 @@ def process(transaction):
 
         newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
         newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newMSSample.setExperiment(newHLATypingExperiment)
+        newMSSample.setExperiment(newMSExperiment)
         properties = xmltemplate % (repl, wf_type)
         newMSSample.setPropertyValue('Q_PROPERTIES', properties)
         # conversion ?
