@@ -1,19 +1,23 @@
 from ch.systemsx.cisd.openbis.generic.shared.basic.dto.RoleWithHierarchy import RoleCode
 
 def process(tr, parameters, tableBuilder):
-  """Create a new project with the code specified in the parameters
+  """Create a new space with the code specified in the parameters
       Code: *
       Space Admin ID (or null): *
   """
+
+  user = parameters.get("registration_user")
+  if not user == None:
+    tr.setUserId(user)
 
   spaceCode = parameters.get("code")
   spaceAdmin = parameters.get("null")
   space = tr.createNewSpace(spaceCode,spaceAdmin)
 
-  pu = parameters.get("powerusers")
-  admins = parameters.get("admins")
-  observers = parameters.get("observers")
-  users = parameters.get("users")
+  pu = parameters.get("poweruser")
+  admins = parameters.get("admin")
+  observers = parameters.get("observer")
+  users = parameters.get("user")
   print users
   if(admins!=None):
  	 tr.assignRoleToSpace(RoleCode.ADMIN, space, admins, [])

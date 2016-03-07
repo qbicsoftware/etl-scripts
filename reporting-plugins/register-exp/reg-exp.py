@@ -1,3 +1,5 @@
+import datetime
+
 def process(tr, parameters, tableBuilder):
   """Create a new experiment with the code specified in the parameters
 
@@ -33,4 +35,9 @@ def process(tr, parameters, tableBuilder):
           material.setPropertyValue("Q_PROTEASE_"+str(i),e)
         exp.setPropertyValue("Q_PROTEASE_DIGESTION", matCode)
       else:
-        exp.setPropertyValue(prop, str(properties.get(prop)))
+        if prop == "Q_PREPARATION_DATE":
+          time = properties.get(prop)
+          date = datetime.datetime.strptime(time, "%d-%m-%Y").strftime('%Y-%m-%d %H:%M:%S')
+          exp.setPropertyValue(prop, date)
+        else:
+          exp.setPropertyValue(prop, str(properties.get(prop)))
