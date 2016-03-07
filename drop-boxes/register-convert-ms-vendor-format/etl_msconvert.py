@@ -359,6 +359,8 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
 '''Script written by Chris, handles everything but conversion'''
 def handleImmunoFiles(transaction):
 
+    xmltemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?> <qproperties> <qfactors> <qcategorical label=\"technical_replicate\" value=\"%s\"/> <qcategorical label=\"workflow_type\" value=\"%s\"/> </qfactors> </qproperties>"
+
     context = transaction.getRegistrationContext().getPersistentMap()
 
     # Get the incoming path of the transaction
