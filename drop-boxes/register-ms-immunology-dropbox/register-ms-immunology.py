@@ -109,9 +109,9 @@ def process(transaction):
 
         newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
         newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newHMSSample.setExperiment(newHLATypingExperiment)
+        newMSSample.setExperiment(newHLATypingExperiment)
         properties = xmltemplate % (repl, wf_type)
-        newHMSSample.setPropertyValue('Q_PROPERTIES', properties)
+        newMSSample.setPropertyValue('Q_PROPERTIES', properties)
         # conversion ?
         newDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
         newDataSet.setSample(newMSSample)
