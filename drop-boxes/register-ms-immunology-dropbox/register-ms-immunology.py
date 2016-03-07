@@ -88,7 +88,7 @@ def process(transaction):
         existingExperimentIDs = []
         existingExperiments = search_service.listExperiments("/" + space + "/" + project)
         
-        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
+        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
 
         for eexp in existingExperiments:
             existingExperimentIDs.append(eexp.getExperimentIdentifier())
