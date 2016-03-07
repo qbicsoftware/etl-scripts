@@ -10,6 +10,7 @@ import checksum
 import re
 import os
 import ch.systemsx.cisd.etlserver.registrator.api.v2
+import datetime
 from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
