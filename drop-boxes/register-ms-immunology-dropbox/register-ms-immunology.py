@@ -82,7 +82,7 @@ def process(transaction):
 
         parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
-        #sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+        sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
          # register new experiment and sample
         existingExperimentIDs = []
