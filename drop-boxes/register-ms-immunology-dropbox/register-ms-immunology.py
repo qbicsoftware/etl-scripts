@@ -73,7 +73,7 @@ def process(transaction):
         repl = splitted[6]
         wf_type = splitted[7]
 
-        date = datetime.datetime.strptime(date_input, "%Y%m%d").strftime('%Y-%m-%d')
+        date = datetime.datetime.strptime(date_input, "%y%m%d").strftime('%Y-%m-%d')
 
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
