@@ -107,7 +107,7 @@ def process(transaction):
         newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
         newMSExperiment.setPropertyValue('Q_MS_LCMS_METHODS', method)
 
-        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ run + parentCode, "Q_MS_RUN")
+        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
         newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         newHMSSample.setExperiment(newHLATypingExperiment)
         properties = xmltemplate % (repl, wf_type)
