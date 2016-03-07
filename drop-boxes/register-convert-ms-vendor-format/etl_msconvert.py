@@ -448,7 +448,6 @@ def handleImmunoFiles(transaction):
         newMZMLDataSet.setSample(newMSSample)
         
         run += 1
-        transaction.moveFile(os.path.join(incomingPath, fileName), newDataSet)
 
         tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
         raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
