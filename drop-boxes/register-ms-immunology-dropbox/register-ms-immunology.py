@@ -20,6 +20,8 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
+xmltemplate = '''<?xml version="1.0" encoding="UTF-8"?><qproperties><qproperty label="technical_replicate" value="%a"/>,<qproperty label="workflow_type" value="%b"/></qproperties>'''
+
 def isExpected(identifier):
     try:
         id = identifier[0:9]
@@ -58,67 +60,60 @@ def process(transaction):
                 metadataFile = open(os.path.join(root, f), 'r')
     
     metadataFile.readline()
+    run = 1
     for line in metadataFile:
         splitted = line.split('\t')
-        file = splitted[0]
-        instr = splitted[1]
-        date = splitted[2]
+        fileName = splitted[0]
+        instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
+        date_input = splitted[2]
         share = splitted[3]
-        repl = splitted[4]
+        comment = splitted[4]
+        method = splitted[5]
+        repl = splitted[6]
+        wf_type = splitted[7]
+
+        date = datetime.datetime.strptime(date_input, "%Y%m%d").strftime('%Y-%m-%d')
+
+        search_service = transaction.getSearchService()
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+        foundSamples = search_service.searchForSamples(sc)
+
+        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
+        space = foundSamples[0].getSpace()
+        #sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+
+         # register new experiment and sample
+        existingExperimentIDs = []
+        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+        
+        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
+
+        for eexp in existingExperiments:
+            existingExperimentIDs.append(eexp.getExperimentIdentifier())
+
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+        while newExpID in existingExperimentIDs:
+            numberOfExperiments += 1 
+            newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
         newMSExperiment = transaction.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
         newMSExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+        newMSExperiment.setPropertyValue('Q_MS_DEVICE', instr)
+        newMSExperiment.setPropertyValue('Q_MEASUREMENT_FINISH_DATE', date)
+        newMSExperiment.setPropertyValue('Q_EXTRACT_SHARE', share)
+        newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
+        newMSExperiment.setPropertyValue('Q_MS_LCMS_METHODS', method)
 
-        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ parentCode, "Q_MS_RUN")
+        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ run + parentCode, "Q_MS_RUN")
         newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         newHMSSample.setExperiment(newHLATypingExperiment)
-  
-       
-	
-    search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
-    foundSamples = search_service.searchForSamples(sc)
-
-    parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
-    space = foundSamples[0].getSpace()
-    sa = transaction.getSampleForUpdate(parentSampleIdentifier)
-
-    # register new experiment and sample
-    existingExperimentIDs = []
-    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
-    
-    numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-
-    for eexp in existingExperiments:
-        existingExperimentIDs.append(eexp.getExperimentIdentifier())
-
-    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
-    while newExpID in existingExperimentIDs:
-        numberOfExperiments += 1 
-        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
-    newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
-    newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
-
-    newHLATypingSample = transaction.createNewSample('/' + space + '/' + 'HLA'+ parentCode, "Q_NGS_HLATYPING")
-    newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-    newHLATypingSample.setExperiment(newHLATypingExperiment)
-
-    for root, subFolders, files in os.walk(incomingPath):
-        if subFolders:
-            subFolder = subFolders[0]
-        for f in files:
-            if f.endswith('.alleles'):
-                resultFile = open(os.path.join(root, f), 'r')
-
-    resultContent = resultFile.read()
-    newHLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
-
-    # create new dataset 
-    dataSet = transaction.createNewDataSet("Q_NGS_HLATYPING_DATA")
-    dataSet.setMeasuredData(False)
-    dataSet.setSample(newHLATypingSample)
-
-    transaction.moveFile(incomingPath, dataSet)
+        properties = xmltemplate % (repl, wf_type)
+        newHMSSample.setPropertyValue('Q_PROPERTIES', properties)
+        # conversion ?
+        newDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+        newDataSet.setSample(newMSSample)
+        
+        run += 1
+        transaction.moveFile(os.path.join(incomingPath, fileName), newDataSet)
