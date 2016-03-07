@@ -484,7 +484,8 @@ def process(transaction):
     immuno = False 
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
-            if f.readline == "qeana18_immuno":
+            source = open(f)
+            if "qeana18_immuno" in source.readline():
                 immuno = True
                 handleImmunoFiles(transaction)
     if not immuno:
