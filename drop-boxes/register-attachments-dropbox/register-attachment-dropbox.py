@@ -36,23 +36,33 @@ def process(transaction):
 
 	# Get the name of the incoming file
 	name = transaction.getIncoming().getName()
+
+	#read in the metadata file
+	metadata = open(os.path.join(name, "metadata.txt"))
+	fileInfo = dict(line.strip().split('=') for line in metadata)
+
+	user = fileInfo["user"]
+	secname = fileInfo["info"]
+	code = fileInfo["barcode"]
+	datasetType = fileInfo["type"]
 	
-	code = ppattern.findall(name)[0]
+	#code = ppattern.findall(name)[0]
 	project = code[:5]
 	
 	type = "INFORMATION"
-	if "Results" in name:
+	if "Results" in datasetType:
 		type = "RESULT"
 
-	ext = name.split(".")[-1]
-	metadata = name.split("_user_")[1]
-	user = metadata.split("_sec")[0]
-	secname = metadata.split("secname_")[1].split(".")[0]
+	#ext = name.split(".")[-1]
+	#metadata = name.split("_user_")[1]
+	#user = metadata.split("_sec")[0]
+	#secname = metadata.split("secname_")[1].split(".")[0]
+	
 	transaction.setUserId(user)
 
-	newFilePath = os.path.join(os.path.dirname(os.path.realpath(incomingPath)), name.split("_user_")[0]+"."+ext)
+	#newFilePath = os.path.join(os.path.dirname(os.path.realpath(incomingPath)), name.split("_user_")[0]+"."+ext)
 
-	os.rename(incomingPath, newFilePath)
+	#os.rename(incomingPath, newFilePath)
 
 	search_service = transaction.getSearchService()
 	sc = SearchCriteria()
@@ -74,7 +84,7 @@ def process(transaction):
 	space = sa.getSpace()
 	if not attachmentReady:
 		exp = transaction.createNewExperiment('/' + space + '/' + project + '/'+ project+'_INFO', "Q_PROJECT_DETAILS")
-		sa = transaction.createNewSample('/' + space + '/'+ project+"000", "Q_ATTACHMENT_SAMPLE")
+		sa = transaction.createNewSample('/' + space + '/'+ code, "Q_ATTACHMENT_SAMPLE")
 		sa.setExperiment(exp)
 	info = None
 
