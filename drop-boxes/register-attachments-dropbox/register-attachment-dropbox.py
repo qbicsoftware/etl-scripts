@@ -9,6 +9,7 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
+import urllib
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -34,35 +35,29 @@ def process(transaction):
 	if (key == None):
 		key = 1
 
-	# Get the name of the incoming file
-	name = transaction.getIncoming().getName()
-
 	#read in the metadata file
-	metadata = open(os.path.join(name, "metadata.txt"))
-	fileInfo = dict(line.strip().split('=') for line in metadata)
+	for f in os.listdir(incomingPath):
+		if f == "metadata.txt":
+			metadata = open(os.path.join(incomingPath, f))
+			fileInfo = dict(line.strip().split('=') for line in metadata)
+			user = fileInfo["user"]
+			secname = fileInfo["info"]
+			code = fileInfo["barcode"]
+			datasetType = fileInfo["type"]
+		else:
+			name = f
 
-	user = fileInfo["user"]
-	secname = fileInfo["info"]
-	code = fileInfo["barcode"]
-	datasetType = fileInfo["type"]
-	
-	#code = ppattern.findall(name)[0]
 	project = code[:5]
-	
 	type = "INFORMATION"
 	if "Results" in datasetType:
 		type = "RESULT"
 
-	#ext = name.split(".")[-1]
-	#metadata = name.split("_user_")[1]
-	#user = metadata.split("_sec")[0]
-	#secname = metadata.split("secname_")[1].split(".")[0]
-	
 	transaction.setUserId(user)
 
-	#newFilePath = os.path.join(os.path.dirname(os.path.realpath(incomingPath)), name.split("_user_")[0]+"."+ext)
-
-	#os.rename(incomingPath, newFilePath)
+	inputFile = os.path.join(incomingPath, name)
+	name = urllib.unquote(name)
+	dataFile = os.path.join(incomingPath, name)
+	os.rename(inputFile, dataFile)
 
 	search_service = transaction.getSearchService()
 	sc = SearchCriteria()
@@ -105,6 +100,6 @@ def process(transaction):
 	dataSet.setPropertyValue("Q_SECONDARY_NAME", secname)
 	dataSet.setPropertyValue("Q_ATTACHMENT_TYPE", type)
 	dataSet.setSample(sa)
-	transaction.moveFile(newFilePath, dataSet)
+	transaction.moveFile(dataFile, dataSet)
 
 
