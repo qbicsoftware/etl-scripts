@@ -40,5 +40,6 @@ def process(tr, parameters, tableBuilder):
           date = datetime.datetime.strptime(time, "%d-%m-%Y").strftime('%Y-%m-%d %H:%M:%S')
           exp.setPropertyValue(prop, date)
         else:
+          print str(properties.get(prop))
           if str(properties.get(prop)):
             exp.setPropertyValue(prop, str(properties.get(prop)))
