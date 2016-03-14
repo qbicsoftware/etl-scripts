@@ -77,10 +77,24 @@ def process(transaction):
                     '/' + project + 'E' + str(expNum)
             ngsExperiment = transaction.createNewExperiment(expID, expType)
             ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
-            ngsSample = transaction.createNewSample('/' + space + '/NGS' + identifier, sampleType)
-            ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-            ngsSample.setExperiment(ngsExperiment)
-            sa = ngsSample
+
+            replicate = 1
+            exists = True
+            while exists:
+                # create new barcode
+                newID = 'NGS'+str(replicate)+identifier
+                # check if sample already exists in database
+                pc = SearchCriteria()
+                pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newBarcode))
+                found = search_service.searchForSamples(pc)
+                if len(found) == 0:
+                    exists = False
+                else:
+                    replicate += 1
+                ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
+                ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+                ngsSample.setExperiment(ngsExperiment)
+                sa = ngsSample
         # create new dataset
         dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
         dataSet.setMeasuredData(False)
