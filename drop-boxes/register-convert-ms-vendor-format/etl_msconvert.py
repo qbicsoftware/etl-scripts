@@ -433,7 +433,7 @@ def handleImmunoFiles(transaction):
         newMSExperiment.setPropertyValue('Q_MEASUREMENT_FINISH_DATE', date)
         newMSExperiment.setPropertyValue('Q_EXTRACT_SHARE', share)
         newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
-        newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method)
+        newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method.replace('@',''))
 
         newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
         newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
