@@ -85,7 +85,7 @@ def process(transaction):
                 newID = 'NGS'+str(replicate)+identifier
                 # check if sample already exists in database
                 pc = SearchCriteria()
-                pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newBarcode))
+                pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newID))
                 found = search_service.searchForSamples(pc)
                 if len(found) == 0:
                     exists = False
