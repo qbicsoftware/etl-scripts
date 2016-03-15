@@ -52,6 +52,11 @@ MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
 CONVERSION_TIMEOUT = 7200
 
+# Standard BSA sample and experiment
+BSA_MPC_SAMPLE_ID = "/MFT_QC_MPC/QCMPC002AO"
+BSA_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE4"
+BSA_MPC_BARCODE = "QCMPC002AO"
+
 try:
     TimeoutError
 except NameError:
@@ -356,6 +361,23 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
                     return True
     return False
 
+def createRawDataSet(transaction, incomingPath, sample, format):
+    rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+    rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
+    rawDataSet.setMeasuredData(False)
+    rawDataSet.setSample(sample)
+    transaction.moveFile(incomingPath, rawDataSet)
+
+def createMZMLDataSet(transaction, filepath, sample):
+    #TODO read metadata from this file path:
+    open(filepath)
+    mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
+    #TODO set property values from
+    #mzmlDataSet.setPropertyValue()
+    mzmlDataSet.setMeasuredData(False)
+    mzmlDataSet.setSample(sample)
+    transaction.moveFile(filepath, mzmlDataSet)
+
 '''Script written by Chris, handles everything but conversion'''
 def handleImmunoFiles(transaction):
 
@@ -440,12 +462,6 @@ def handleImmunoFiles(transaction):
         newMSSample.setExperiment(newMSExperiment)
         properties = xmltemplate % (repl, wf_type)
         newMSSample.setPropertyValue('Q_PROPERTIES', properties)
-        # conversion ?
-        newDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-        newDataSet.setSample(newMSSample)
-
-        newMZMLDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
-        newMZMLDataSet.setSample(newMSSample)
         
         run += 1
 
@@ -464,7 +480,6 @@ def handleImmunoFiles(transaction):
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
             mzml_path = os.path.join(tmpdir, stem + '.mzML')
-            #raw_path = os.path.join(incomingPath, name)
             convert(raw_path, mzml_path)
 
             mzml_name = os.path.basename(mzml_path)
@@ -473,8 +488,62 @@ def handleImmunoFiles(transaction):
             os.rename(mzml_path, mzml_dest)
         finally:
             shutil.rmtree(tmpdir)
-        transaction.moveFile(raw_path, newDataSet)
-        transaction.moveFile(mzml_dest, newMZMLDataSet)
+        createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
+        createMZMLDataSet(transaction, mzml_dest, newMSSample)
+
+def handle_BSA_Run(transaction):
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
+
+    code = barcode_pattern.findall(name)[0]
+    if extract_barcode(code):
+        project = code[:5]
+    else:
+        raise ValueError("Invalid barcode: %s" % code)
+
+    stem, ext = os.path.splitext(name)
+    search_service = transaction.getSearchService()
+
+    # Convert the raw file and write it to an mzml tmp folder.
+    # Sadly, I can not see a way to make this part of the transaction.
+    tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+    try:
+        convert = partial(convert_raw,
+                  remote_base=REMOTE_BASE,
+                  host=MSCONVERT_HOST,
+                  timeout=CONVERSION_TIMEOUT,
+                  user=MSCONVERT_USER)
+        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+        else:
+            raise ValueError("Invalid incoming file %s" % incomingPath)
+
+        mzml_path = os.path.join(tmpdir, stem + '.mzML')
+        raw_path = os.path.join(incomingPath, name)
+        convert(raw_path, mzml_path)
+
+        mzml_name = os.path.basename(mzml_path)
+        mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+
+        os.rename(mzml_path, mzml_dest)
+    finally:
+        shutil.rmtree(tmpdir)
+
+    # The MS experiment
+    msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
+
+    #TODO create new ms sample? if so, use normal qbic barcodes? timestamp in name?
+    msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+    #set parent sample, always the same for bsa run
+    msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
+    msSample.setExperiment(msExp)
+
+    createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
+    createMZMLDataSet(transaction, mzml_dest, msSample)
+
+    for f in os.listdir(incomingPath):
+        if ".testorig" in f:
+            os.remove(os.path.realpath(os.path.join(incomingPath, f)))
 
 def process(transaction):
     """Ask Andreas"""
@@ -484,6 +553,7 @@ def process(transaction):
     incomingPath = transaction.getIncoming().getAbsolutePath()
 
     # If special format from Immuno Dropbox handle separately
+    #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
@@ -577,21 +647,8 @@ def process(transaction):
         else:
             msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
 
-        # create new datasets
-        rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-        rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", openbis_format_code)
-        rawDataSet.setMeasuredData(False)
-        rawDataSet.setSample(msSample)
-
-        mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
-        mzmlDataSet.setMeasuredData(False)
-        mzmlDataSet.setSample(msSample)
-
-        #f = "source_dropbox.txt"
-        #sourceLabFile = open(os.path.join(incomingPath, f))
-        #sourceLab = sourceLabFile.readline().strip()
-        #sourceLabFile.close()
-        #os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+        createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
+        createMZMLDataSet(transaction, mzml_dest, msSample)
 
         for f in os.listdir(incomingPath):
             if ".testorig" in f:
