@@ -46,7 +46,6 @@ def process(transaction):
         #identifier = name
 	if isExpected(identifier):
                 project = identifier[:5]
-                #parentCode = identifier[:10]
         else:
                 print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
         
@@ -58,14 +57,45 @@ def process(transaction):
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(sampleIdentifier)
-        #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-        #newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
 
-        #newVariantCallingSample = transaction.createNewSample('/' + space + '/' + 'VC'+ parentCode, "Q_NGS_VARIANT_CALLING")
-        #newVariantCallingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
-	#newVariantCallingSample.setExperiment(newVariantCallingExperiment) 
-        # create new dataset 
+        sampleType = "Q_NGS_SINGLE_SAMPLE_RUN"
+        if sa.getSampleType() != sampleType:
+            # create NGS-specific experiment/sample and
+            # attach to the test sample
+            expType = "Q_NGS_MEASUREMENT"
+            ngsExperiment = None
+            experiments = search_service.listExperiments("/" + space + "/" + project)
+            experimentIDs = []
+            for exp in experiments:
+                experimentIDs.append(exp.getExperimentIdentifier())
+            expID = experimentIDs[0]
+            i = 0
+            while expID in experimentIDs:
+                i += 1
+                expNum = len(experiments) + i
+                expID = '/' + space + '/' + project + \
+                    '/' + project + 'E' + str(expNum)
+            ngsExperiment = transaction.createNewExperiment(expID, expType)
+            ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
+
+            replicate = 1
+            exists = True
+            while exists:
+                # create new barcode
+                newID = 'NGS'+str(replicate)+identifier
+                # check if sample already exists in database
+                pc = SearchCriteria()
+                pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newID))
+                found = search_service.searchForSamples(pc)
+                if len(found) == 0:
+                    exists = False
+                else:
+                    replicate += 1
+                ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
+                ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+                ngsSample.setExperiment(ngsExperiment)
+                sa = ngsSample
+        # create new dataset
         dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
