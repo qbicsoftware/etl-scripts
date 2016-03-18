@@ -427,7 +427,7 @@ def process(transaction):
         fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
         fastqDataSet.setSample(fastqSample)
 
-        fastqFolder = os.path.join(folder, "raw")
+        fastqFolder = os.path.join(folder, name+"_fastq_files")
         os.mkdir(fastqFolder)
         for f in fastqs:
             os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
@@ -443,7 +443,7 @@ def process(transaction):
         vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
         vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
         vcfDataSet.setSample(vcfSample)
-        vcfFolder = os.path.join(folder, "vcf")
+        vcfFolder = os.path.join(folder, name+"_vcf_files")
         os.mkdir(vcfFolder)
         os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
 
