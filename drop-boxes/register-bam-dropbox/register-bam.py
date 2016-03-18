@@ -78,10 +78,33 @@ def process(transaction):
                 mapExperiment = transaction.createNewExperiment(expID, expType)
                 mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
-        newMappingSample = transaction.createNewSample('/' + space + '/' + 'MP'+ parentCode, "Q_NGS_MAPPING")
+        #newMappingSample = transaction.createNewSample('/' + space + '/' + 'MP'+ parentCode, "Q_NGS_MAPPING")
+        #newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+	#newMappingSample.setExperiment(mapExperiment)
+
+        search_service = transaction.getSearchService()
+        sc = SearchCriteria()
+        pc = SearchCriteria()
+        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+        foundSamples2 = search_service.searchForSamples(sc)
+
+        existingSampleIDs = []
+        vcNumber = 1
+        newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
+        
+        for samp in foundSamples2:
+                existingSampleIDs.append(samp.getSampleIdentifier())
+
+        while newSampleID in existingSampleIDs:
+                vcNumber += 1
+                newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
+                
+        newMappingSample = transaction.createNewSample(newSampleID, "Q_NGS_MAPPING")
         newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-	newMappingSample.setExperiment(mapExperiment) 
-        # create new dataset 
+
+        # create new dataset
+        newMappingSample.setExperiment(mapExperiment)
         dataSet = transaction.createNewDataSet("Q_NGS_MAPPING_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(newMappingSample)
