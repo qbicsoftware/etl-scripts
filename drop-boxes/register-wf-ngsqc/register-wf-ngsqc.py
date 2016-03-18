@@ -76,5 +76,10 @@ def process(transaction):
 	dataSetRes.setSample(sample)
 	dataSetLogs.setSample(sample)
 
-	transaction.moveFile(incomingPath+"/"+parentInfos+"_workflow_results", dataSetRes)
-	transaction.moveFile(incomingPath+"/"+parentInfos+"_workflow_logs", dataSetLogs)
+	resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
+	logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+	os.rename(incomingPath+"/logs", logname)
+	os.rename(incomingPath+"/result", resultsname)
+
+	transaction.moveFile(resultsname, dataSetRes)
+	transaction.moveFile(logname, dataSetLogs)
