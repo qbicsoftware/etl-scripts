@@ -51,11 +51,11 @@ def process(transaction):
 	sc = SearchCriteria()
 	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
 	foundSamples = ss.searchForSamples(sc)
-	sample = foundSamples[0]
-	sample = transaction.getSampleForUpdate(sample.getSampleIdentifier())
+	samplehit = foundSamples[0]
+	sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
-	parents = sample.getParentSampleIdentifiers()
-	print parents
+	parents = samplehit.getParentSampleIdentifiers()
+	print "parents: "+parents
 	parentcodes = []
 	for parent in parents:
 		parentcodes.append(parent.split("/")[-1])
