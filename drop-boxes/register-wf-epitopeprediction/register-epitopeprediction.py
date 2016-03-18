@@ -42,8 +42,14 @@ def process(transaction):
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
     foundSamples = ss.searchForSamples(sc)
-    sample = foundSamples[0]
-    sample = transaction.getSampleForUpdate(sample.getSampleIdentifier())
+    samplehit = foundSamples[0]
+    sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
+
+    parents = samplehit.getParentSampleIdentifiers()
+    parentcodes = []
+    for parent in parents:
+        parentcodes.append(parent.split("/")[-1])
+    parentInfos = "_".join(parentcodes)
 
     experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
 
@@ -66,5 +72,10 @@ def process(transaction):
             if f.endswith('info'):
                 os.rename(os.path.join(root, f), os.path.join(incomingPath + '/logs', f))
 
-    transaction.moveFile(incomingPath+"/result", dataSetRes)
-    transaction.moveFile(incomingPath+"/logs", dataSetLogs)
+    resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
+    logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+    os.rename(incomingPath+"/logs", logname)
+    os.rename(incomingPath+"/result", resultsname)
+    
+    transaction.moveFile(resultsname, dataSetRes)
+    transaction.moveFile(logname, dataSetLogs)
