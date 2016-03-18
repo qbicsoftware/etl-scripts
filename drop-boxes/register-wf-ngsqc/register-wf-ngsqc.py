@@ -55,7 +55,7 @@ def process(transaction):
 	sample = transaction.getSampleForUpdate(sample.getSampleIdentifier())
 
 	parents = sample.getParentSampleIdentifiers()
-	parentcodes = []]
+	parentcodes = []
 	for parent in parents:
 		parentscodes.append(parent.split("/")[-1])
 	parentInfos = "_".join(parentcodes)
