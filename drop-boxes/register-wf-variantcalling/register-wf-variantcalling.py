@@ -50,8 +50,14 @@ def process(transaction):
 	sc = SearchCriteria()
 	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
 	foundSamples = ss.searchForSamples(sc)
-	sample = foundSamples[0]
-	sample = transaction.getSampleForUpdate(sample.getSampleIdentifier())
+	samplehit = foundSamples[0]
+	sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
+
+	parents = samplehit.getParentSampleIdentifiers()
+	parentcodes = []
+	for parent in parents:
+		parentcodes.append(parent.split("/")[-1])
+	parentInfos = "_".join(parentcodes)
 
 	experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
 
@@ -61,16 +67,24 @@ def process(transaction):
 	sample.setExperiment(experiment)
 
 	#Register files
-	if os.path.isdir(incomingPath+"/logs"):
-		dataSetLogs = transaction.createNewDataSet('Q_WF_NGS_VARIANT_CALLING_LOGS')
-		dataSetLogs.setMeasuredData(False)
-		dataSetLogs.setSample(sample)
-		transaction.moveFile(incomingPath+"/logs", dataSetLogs)
+	#if os.path.isdir(incomingPath+"/logs"):
+	dataSetLogs = transaction.createNewDataSet('Q_WF_NGS_VARIANT_CALLING_LOGS')
+	dataSetLogs.setMeasuredData(False)
+	dataSetLogs.setSample(sample)
+	#transaction.moveFile(incomingPath+"/logs", dataSetLogs)
 
 	dataSetRes = transaction.createNewDataSet('Q_WF_NGS_VARIANT_CALLING_RESULTS')
 	dataSetRes.setMeasuredData(False)
 	dataSetRes.setSample(sample)
-	if os.path.isdir(incomingPath+"/result"):
-		transaction.moveFile(incomingPath+"/result", dataSetRes)
-	else:
-		transaction.moveFile(incomingPath, dataSetRes)
+
+	resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
+	logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+	os.rename(incomingPath+"/logs", logname)
+	os.rename(incomingPath+"/result", resultsname)
+
+	transaction.moveFile(resultsname, dataSetRes)
+	transaction.moveFile(logname, dataSetLogs)
+	#if os.path.isdir(incomingPath+"/result"):
+	#	transaction.moveFile(incomingPath+"/result", dataSetRes)
+	#else:
+	#	transaction.moveFile(incomingPath, dataSetRes)

@@ -53,8 +53,14 @@ def process(transaction):
 	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
 	foundSamples = ss.searchForSamples(sc)
 	#sample = transaction.createNewSample("/"+space+"/"+sample_id + str(len(foundSamples)+1), "Q_WF_MS_PEPTIDEID_RUN")
-	sample = foundSamples[0]
-	sample = transaction.getSampleForUpdate(sample.getSampleIdentifier())
+	samplehit = foundSamples[0]
+	sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
+
+	parents = samplehit.getParentSampleIdentifiers()
+	parentcodes = []
+	for parent in parents:
+		parentcodes.append(parent.split("/")[-1])
+	parentInfos = "_".join(parentcodes)
 
 	experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
 
@@ -72,5 +78,10 @@ def process(transaction):
 	dataSetRes.setSample(sample)
 	dataSetLogs.setSample(sample)
 
-	transaction.moveFile(incomingPath+"/results", dataSetRes)
-	transaction.moveFile(incomingPath+"/logs", dataSetLogs)
+	resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
+	logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+	os.rename(incomingPath+"/logs", logname)
+	os.rename(incomingPath+"/result", resultsname)
+
+	transaction.moveFile(resultsname, dataSetRes)
+	transaction.moveFile(logname, dataSetLogs)
