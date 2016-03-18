@@ -58,7 +58,7 @@ def process(transaction):
 	print parents
 	parentcodes = []
 	for parent in parents:
-		parentscodes.append(parent.split("/")[-1])
+		parentcodes.append(parent.split("/")[-1])
 	parentInfos = "_".join(parentcodes)
 
 	experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
