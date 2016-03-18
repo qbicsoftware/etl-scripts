@@ -653,5 +653,3 @@ def process(transaction):
         for f in os.listdir(incomingPath):
             if ".testorig" in f:
                 os.remove(os.path.realpath(os.path.join(incomingPath, f)))
-        transaction.moveFile(incomingPath, rawDataSet)
-        transaction.moveFile(mzml_dest, mzmlDataSet)
