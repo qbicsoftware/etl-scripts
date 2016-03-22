@@ -60,23 +60,22 @@ def process(transaction):
         sa = transaction.getSampleForUpdate(parentSampleIdentifier)
         # find or register new experiment
         expType = "Q_NGS_MAPPING"
-        mapExperiment = None
+
         experiments = search_service.listExperiments("/" + space + "/" + project)
         experimentIDs = []
         for exp in experiments:
                 experimentIDs.append(exp.getExperimentIdentifier())
-                if exp.getExperimentType() == expType:
-                        mapExperiment = exp
+
         # no existing experiment for samples of this sample preparation found
-        if not mapExperiment:
-                expID = experimentIDs[0]
-                i = 0
-                while expID in experimentIDs:
-                        i += 1
-                        expNum = len(experiments) + i
-                        expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
-                mapExperiment = transaction.createNewExperiment(expID, expType)
-                mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+        expID = experimentIDs[0]
+        i = 0
+        while expID in experimentIDs:
+                i += 1
+                expNum = len(experiments) + i
+                expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
+                
+        mapExperiment = transaction.createNewExperiment(expID, expType)
+        mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
         #newMappingSample = transaction.createNewSample('/' + space + '/' + 'MP'+ parentCode, "Q_NGS_MAPPING")
         #newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
