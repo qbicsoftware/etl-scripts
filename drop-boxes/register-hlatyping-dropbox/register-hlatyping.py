@@ -91,6 +91,12 @@ def process(transaction):
     resultContent = resultFile.read()
     newHLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
 
+    # check for MHC class
+    if 'A*' in resultContent:
+        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", "MHC_CLASS_I")
+    else:
+        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", "MHC_CLASS_II")
+
     # create new dataset 
     dataSet = transaction.createNewDataSet("Q_NGS_HLATYPING_DATA")
     dataSet.setMeasuredData(False)
