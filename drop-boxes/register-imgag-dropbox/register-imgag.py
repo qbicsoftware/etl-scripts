@@ -131,7 +131,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         print curSecName
                         print extID
                         # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
-                        if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((curSecName in genShortID) or (extID == genShortID))):
+                        if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((genShortID in curSecName) or (genShortID in extID))):
                             print "first test successfull"
                             testParentID = samp.getSampleIdentifier()
                             # this time we are looking for the NGS Single Sample run attached to the test sample we just found
@@ -139,7 +139,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                 sampleType = s.getSampleType()
                                 curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                                 extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
-                                if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (curSecName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
+                                if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                     sampleIdent = s.getSampleIdentifier()
                                     print "second test successfull"
                                     parentIdentifiers.append(sampleIdent)
@@ -165,13 +165,13 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                 curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
                 extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
                 # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
-                if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((curSecName in genShortID) or (extID == genShortID))):
+                if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((genShortID in curSecName) or (genShortID in extID))):
                     testParentID = samp.getSampleIdentifier()
                     for s in foundSamples:
                         sampleType = s.getSampleType()
                         curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                         extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
-                        if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (curSecName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
+                        if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                             sampleIdent = s.getSampleIdentifier()
                             print "fourth branch"
                             parentIdentifiers.append(sampleIdent)
