@@ -61,7 +61,7 @@ newTestSamples = {}
 oldTestSamples = {}
 newNGSSamples = {}
 
-def find_and_register_vcf(transaction, jsonContent, varcode):
+def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: GS130715_03-GS130717_03 (verified in startup.log)
     qbicBarcodes = []
     geneticIDS = []
     sampleSource = []
@@ -71,8 +71,8 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
     for key in jsonContent.keys():
         if key == "type" or key == "files":
             pass
-        else:
-            geneticIDS.append(jsonContent[key]["id_genetics"])
+        else:#keys: "sample1" and "sample2"
+            geneticIDS.append(jsonContent[key]["id_genetics"])#GS130715_03 and GS130717_03
             qbicBarcodes.append(jsonContent[key]["id_qbic"])
             sampleSource.append(jsonContent[key]["tumor"])
             print 'debugNew'
@@ -105,7 +105,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
     secName = ''
 
     if len(geneticIDS) >= 2:
-        somaticIdent = '%s-%s' % (geneticIDS[0], geneticIDS[1])
+        somaticIdent = '%s-%s' % (geneticIDS[0], geneticIDS[1]) # if there is more than one sample we have to concatenate the identifiers
         print somaticIdent
         if somaticIdent == varcode:
             for i, parentBarcode in enumerate(qbicBarcodes):
@@ -117,40 +117,57 @@ def find_and_register_vcf(transaction, jsonContent, varcode):
                     testParentIdentifiers.append(oldTestSamples[geneticID])
                 else:
                     for samp in foundSamples:
-                        qbicBarcodeID = '/' + space + '/' + barcode
-                        if qbicBarcodeID in samp.getParentSampleIdentifiers():
+                        #some short variables to clean up the long if case
+                        code = samp.getCode()
+                        sType = samp.getSampleType()
+                        qbicBarcodeID = '/' + space + '/' + barcode # qbic identifier from the metadata that came in (probably tissue sample)
+                        parentIDs = samp.getParentSampleIdentifiers()
+                        analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
+                        secName = samp.getPropertyValue("Q_SECONDARY_NAME")
+                        extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
+                        genShortID = idGenetics.split('_')[0]
+                        # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
+                        if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((secName in genShortID) or (extID == genShortID))):
                             testParentID = samp.getSampleIdentifier()
-
-                        for s in foundSamples:
-                            sampleType = s.getSampleType()
-                            secName = s.getPropertyValue("Q_SECONDARY_NAME")
-                            extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
-                            if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((secName != None) and (secName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
-                                sampleIdent = s.getSampleIdentifier()
-                                parentIdentifiers.append(sampleIdent)
-                                testParentIdentifiers.append(testParentID)
-
+                            # this time we are looking for the NGS Single Sample run attached to the test sample we just found
+                            for s in foundSamples:
+                                sampleType = s.getSampleType()
+                                secName = s.getPropertyValue("Q_SECONDARY_NAME")
+                                extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
+                                if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((secName != None) and (secName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
+                                    sampleIdent = s.getSampleIdentifier()
+                                    parentIdentifiers.append(sampleIdent)
+                                    testParentIdentifiers.append(testParentID) # if we found the right one, we append it for later, as every related test sample is needed for registration
+    else:
+        geneticID = varcode
+        barcode = jsonContent[varcodekey]["id_qbic"]
+        additionalInfo = '%s %s Tumor: %s \n' % (barcode, geneticID, jsonContent[varcodekey]["tumor"])
+        secName += '%s ' % geneticID
+        if geneticID in newNGSSamples:
+            parentIdentifiers.append(newNGSSamples[geneticID])
+            testParentIdentifiers.append(oldTestSamples[geneticID])
         else:
-            geneticID = varcode
-            barcode = jsonContent[varcodekey]["id_qbic"]
-            additionalInfo = '%s %s Tumor: %s \n' % (barcode, geneticID, jsonContent[varcodekey]["tumor"])
-            secName += '%s ' % geneticID
-            if geneticID in newNGSSamples:
-                parentIdentifiers.append(newNGSSamples[geneticID])
-                testParentIdentifiers.append(oldTestSamples[geneticID])
-            else:
-                for samp in foundSamples:
-                    qbicBarcodeID = '/' + space + '/' + barcode
-                    if qbicBarcodeID in samp.getParentSampleIdentifiers():
-                        testParentID = samp.getSampleIdentifier()
-                        for s in foundSamples:
-                            sampleType = s.getSampleType()
-                            secName = s.getPropertyValue("Q_SECONDARY_NAME")
-                            extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
-                            if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((secName != None) and (secName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
-                                sampleIdent = s.getSampleIdentifier()
-                                parentIdentifiers.append(sampleIdent)
-                                testParentIdentifiers.append(testParentID)
+            for samp in foundSamples:
+                #some short variables to clean up the long if case
+                code = samp.getCode()
+                sType = samp.getSampleType()
+                qbicBarcodeID = '/' + space + '/' + barcode # qbic identifier from the metadata that came in (probably tissue sample)
+                parentIDs = samp.getParentSampleIdentifiers()
+                analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
+                secName = samp.getPropertyValue("Q_SECONDARY_NAME")
+                extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
+                genShortID = idGenetics.split('_')[0]
+                # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
+                if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((secName in genShortID) or (extID == genShortID))):
+                    testParentID = samp.getSampleIdentifier()
+                    for s in foundSamples:
+                        sampleType = s.getSampleType()
+                        secName = s.getPropertyValue("Q_SECONDARY_NAME")
+                        extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
+                        if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((secName != None) and (secName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
+                            sampleIdent = s.getSampleIdentifier()
+                            parentIdentifiers.append(sampleIdent)
+                            testParentIdentifiers.append(testParentID)
 
     #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
     #TEST
@@ -381,7 +398,7 @@ def process(transaction):
     if os.path.isfile(src):
         os.remove(src)
 
-    print "start registration"
+    print "imgag start registration"
     #dataSet = None
     for f in os.listdir(os.path.join(incomingPath,name)):
         if f.endswith('metadata'):
@@ -392,7 +409,7 @@ def process(transaction):
             fastqs = []
             gsvars = []
             print "metadata read"
-            for rawFile in rawFiles:
+            for rawFile in rawFiles: #example: ["GS130715_03-GS130717_03_var_annotated.vcf.gz","GS130715_03-GS130717_03.GSvar"]
                 print rawFile
                 if rawFile.endswith("vcf") or rawFile.endswith("vcf.gz"):
                     vcfs.append(rawFile)
@@ -433,7 +450,7 @@ def process(transaction):
         transaction.moveFile(fastqFolder, fastqDataSet)
         #transaction.moveFile(folder, fastqDataSet)
     for vc in vcfs:
-        ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','')
+        ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','') #example: GS130715_03-GS130717_03
         print ident
         vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
         vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
