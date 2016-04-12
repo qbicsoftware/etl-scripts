@@ -100,10 +100,10 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
 
     if len(geneticIDS) >= 2:
         somaticIdent = '%s-%s' % (geneticIDS[0], geneticIDS[1]) # if there is more than one sample we have to concatenate the identifiers
+        secName = somaticIdent
         if somaticIdent == varcode:
             for i, parentBarcode in enumerate(qbicBarcodes):
                 additionalInfo += '%s %s Tumor: %s \n' % (qbicBarcodes[i], geneticIDS[i], sampleSource[i])
-                secName += somaticIdent
             for barcode, geneticID in zip(qbicBarcodes, geneticIDS):
                 genShortID = geneticID.split('_')[0]
                 if geneticID in newNGSSamples:
