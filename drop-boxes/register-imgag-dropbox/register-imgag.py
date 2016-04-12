@@ -253,19 +253,14 @@ def find_and_register_ngs(transaction, jsonContent):
     for samp in foundSamples:
         qbicBarcodeID = '/' + samp.getSpace() + '/' + qbicBarcode
         knownCodes.append(samp.getCode())
-        print "code: "+samp.getCode()
-        if qbicBarcodeID in samp.getParentSampleIdentifiers() or qbicBarcode == samp.getCode():
-            sampleType = samp.getSampleType()
-            if sampleType == "Q_TEST_SAMPLE":
-                sampleIdent = samp.getSampleIdentifier()
-                testSampleCode = samp.getCode()
-                oldTestSamples[idGenetics] = sampleIdent
-                #print "searching: "+idGenetics.split('_')[0]
-                #print samp.getPropertyValue("Q_EXTERNALDB_ID")
-                #if (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") == idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0])):
+        #if qbicBarcodeID in samp.getParentSampleIdentifiers() or qbicBarcode == samp.getCode():
+        sampleType = samp.getSampleType()
+        if ((qbicBarcode == samp.getCode()) and (sampleType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in samp.getParentSampleIdentifiers()) and (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") in idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0]))):
+            sampleIdent = samp.getSampleIdentifier()
+            testSampleCode = samp.getCode()
+            oldTestSamples[idGenetics] = sampleIdent
 
     if not sampleIdent:
-        print "found test sample"
         if not idGenetics in newTestSamples:
             for samp in foundSamples:
                 if qbicBarcode == samp.getCode():
@@ -297,7 +292,7 @@ def find_and_register_ngs(transaction, jsonContent):
 
     for s in foundSamples:
         # There is already a registered NGS run
-        if (s.getSampleType() == "Q_NGS_SINGLE_SAMPLE_RUN") and (sampleIdent in s.getParentSampleIdentifiers() and (s.getPropertyValue("Q_SECONDARY_NAME") in idGenetics)):
+        if ((s.getSampleType() == "Q_NGS_SINGLE_SAMPLE_RUN") and (sampleIdent in s.getParentSampleIdentifiers()) and (s.getPropertyValue("Q_SECONDARY_NAME") == idGenetics)):
             sa = transaction.getSampleForUpdate(s.getSampleIdentifier())
             sa.setPropertyValue("Q_SECONDARY_NAME", idGenetics)
 
