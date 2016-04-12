@@ -113,6 +113,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                 secName += somaticIdent
             for barcode, geneticID in zip(qbicBarcodes, geneticIDS):
                 if geneticID in newNGSSamples:
+                    print "first branch"
                     parentIdentifiers.append(newNGSSamples[geneticID])
                     testParentIdentifiers.append(oldTestSamples[geneticID])
                 else:
@@ -136,6 +137,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                 extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
                                 if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (curSecName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
                                     sampleIdent = s.getSampleIdentifier()
+                                    print "second branch"
                                     parentIdentifiers.append(sampleIdent)
                                     testParentIdentifiers.append(testParentID) # if we found the right one, we append it for later, as every related test sample is needed for registration
     else:
@@ -144,6 +146,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
         additionalInfo = '%s %s Tumor: %s \n' % (barcode, geneticID, jsonContent[varcodekey]["tumor"])
         secName += '%s ' % geneticID
         if geneticID in newNGSSamples:
+            print "third branch"
             parentIdentifiers.append(newNGSSamples[geneticID])
             testParentIdentifiers.append(oldTestSamples[geneticID])
         else:
@@ -166,9 +169,10 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
                         if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (curSecName in geneticID)) or ((extDB != None) and (extDB in geneticID))):
                             sampleIdent = s.getSampleIdentifier()
+                            print "fourth branch"
                             parentIdentifiers.append(sampleIdent)
                             testParentIdentifiers.append(testParentID)
-
+    print "parents: "+str(parentIdentifiers)
     #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
     #TEST
     numberOfExperiments += 1
