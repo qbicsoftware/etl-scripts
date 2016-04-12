@@ -27,7 +27,7 @@ from shutil import copyfile
 # Data import and registration
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
-typesDict = {'dna_seq': 'DNA', 'rna_seq': 'RNA'}
+typesDict = {'dna_seq': 'DNA', 'rna_seq': 'RNA', 'dna_seq_somatic': 'DNA'}
 
 def parse_metadata_file(filePath):
     jsonFile = open(filePath, 'r')
