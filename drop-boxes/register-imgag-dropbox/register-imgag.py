@@ -125,7 +125,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
                         secName = samp.getPropertyValue("Q_SECONDARY_NAME")
                         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
-                        genShortID = idGenetics.split('_')[0]
+                        genShortID = geneticID.split('_')[0]
                         # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
                         if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((secName in genShortID) or (extID == genShortID))):
                             testParentID = samp.getSampleIdentifier()
@@ -156,7 +156,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                 analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
                 secName = samp.getPropertyValue("Q_SECONDARY_NAME")
                 extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
-                genShortID = idGenetics.split('_')[0]
+                genShortID = geneticID.split('_')[0]
                 # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
                 if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((secName in genShortID) or (extID == genShortID))):
                     testParentID = samp.getSampleIdentifier()
