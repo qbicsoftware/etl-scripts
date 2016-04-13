@@ -217,7 +217,7 @@ def createNewBarcode(project, tr):
     sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
     foundSamples = search_service.searchForSamples(sc)
 
-    foundSamplesFilter = [s for s in foundSamples if 'ENTITY' not in s]
+    foundSamplesFilter = [s for s in foundSamples if 'ENTITY' not in s.getCode()]
 
     offset = 0
     exists = True
