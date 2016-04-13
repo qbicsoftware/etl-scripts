@@ -22,11 +22,11 @@ pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 def isExpected(identifier):
         try:
-                id = identifier[0:9]
-                #also checks for old checksums with lower case letters
-                return checksum.checksum(id)==identifier[9]
+            id = identifier[0:9]
+            #also checks for old checksums with lower case letters
+            return checksum.checksum(id)==identifier[9]
         except:
-                return False
+            return False
 
 def process(transaction):
         context = transaction.getRegistrationContext().getPersistentMap()
@@ -55,74 +55,93 @@ def process(transaction):
         dataSet.setMeasuredData(False)
 
         search_service = transaction.getSearchService()
-	# vcf sample already exists VCQSGMA022AUA
-	vcf = re.compile("VCQ\w{4}[0-9]{3}[A-Z]\w[A-Z]*")
-	vcfCodes = vcf.findall(name)
-	if len(vcfCodes) > 0:
-	        sc = SearchCriteria()
-		sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, vcfCodes[0]))
-		foundSamples = search_service.searchForSamples(sc)
-		vcSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
-	else:
-		# vcf sample needs to be created        
-	        sc = SearchCriteria()
-	        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
-		foundSamples = search_service.searchForSamples(sc)
+    # vcf sample already exists VCQSGMA022AUA
+    vcf = re.compile("VCQ\w{4}[0-9]{3}[A-Z]\w[A-Z]*")
+    vcfCodes = vcf.findall(name)
+    if len(vcfCodes) > 0:
+            sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, vcfCodes[0]))
+        foundSamples = search_service.searchForSamples(sc)
+        vcSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+    else:
+        # vcf sample needs to be created        
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+        foundSamples = search_service.searchForSamples(sc)
 
-		parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
-		space = foundSamples[0].getSpace()
-        	sa = transaction.getSampleForUpdate(parentSampleIdentifier)
-        	# register new experiment and sample
-        	numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-        	newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
-		newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
+        space = foundSamples[0].getSpace()
+        sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+        
+        # register new experiment and sample
+        #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
+        #newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
+        #newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
-		vcNumber = 1
-		newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
+        # register new experiment and sample
+        existingExperimentIDs = []
+        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    
+        numberOfExperiments = len(existingExperiments) + 1
 
-		search_service = transaction.getSearchService()
-		sc = SearchCriteria()
-		pc = SearchCriteria()
-		pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
-		sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-		foundSamples2 = search_service.searchForSamples(sc)
+        for eexp in existingExperiments:
+            existingExperimentIDs.append(eexp.getExperimentIdentifier())
 
-		existingSampleIDs = []
-		for samp in foundSamples2:
-			existingSampleIDs.append(samp.getSampleIdentifier())
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
-        	while newSampleID in existingSampleIDs:
-			vcNumber += 1
-			newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
-	        
-	        vcSample = transaction.createNewSample(newSampleID, "Q_NGS_VARIANT_CALLING")
-	       	vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        while newExpID in existingExperimentIDs:
+            numberOfExperiments += 1 
+            newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+        newVariantCallingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_VARIANT_CALLING")
+        newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+
+        search_service = transaction.getSearchService()
+        sc = SearchCriteria()
+        pc = SearchCriteria()
+        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+        foundSamples2 = search_service.searchForSamples(sc)
+
+        vcNumber = 1
+        newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
+        existingSampleIDs = []
+
+        for samp in foundSamples2:
+            existingSampleIDs.append(samp.getSampleIdentifier())
+
+        while newSampleID in existingSampleIDs:
+            vcNumber += 1
+            newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
+            
+        vcSample = transaction.createNewSample(newSampleID, "Q_NGS_VARIANT_CALLING")
+        vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
       
-		vcSample.setExperiment(newVariantCallingExperiment) 
+        vcSample.setExperiment(newVariantCallingExperiment) 
 
-		cegat = False
-	        sourceLabFile = open(os.path.join(incomingPath,'source_dropbox.txt'), 'r')
-	        sourceLab = sourceLabFile.readline().strip()
-	        sourceLabFile.close()
+        cegat = False
+        sourceLabFile = open(os.path.join(incomingPath,'source_dropbox.txt'), 'r')
+        sourceLab = sourceLabFile.readline().strip()
+        sourceLabFile.close()
 
-	        if sourceLab == 'dmcegat':
-       		        cegat = True
-	        os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
+        if sourceLab == 'dmcegat':
+            cegat = True
+        os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
 
-	        for f in os.listdir(incomingPath):
-        	        if f.endswith('origlabfilename') and cegat:
-				origName = open(os.path.join(incomingPath,f), 'r')
-                        	secondaryName = origName.readline().strip().split('_')[0]
-				origName.close()
-                        	#entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
-                        	sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-				os.remove(os.path.realpath(os.path.join(incomingPath,f)))	
-		
-                	elif f.endswith('sha256sum') or f.endswith('vcf'):
-                        	pass
-                        	#transaction.moveFile(os.path.join(incomingPath,f), dataSet)
-                	else:
-                        	os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+        for f in os.listdir(incomingPath):
+            if f.endswith('origlabfilename') and cegat:
+                origName = open(os.path.join(incomingPath,f), 'r')
+                secondaryName = origName.readline().strip().split('_')[0]
+                origName.close()
+                #entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
+                sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))   
+        
+            elif f.endswith('sha256sum') or f.endswith('vcf'):
+                pass
+                #transaction.moveFile(os.path.join(incomingPath,f), dataSet)
+            else:
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         dataSet.setSample(vcSample)
         transaction.moveFile(incomingPath, dataSet)
