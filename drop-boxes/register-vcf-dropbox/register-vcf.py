@@ -21,45 +21,46 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 def isExpected(identifier):
-        try:
-            id = identifier[0:9]
-            #also checks for old checksums with lower case letters
-            return checksum.checksum(id)==identifier[9]
-        except:
-            return False
+    try:
+        id = identifier[0:9]
+        #also checks for old checksums with lower case letters
+        return checksum.checksum(id)==identifier[9]
+    except:
+        return False
 
 def process(transaction):
-        context = transaction.getRegistrationContext().getPersistentMap()
+    context = transaction.getRegistrationContext().getPersistentMap()
 
-        # Get the incoming path of the transaction
-        incomingPath = transaction.getIncoming().getAbsolutePath()
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
 
-        key = context.get("RETRY_COUNT")
-        if (key == None):
-                key = 1
+    key = context.get("RETRY_COUNT")
+    if (key == None):
+        key = 1
 
 
-        # Get the name of the incoming file
-        name = transaction.getIncoming().getName()
-        
-        identifier = pattern.findall(name)[0]
-        if isExpected(identifier):
-                experiment = identifier[1:5]
-                project = identifier[:5]
-                parentCode = identifier[:10]
-        else:
-                print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
+    
+    identifier = pattern.findall(name)[0]
+    if isExpected(identifier):
+        experiment = identifier[1:5]
+        project = identifier[:5]
+        parentCode = identifier[:10]
+    else:
+        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
  
-        # create new dataset 
-        dataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
-        dataSet.setMeasuredData(False)
+    # create new dataset 
+    dataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
+    dataSet.setMeasuredData(False)
 
-        search_service = transaction.getSearchService()
-    # vcf sample already exists VCQSGMA022AUA
+    search_service = transaction.getSearchService()
+
     vcf = re.compile("VCQ\w{4}[0-9]{3}[A-Z]\w[A-Z]*")
     vcfCodes = vcf.findall(name)
+
     if len(vcfCodes) > 0:
-            sc = SearchCriteria()
+        sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, vcfCodes[0]))
         foundSamples = search_service.searchForSamples(sc)
         vcSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
