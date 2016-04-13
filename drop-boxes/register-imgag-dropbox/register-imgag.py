@@ -123,8 +123,8 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         print qbicBarcodeID in parentIDs
                         print analyte == typesDict[expType]
                         print (curSecName != None) and (genShortID in curSecName)
-                        print (extDB != None) and (genShortID in extID)
-                        if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and (((curSecName != None) and (genShortID in curSecName)) or ((extDB != None) and (genShortID in extID)))):
+                        print (extID != None) and (genShortID in extID)
+                        if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and (((curSecName != None) and (genShortID in curSecName)) or ((extID != None) and (genShortID in extID)))):
                             testParentID = samp.getSampleIdentifier()
                             # this time we are looking for the NGS Single Sample run attached to the test sample we just found
                             for s in foundSamples:
