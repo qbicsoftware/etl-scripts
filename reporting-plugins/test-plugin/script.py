@@ -67,7 +67,7 @@ def process(tr, parameters, tableBuilder):
 	pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
 	sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
 	fetchOptions = EnumSet.of(SampleFetchOption.ANCESTORS, SampleFetchOption.PROPERTIES)
-	allSamples = service.searchForSamples(sc, fetchOptions)
+	allSamples = search.searchForSamples(sc, fetchOptions)
 	#filter all samples by types
 	samples = []
 	for s in allSamples:
