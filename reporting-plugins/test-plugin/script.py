@@ -44,7 +44,6 @@ def fetchSource(samples, terms, res):
 			res.append("unknown source")
 	return '+'.join(res)
 
-
 def process(tr, parameters, tableBuilder):
 	#ids = sorted(parameters.get("ids"))
 	types = parameters.get("types") #sample types (tiers) that are requested for the tsv
