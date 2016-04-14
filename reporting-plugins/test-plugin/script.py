@@ -1,6 +1,8 @@
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto.SearchCriteria import MatchClause
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto.SearchCriteria import MatchClauseAttribute
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
 
 # This script returns a spreadsheet of humanly readable information of interest of an experiment. As requested on the QBiC retreat 10/2015 each layer in the data model
 # is returned (and has to be requested) separately. Experimental factors are returned as xml and have to be parsed in the portal
