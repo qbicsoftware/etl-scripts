@@ -108,7 +108,7 @@ def process(transaction):
         #        vcNumber += 1
         #        newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
         if len(foundMapSample) == 0:
-                mappingSample = transaction.createNewSample(newSampleID, "Q_NGS_MAPPING")
+                mappingSample = transaction.createNewSample(mapSampleID, "Q_NGS_MAPPING")
                 mappingSample.setParentSampleIdentifiers(ngsParents)
         else:
                 mappingSample = foundMapSample[0]
