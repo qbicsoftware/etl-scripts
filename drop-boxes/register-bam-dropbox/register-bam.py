@@ -94,11 +94,8 @@ def process(transaction):
         for samp in allSamples:
                 #existingSampleIDs.append(samp.getSampleIdentifier())
                 if samp.getSampleType()=="Q_NGS_SINGLE_SAMPLE_RUN":
-                        print samp
-                        print samp.getParentSampleIdentifiers()
-                        print sa.getSampleIdentifier()
                         if sa.getSampleIdentifier() in samp.getParentSampleIdentifiers():
-                                ngsParents.append(samp)
+                                ngsParents.append(samp.getSampleIdentifier())
 
         #replNumber = 1
         #if len(ngsParents > 1):
@@ -112,6 +109,7 @@ def process(transaction):
         #        newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
         if len(foundMapSample) == 0:
                 mappingSample = transaction.createNewSample(mapSampleID, "Q_NGS_MAPPING")
+
                 mappingSample.setParentSampleIdentifiers(ngsParents)
         else:
                 mappingSample = foundMapSample[0]
