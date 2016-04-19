@@ -79,33 +79,43 @@ def process(transaction):
 
         #newMappingSample = transaction.createNewSample('/' + space + '/' + 'MP'+ parentCode, "Q_NGS_MAPPING")
         #newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-	#newMappingSample.setExperiment(mapExperiment)
+        #newMappingSample.setExperiment(mapExperiment)
 
-        search_service = transaction.getSearchService()
-        sc = SearchCriteria()
-        pc = SearchCriteria()
-        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
-        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-        foundSamples2 = search_service.searchForSamples(sc)
+        #sc = SearchCriteria()
+        #pc = SearchCriteria()
+        #pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+        #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+        #foundSamples2 = search_service.searchForSamples(sc)
 
-        existingSampleIDs = []
-        vcNumber = 1
-        newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
+        #existingSampleIDs = []
+
+        ngsParents = []
         
         for samp in foundSamples2:
                 existingSampleIDs.append(samp.getSampleIdentifier())
+                if samp.getSampleType()=="Q_NGS_SINGLE_SAMPLE_RUN":
+                        if sa.getIdentifier() == samp.getParentSampleIdentifiers():
+                                ngsParents.append(samp)
 
-        while newSampleID in existingSampleIDs:
-                vcNumber += 1
-                newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
-                
-        newMappingSample = transaction.createNewSample(newSampleID, "Q_NGS_MAPPING")
-        newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        #replNumber = 1
+        #if len(ngsParents > 1):
+        mapSampleID = '/' + space + '/' + 'MP' + parentCode
 
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, mapSampleID))
+        foundMapSample = search_service.searchForSamples(sc)
+        #while newSampleID in existingSampleIDs:
+        #        vcNumber += 1
+        #        newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
+        if len(foundMapSample) == 0:
+                mappingSample = transaction.createNewSample(newSampleID, "Q_NGS_MAPPING")
+                mappingSample.setParentSampleIdentifiers(ngsParents)
+        else:
+                mappingSample = foundMapSample[0]
         # create new dataset
-        newMappingSample.setExperiment(mapExperiment)
+        mappingSample.setExperiment(mapExperiment)
         dataSet = transaction.createNewDataSet("Q_NGS_MAPPING_DATA")
         dataSet.setMeasuredData(False)
-        dataSet.setSample(newMappingSample)
+        dataSet.setSample(mappingSample)
 
         transaction.moveFile(incomingPath, dataSet)
