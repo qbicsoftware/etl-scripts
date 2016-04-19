@@ -73,9 +73,6 @@ def process(transaction):
                 i += 1
                 expNum = len(experiments) + i
                 expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
-                
-        mapExperiment = transaction.createNewExperiment(expID, expType)
-        mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
         #newMappingSample = transaction.createNewSample('/' + space + '/' + 'MP'+ parentCode, "Q_NGS_MAPPING")
         #newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
@@ -108,13 +105,14 @@ def process(transaction):
         #        vcNumber += 1
         #        newSampleID = '/' + space + '/' + 'MP' + str(vcNumber) + parentCode
         if len(foundMapSample) == 0:
+                mapExperiment = transaction.createNewExperiment(expID, expType)
+                mapExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
                 mappingSample = transaction.createNewSample(mapSampleID, "Q_NGS_MAPPING")
-
                 mappingSample.setParentSampleIdentifiers(ngsParents)
+                mappingSample.setExperiment(mapExperiment)
         else:
-                mappingSample = foundMapSample[0]
+                mappingSample = getSampleForUpdate(foundMapSample[0].getSampleIdentifier())
         # create new dataset
-        mappingSample.setExperiment(mapExperiment)
         dataSet = transaction.createNewDataSet("Q_NGS_MAPPING_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(mappingSample)
