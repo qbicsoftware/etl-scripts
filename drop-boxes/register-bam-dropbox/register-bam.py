@@ -111,7 +111,7 @@ def process(transaction):
                 mappingSample.setParentSampleIdentifiers(ngsParents)
                 mappingSample.setExperiment(mapExperiment)
         else:
-                mappingSample = getSampleForUpdate(foundMapSample[0].getSampleIdentifier())
+                mappingSample = transaction.getSampleForUpdate(foundMapSample[0].getSampleIdentifier())
         # create new dataset
         dataSet = transaction.createNewDataSet("Q_NGS_MAPPING_DATA")
         dataSet.setMeasuredData(False)
