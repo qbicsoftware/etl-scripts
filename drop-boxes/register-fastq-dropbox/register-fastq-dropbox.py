@@ -15,7 +15,6 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-# ETL script for registration of VCF files
 # expected:
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
@@ -44,7 +43,7 @@ def process(transaction):
         
         identifier = pattern.findall(name)[0]
         #identifier = name
-	if isExpected(identifier):
+        if isExpected(identifier):
                 project = identifier[:5]
         else:
                 print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
@@ -91,10 +90,10 @@ def process(transaction):
                     exists = False
                 else:
                     replicate += 1
-                ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
-                ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-                ngsSample.setExperiment(ngsExperiment)
-                sa = ngsSample
+            ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
+            ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+            ngsSample.setExperiment(ngsExperiment)
+            sa = ngsSample
         # create new dataset
         dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
         dataSet.setMeasuredData(False)
