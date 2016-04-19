@@ -94,7 +94,7 @@ def process(transaction):
         for samp in allSamples:
                 #existingSampleIDs.append(samp.getSampleIdentifier())
                 if samp.getSampleType()=="Q_NGS_SINGLE_SAMPLE_RUN":
-                        if sa.getIdentifier() == samp.getParentSampleIdentifiers():
+                        if sa.getSampleIdentifier() == samp.getParentSampleIdentifiers():
                                 ngsParents.append(samp)
 
         #replNumber = 1
