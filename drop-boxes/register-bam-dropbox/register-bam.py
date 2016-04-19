@@ -81,18 +81,18 @@ def process(transaction):
         #newMappingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         #newMappingSample.setExperiment(mapExperiment)
 
-        #sc = SearchCriteria()
-        #pc = SearchCriteria()
-        #pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
-        #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-        #foundSamples2 = search_service.searchForSamples(sc)
+        sc = SearchCriteria()
+        pc = SearchCriteria()
+        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+        allSamples = search_service.searchForSamples(sc)
 
         #existingSampleIDs = []
 
         ngsParents = []
         
-        for samp in foundSamples2:
-                existingSampleIDs.append(samp.getSampleIdentifier())
+        for samp in allSamples:
+                #existingSampleIDs.append(samp.getSampleIdentifier())
                 if samp.getSampleType()=="Q_NGS_SINGLE_SAMPLE_RUN":
                         if sa.getIdentifier() == samp.getParentSampleIdentifiers():
                                 ngsParents.append(samp)
