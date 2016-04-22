@@ -67,6 +67,14 @@ def process(transaction):
     dataSetRes.setSample(sample)
     dataSetLogs.setSample(sample)
 
+    for fn in os.listdir(incomingPath+"/logs"):
+     if os.path.isfile(fn):
+        if 'snpEfflog' in fn:
+            sample.setPropertyValue("Q_ADDITIONAL_INFO", "snpEff Annotation")
+        else:
+            sample.setPropertyValue("Q_ADDITIONAL_INFO", "ANNOVAR Annotation")
+
+
     resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
     logname = incomingPath+"/"+parentInfos+"_workflow_logs"
     os.rename(incomingPath+"/logs", logname)
