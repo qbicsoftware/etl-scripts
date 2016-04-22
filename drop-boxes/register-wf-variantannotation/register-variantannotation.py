@@ -68,7 +68,7 @@ def process(transaction):
     dataSetLogs.setSample(sample)
 
     for fn in os.listdir(incomingPath+"/logs"):
-     if os.path.isfile(fn):
+     if os.path.isfile(os.path.join(incomingPath+"/logs", fn)):
         if 'snpEfflog' in fn:
             sample.setPropertyValue("Q_ADDITIONAL_INFO", "snpEff Annotation")
         else:
