@@ -404,19 +404,17 @@ def handleImmunoFiles(transaction):
         raise ValueError("Invalid barcode: %s" % code)        
 
     for root, subFolders, files in os.walk(incomingPath):
-        print root
-        print subFolders
-        print files
         if subFolders:
             subFolder = subFolders[0]
         for f in files:
             if f.endswith('.tsv'):
-                print os.path.join(root, f)
-                metadataFile = open(os.path.join(root, os.path.join(subFolder, f)), 'r')
-    
+                print root
+                print f
+                metadataFile = open(os.path.join(root, f), 'r')
     metadataFile.readline()
     run = 1
     for line in metadataFile:
+        print line
         splitted = line.split('\t')
         fileName = splitted[0]
         instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
@@ -471,7 +469,10 @@ def handleImmunoFiles(transaction):
 
         tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
         raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
+        print raw_path
         stem, ext = os.path.splitext(fileName)
+        print stem
+        print ext
         try:
             convert = partial(convert_raw,
                       remote_base=REMOTE_BASE,
