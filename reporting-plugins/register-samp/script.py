@@ -42,7 +42,6 @@ def process(tr, parameters, tableBuilder):
   sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
   foundSamples = search_service.searchForSamples(sc)
   if(foundSamples.size() < 1):
-    print "new sample!"
     proj = parameters.get("project")
     space = parameters.get("space")
     sampleType = parameters.get("type")
@@ -55,7 +54,7 @@ def process(tr, parameters, tableBuilder):
       sample.setPropertyValue("Q_SECONDARY_NAME",parameters.get("sample_class"))
     if parameters.get("parents"):
       sample.setParentSampleIdentifiers(parameters.get("parents"))
-    if parameters.get("metadata"):
-      properties = parameters.get("metadata")
+    if parameters.get("properties"):
+      properties = parameters.get("properties")
       for prop in properties.keySet():
         sample.setPropertyValue(prop, properties.get(prop))
