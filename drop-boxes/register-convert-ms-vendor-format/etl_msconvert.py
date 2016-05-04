@@ -410,9 +410,17 @@ def handleImmunoFiles(transaction):
             if f.endswith('.tsv'):
                 metadataFile = open(os.path.join(root, f), 'U')
     line = metadataFile.readline()
-    run = 1
+
+    #info needed in the for loop
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+    foundSamples = search_service.searchForSamples(sc)
+    space = foundSamples[0].getSpace()
     existingExperimentIDs = []
     existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+
+    run = 1
     for line in metadataFile:
         splitted = line.split('\t')
         fileName = splitted[0]
@@ -425,14 +433,7 @@ def handleImmunoFiles(transaction):
         wf_type = splitted[7]
 
         date = datetime.datetime.strptime(date_input, "%y%m%d").strftime('%Y-%m-%d')
-
-        search_service = transaction.getSearchService()
-        sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
-        foundSamples = search_service.searchForSamples(sc)
-
         parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
-        space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
          # register new experiment and sample
