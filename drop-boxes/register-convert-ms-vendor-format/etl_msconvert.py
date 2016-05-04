@@ -411,6 +411,8 @@ def handleImmunoFiles(transaction):
                 metadataFile = open(os.path.join(root, f), 'U')
     line = metadataFile.readline()
     run = 1
+    existingExperimentIDs = []
+    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
     for line in metadataFile:
         splitted = line.split('\t')
         fileName = splitted[0]
@@ -434,8 +436,6 @@ def handleImmunoFiles(transaction):
         sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
          # register new experiment and sample
-        existingExperimentIDs = []
-        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
         
         numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
 
@@ -447,7 +447,7 @@ def handleImmunoFiles(transaction):
         while newExpID in existingExperimentIDs:
             numberOfExperiments += 1 
             newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-            existingExperimentIDs.append(newExpID)
+        existingExperimentIDs.append(newExpID)
 
         newMSExperiment = transaction.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
         newMSExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
