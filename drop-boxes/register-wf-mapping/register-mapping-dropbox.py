@@ -54,6 +54,8 @@ def process(transaction):
         samplehit = foundSamples[0]
         sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
+        additionalInfo = sample.getPropertyValue("Q_ADDITIONAL_INFO")
+
         parents = samplehit.getParentSampleIdentifiers()
         parentcodes = []
         for parent in parents:
@@ -70,7 +72,9 @@ def process(transaction):
         #Register files
         dataSetRes = transaction.createNewDataSet('Q_WF_NGS_MAPPING_RESULTS')
         dataSetRes.setMeasuredData(False)
+        dataSetRes.setPropertyValue("Q_ADDITIONAL_INFO", additionalInfo)
         dataSetLogs = transaction.createNewDataSet('Q_WF_NGS_MAPPING_LOGS')
+        dataSetLogs.setPropertyValue("Q_ADDITIONAL_INFO", additionalInfo)
         dataSetLogs.setMeasuredData(False)
 
         dataSetRes.setSample(sample)
