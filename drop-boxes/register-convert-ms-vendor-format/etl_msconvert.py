@@ -404,11 +404,15 @@ def handleImmunoFiles(transaction):
         raise ValueError("Invalid barcode: %s" % code)        
 
     for root, subFolders, files in os.walk(incomingPath):
+        print root
+        print subFolders
+        print files
         if subFolders:
             subFolder = subFolders[0]
         for f in files:
             if f.endswith('.tsv'):
-                metadataFile = open(os.path.join(root, f), 'r')
+                print os.path.join(root, f)
+                metadataFile = open(os.path.join(root, os.path.join(subFolder, f)), 'r')
     
     metadataFile.readline()
     run = 1
