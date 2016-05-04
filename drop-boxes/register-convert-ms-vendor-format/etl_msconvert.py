@@ -408,14 +408,10 @@ def handleImmunoFiles(transaction):
             subFolder = subFolders[0]
         for f in files:
             if f.endswith('.tsv'):
-                print root
-                print f
                 metadataFile = open(os.path.join(root, f), 'U')
     line = metadataFile.readline()
-    print line
     run = 1
     for line in metadataFile:
-        print line
         splitted = line.split('\t')
         fileName = splitted[0]
         instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
@@ -451,6 +447,7 @@ def handleImmunoFiles(transaction):
         while newExpID in existingExperimentIDs:
             numberOfExperiments += 1 
             newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+            existingExperimentIDs.append(newExpID)
 
         newMSExperiment = transaction.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
         newMSExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
