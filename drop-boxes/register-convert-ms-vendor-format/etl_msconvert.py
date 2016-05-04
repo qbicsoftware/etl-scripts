@@ -410,7 +410,7 @@ def handleImmunoFiles(transaction):
             if f.endswith('.tsv'):
                 print root
                 print f
-                metadataFile = open(os.path.join(root, f), 'r')
+                metadataFile = open(os.path.join(root, f), 'U')
     line = metadataFile.readline()
     print line
     run = 1
