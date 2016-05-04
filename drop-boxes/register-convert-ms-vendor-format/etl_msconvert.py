@@ -411,7 +411,8 @@ def handleImmunoFiles(transaction):
                 print root
                 print f
                 metadataFile = open(os.path.join(root, f), 'r')
-    metadataFile.readline()
+    line = metadataFile.readline()
+    print line
     run = 1
     for line in metadataFile:
         print line
