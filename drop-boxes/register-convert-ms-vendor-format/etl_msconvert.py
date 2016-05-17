@@ -176,11 +176,11 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
             print remote_dir
             ssh(['msconvert', raw_name], cwd=remote_dir)
         rsync_from(source=remote_mzml, dest=dest)
-    finally:
-        try:
+    #finally:
+        #try:
             #ssh(["rm", "-rf", remote_dir])
-        except Exception:
-            logging.exception("Could not remove remote dir.")
+        #except Exception:
+            #logging.exception("Could not remove remote dir.")
 
 
 def extract_barcode(filename):
