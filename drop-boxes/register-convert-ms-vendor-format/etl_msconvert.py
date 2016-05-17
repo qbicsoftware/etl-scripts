@@ -120,7 +120,7 @@ def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
     if dest_user:
         dest = "%s@%s" % (dest_user, dest)
 
-    cmd = ['rsync', '--', source, dest]
+    cmd = ['rsync', '-v','--', source, dest]
     if extra_options:
         cmd = cmd[0:1] + extra_options + cmd[1:]
     return check_output(cmd, timeout=timeout)
