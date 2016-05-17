@@ -178,7 +178,7 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
         rsync_from(source=remote_mzml, dest=dest)
     finally:
         try:
-            ssh(["rm", "-rf", remote_dir])
+            #ssh(["rm", "-rf", remote_dir])
         except Exception:
             logging.exception("Could not remove remote dir.")
 
@@ -596,7 +596,7 @@ def process(transaction):
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
             mzml_path = os.path.join(tmpdir, stem + '.mzML')
-            raw_path = os.path.join(incomingPath, name)
+            raw_path = os.path.join(incomingPath, name)#raw file has the same name as the incoming folder, this is the path to this file!
             convert(raw_path, mzml_path)
 
             mzml_name = os.path.basename(mzml_path)
