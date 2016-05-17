@@ -171,6 +171,9 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
             ssh(['cp', remote_file, remote_mzml])
         else:
             raw_name = os.path.basename(raw_path)
+            print "debug"
+            print raw_name
+            print remote_dir
             ssh(['msconvert', raw_name], cwd=remote_dir)
         rsync_from(source=remote_mzml, dest=dest)
     finally:
