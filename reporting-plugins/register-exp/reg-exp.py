@@ -41,7 +41,9 @@ def process(tr, parameters, tableBuilder):
           exp.setPropertyValue(prop, date)
         else:
           if properties.get(prop):
-            val = str(properties.get(prop))
-            val = unicode(val,"utf-8")
-            val = val.encode("utf-8")
+            try:
+              val = str(properties.get(prop))
+            except:
+              val = unicode(val,"utf-8")
+              val = val.encode("utf-8")
             exp.setPropertyValue(prop, val)
