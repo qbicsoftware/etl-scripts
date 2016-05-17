@@ -120,7 +120,7 @@ def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
     if dest_user:
         dest = "%s@%s" % (dest_user, dest)
 
-    cmd = ['rsync', '-v','--', source, dest]
+    cmd = ['rsync', '--', source, dest]
     if extra_options:
         cmd = cmd[0:1] + extra_options + cmd[1:]
     return check_output(cmd, timeout=timeout)
@@ -164,27 +164,20 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
         except AttributeError:
             remote_dir = remote_dir.strip()
         remote_file = os.path.join(remote_dir, os.path.basename(raw_path))
-        print "debug 2"
-        print remote_file
         rsync_to(source=raw_path, dest=remote_file)
-        print raw_path
 
         remote_mzml = os.path.splitext(remote_file)[0] + '.mzML'
         if dryrun:
             ssh(['cp', remote_file, remote_mzml])
         else:
             raw_name = os.path.basename(raw_path)
-            print "debug"
-            print raw_name
-            print remote_dir
             ssh(['msconvert', raw_name], cwd=remote_dir)
         rsync_from(source=remote_mzml, dest=dest)
     finally:
-        print "done"
-        #try:
-            #ssh(["rm", "-rf", remote_dir])
-        #except Exception:
-            #logging.exception("Could not remove remote dir.")
+        try:
+            ssh(["rm", "-rf", remote_dir])
+        except Exception:
+            logging.exception("Could not remove remote dir.")
 
 
 def extract_barcode(filename):
