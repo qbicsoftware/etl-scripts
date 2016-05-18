@@ -164,7 +164,7 @@ def convert_raw(raw_path, dest, remote_base, host, timeout, user=None,
         except AttributeError:
             remote_dir = remote_dir.strip()
         remote_file = os.path.join(remote_dir, os.path.basename(raw_path))
-        rsync_to(source=raw_path, dest=remote_file)
+        rsync_to(source=raw_path, dest=remote_dir)#changed this from remote_file to remote_dir so it works for folders (.d)
 
         remote_mzml = os.path.splitext(remote_file)[0] + '.mzML'
         if dryrun:
