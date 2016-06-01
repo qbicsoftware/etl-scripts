@@ -335,11 +335,16 @@ def find_and_register_ngs(transaction, jsonContent):
         newNGSID = '/' + space + '/' + 'NGS'+ idGenetics.split('_')[-1] + testSampleCode
 
         freeID = idGenetics.split('_')[-1]
-        while newNGSID in foundSamples:
+        existingSampleIDs = []
+        
+        for s in foundSamples:
+            existingSampleIDs.append(s.getSampleIdentifier())
+
+        while newNGSID in existingSampleIDs:
             freeID = str(int(freeID) + 1).zfill(len(freeID))
             newNGSID = '/' + space + '/' + 'NGS'+ freeID + testSampleCode
 
-        foundSamples.append(newNGSID)
+        existingSampleIDs.append(newNGSID)
         newNGSrunSample = transaction.createNewSample(newNGSID, "Q_NGS_SINGLE_SAMPLE_RUN")
         newNGSrunSample.setParentSampleIdentifiers([sampleIdent])
         newNGSrunSample.setExperiment(newNGSMeasurementExp)
