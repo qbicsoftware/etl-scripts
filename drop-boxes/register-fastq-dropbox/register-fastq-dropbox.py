@@ -59,66 +59,45 @@ def process(transaction):
 
         sampleType = "Q_NGS_SINGLE_SAMPLE_RUN"
         if sa.getSampleType() != sampleType:
-            # create NGS-specific experiment/sample and
-            # attach to the test sample
-            expType = "Q_NGS_MEASUREMENT"
-            ngsExperiment = None
-            experiments = search_service.listExperiments("/" + space + "/" + project)
-            experimentIDs = []
-            for exp in experiments:
-                experimentIDs.append(exp.getExperimentIdentifier())
-            expID = experimentIDs[0]
-            i = 0
-            while expID in experimentIDs:
-                i += 1
-                expNum = len(experiments) + i
-                expID = '/' + space + '/' + project + \
-                    '/' + project + 'E' + str(expNum)
-            ngsExperiment = transaction.createNewExperiment(expID, expType)
-            ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
-
-            replicate = 1
-            exists = True
-            while exists:
-                # create new barcode
-                newID = 'NGS'+str(replicate)+identifier
-                # check if sample already exists in database
-                pc = SearchCriteria()
-                pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newID))
-                found = search_service.searchForSamples(pc)
-                if len(found) == 0:
-                    exists = False
-                else:
-                    replicate += 1
-            ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
-            ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-            ngsSample.setExperiment(ngsExperiment)
-            sa = ngsSample
+            sc = SearchCriteria()
+            sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "NGS"+identifier))
+            foundSamples = search_service.searchForSamples(sc)
+            if foundSamples > 0:
+                sampleIdentifier = foundSamples[0].getSampleIdentifier()
+                sa = transaction.getSampleForUpdate(sampleIdentifier)
+            else:
+                # create NGS-specific experiment/sample and
+                # attach to the test sample
+                expType = "Q_NGS_MEASUREMENT"
+                ngsExperiment = None
+                experiments = search_service.listExperiments("/" + space + "/" + project)
+                experimentIDs = []
+                for exp in experiments:
+                    experimentIDs.append(exp.getExperimentIdentifier())
+                expID = experimentIDs[0]
+                i = 0
+                while expID in experimentIDs:
+                    i += 1
+                    expNum = len(experiments) + i
+                    expID = '/' + space + '/' + project + \
+                        '/' + project + 'E' + str(expNum)
+                ngsExperiment = transaction.createNewExperiment(expID, expType)
+                ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
+                newID = 'NGS'+identifier
+                ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
+                ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+                ngsSample.setExperiment(ngsExperiment)
+                sa = ngsSample
         # create new dataset
         dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
         dataSet.setMeasuredData(False)
         dataSet.setSample(sa)
 
-       	cegat = False
-        f = "source_dropbox.txt"
-        sourceLabFile = open(os.path.join(incomingPath,f))
-       	sourceLab = sourceLabFile.readline().strip() 
-        sourceLabFile.close()
-        if sourceLab == 'dmcegat':
-                cegat = True
-        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        f = name+".origlabfilename"
-       	nameFile = open(os.path.join(incomingPath,f))
-        origName = nameFile.readline().strip()
-        nameFile.close()
-        if sourceLab == 'dmcegat':
-                cegat = True
-                secondaryName = origName.split('_')[3]
-                sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
         for f in os.listdir(incomingPath):
-		if ".testorig" in f:
-			os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+            if ".testorig" in f:
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+            if ".origlabfilename" in f:
+                nameFile = open(os.path.join(incomingPath,f))
+                origName = nameFile.readline().strip()
+                nameFile.close()
         transaction.moveFile(incomingPath, dataSet)
