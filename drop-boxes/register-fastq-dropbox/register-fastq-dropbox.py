@@ -62,7 +62,7 @@ def process(transaction):
             sc = SearchCriteria()
             sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "NGS"+identifier))
             foundSamples = search_service.searchForSamples(sc)
-            if foundSamples > 0:
+            if len(foundSamples) > 0:
                 sampleIdentifier = foundSamples[0].getSampleIdentifier()
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
             else:
