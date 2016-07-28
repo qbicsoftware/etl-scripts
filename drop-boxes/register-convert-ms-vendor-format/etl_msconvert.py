@@ -603,53 +603,52 @@ def process(transaction):
         finally:
             shutil.rmtree(tmpdir)
 
-        # Find the test sample
+        # Try to find an existing MS sample
         sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-            SearchCriteria.MatchClauseAttribute.CODE, code))
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
         foundSamples = search_service.searchForSamples(sc)
+        if len(foundSamples) > 0:
+            msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+            #msSample.getExperiment() update experiment here
+        else:
+            # Find the test sample
+            sc = SearchCriteria()
+            sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+            foundSamples = search_service.searchForSamples(sc)
 
-        sampleIdentifier = foundSamples[0].getSampleIdentifier()
-        space = foundSamples[0].getSpace()
-        sa = transaction.getSampleForUpdate(sampleIdentifier)
+            sampleIdentifier = foundSamples[0].getSampleIdentifier()
+            space = foundSamples[0].getSpace()
+            sa = transaction.getSampleForUpdate(sampleIdentifier)
 
-        # get or create MS-specific experiment/sample and
-        # attach to the test sample
-        expType = "Q_MS_MEASUREMENT"
-        MSRawExperiment = None
-        experiments = search_service.listExperiments("/" + space + "/" + project)
-        experimentIDs = []
-        for exp in experiments:
-            experimentIDs.append(exp.getExperimentIdentifier())
-            if exp.getExperimentType() == expType:
-                if isCurrentMSRun(
-                    transaction,
-                    sa.getExperiment().getExperimentIdentifier(),
-                    exp.getExperimentIdentifier()
-                ):
-                    MSRawExperiment = exp
-        # no existing experiment for samples of this sample preparation found
-        if not MSRawExperiment:
-            expID = experimentIDs[0]
-            i = 0
-            while expID in experimentIDs:
-                i += 1
-                expNum = len(experiments) + i
-                expID = '/' + space + '/' + project + \
-                    '/' + project + 'E' + str(expNum)
-            MSRawExperiment = transaction.createNewExperiment(expID, expType)
-        # does MS sample already exist?
-        msCode = 'MS' + code
-        sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-            SearchCriteria.MatchClauseAttribute.CODE, msCode))
-        foundSamples = search_service.searchForSamples(sc)
-        if len(foundSamples) < 1:
+            # get or create MS-specific experiment/sample and
+            # attach to the test sample
+            expType = "Q_MS_MEASUREMENT"
+            MSRawExperiment = None
+            experiments = search_service.listExperiments("/" + space + "/" + project)
+            experimentIDs = []
+            for exp in experiments:
+                experimentIDs.append(exp.getExperimentIdentifier())
+                if exp.getExperimentType() == expType:
+                    if isCurrentMSRun(
+                        transaction,
+                        sa.getExperiment().getExperimentIdentifier(),
+                        exp.getExperimentIdentifier()
+                    ):
+                        MSRawExperiment = exp
+            # no existing experiment for samples of this sample preparation found
+            if not MSRawExperiment:
+                expID = experimentIDs[0]
+                i = 0
+                while expID in experimentIDs:
+                    i += 1
+                    expNum = len(experiments) + i
+                    expID = '/' + space + '/' + project + \
+                        '/' + project + 'E' + str(expNum)
+                MSRawExperiment = transaction.createNewExperiment(expID, expType)
+            # create new ms sample
             msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
             msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
             msSample.setExperiment(MSRawExperiment)
-        else:
-            msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
 
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
         createMZMLDataSet(transaction, mzml_dest, msSample)
