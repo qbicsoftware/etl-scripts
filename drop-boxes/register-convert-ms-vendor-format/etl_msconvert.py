@@ -46,7 +46,7 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
 DROPBOX_PATH = "/mnt/DSS1/openbis_dss/QBiC-convert-register-ms-vendor-format/"
-VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER'}
+VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER','.wiff':'WIFF_SCIEX'}
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -646,7 +646,7 @@ def process(transaction):
                         '/' + project + 'E' + str(expNum)
                 MSRawExperiment = transaction.createNewExperiment(expID, expType)
             # create new ms sample
-            msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+            msSample = transaction.createNewSample('/' + space + '/' + "MS"+code, "Q_MS_RUN")
             msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
             msSample.setExperiment(MSRawExperiment)
 
