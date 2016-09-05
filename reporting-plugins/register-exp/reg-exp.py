@@ -42,7 +42,8 @@ def process(tr, parameters, tableBuilder):
         else:
           if properties.get(prop):
             try:
-              val = str(properties.get(prop))
+              val = properties.get(prop)
+              val = str(val)
             except:
               val = unicode(val,"utf-8")
               val = val.encode("utf-8")
