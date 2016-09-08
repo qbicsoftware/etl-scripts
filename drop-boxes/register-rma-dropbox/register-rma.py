@@ -70,7 +70,7 @@ def process(transaction):
     else:
         # rma sample needs to be created        
         sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "NGS"+parentCode))
         foundSamples = search_service.searchForSamples(sc)
 
         parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
