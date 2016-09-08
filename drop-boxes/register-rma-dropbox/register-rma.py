@@ -59,7 +59,7 @@ def process(transaction):
     dataSet = transaction.createNewDataSet(DS_TYPE)
     dataSet.setMeasuredData(False)
     stem, ext = os.path.splitext(name)
-    dataSet.setPropertyValue(FILE_TYPE_PROPERTY,ext.upper())
+    dataSet.setPropertyValue(FILE_TYPE_PROPERTY,ext[1:].upper())
 
     search_service = transaction.getSearchService()
     sc = SearchCriteria()
