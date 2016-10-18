@@ -42,7 +42,7 @@ def process(tr, parameters, tableBuilder):
   codes = parameters.get("codes")
   if not codes:
     codes = [parameters.get("code")]
-  types = parameters.get(types)
+  types = parameters.get("types")
   if not types:
     types = [parameters.get("type")]
   project = parameters.get("project")
