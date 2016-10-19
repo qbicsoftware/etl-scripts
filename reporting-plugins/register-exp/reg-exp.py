@@ -1,5 +1,5 @@
 import datetime
-{project=QHIPP, properties={Q_WF_VERSION=1.0, Q_WF_STATUS=RUNNING, Q_WF_NAME=ligandomicsid_v1_0_2016, Q_WF_EXECUTED_BY=iismo01, Q_WF_STARTED_AT=2016-10-19 10:59:19 +0000}, code=QHIPPE176, space=MNF_ELK, type=Q_WF_MS_LIGANDOMICS_ID}
+
 def setProperties(tr, exp, props):
   print "props "+props
   for prop in props.keySet():
