@@ -1,7 +1,8 @@
 import datetime
 
 def setProperties(tr, exp, props):
-  print "props "+props
+  print "props"
+  print props
   for prop in props.keySet():
     if prop == "ENZYMES":
       m = 0
@@ -54,7 +55,8 @@ def process(tr, parameters, tableBuilder):
     props = [props]
 
   for data in zip(codes, types, props):
-    print "data "+data
+    print "data"
+    print data
     expId = "/" + space + "/" + project + "/" + data[0]
     exp = tr.createNewExperiment(expId, data[1])
     if not data[2] == None:
