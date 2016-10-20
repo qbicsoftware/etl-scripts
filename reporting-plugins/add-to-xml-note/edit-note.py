@@ -28,4 +28,4 @@ def process(tr, parameters, tableBuilder):
   note += "</note>\n"
   all += note
   all += "</notes>"
-  sample.setPropertyValue("Q_NOTES",all)
+  entity.setPropertyValue("Q_NOTES",all)
