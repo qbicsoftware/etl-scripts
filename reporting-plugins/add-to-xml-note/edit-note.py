@@ -3,7 +3,13 @@ def wrap(element, input):
 
 def process(tr, parameters, tableBuilder):
   id = parameters.get("id")
-  sample = tr.getSampleForUpdate(id)
+  idtype = len(id.split("/"))
+  #sample
+  if(idtype == 3):
+    entity = tr.getSampleForUpdate(id)
+  #experiment
+  else:
+    entity = tr.getExperimentForUpdate(id)
   user = parameters.get("user")
   comment = parameters.get("comment")
   time = str(parameters.get("time"))
