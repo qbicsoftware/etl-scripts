@@ -14,7 +14,7 @@ def process(tr, parameters, tableBuilder):
   comment = parameters.get("comment")
   time = str(parameters.get("time"))
 
-  xml = sample.getPropertyValue("Q_NOTES")
+  xml = entity.getPropertyValue("Q_NOTES")
 
   all = ""
   try:
