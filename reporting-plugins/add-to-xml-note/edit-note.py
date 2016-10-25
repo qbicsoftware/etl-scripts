@@ -3,12 +3,18 @@ def wrap(element, input):
 
 def process(tr, parameters, tableBuilder):
   id = parameters.get("id")
-  sample = tr.getSampleForUpdate(id)
+  idtype = len(id.split("/"))
+  #sample
+  if(idtype == 3):
+    entity = tr.getSampleForUpdate(id)
+  #experiment
+  else:
+    entity = tr.getExperimentForUpdate(id)
   user = parameters.get("user")
   comment = parameters.get("comment")
   time = str(parameters.get("time"))
 
-  xml = sample.getPropertyValue("Q_NOTES")
+  xml = entity.getPropertyValue("Q_NOTES")
 
   all = ""
   try:
@@ -22,4 +28,4 @@ def process(tr, parameters, tableBuilder):
   note += "</note>\n"
   all += note
   all += "</notes>"
-  sample.setPropertyValue("Q_NOTES",all)
+  entity.setPropertyValue("Q_NOTES",all)

@@ -26,7 +26,8 @@ def process(tr, params, tableBuilder):
       exp = "/"+space+"/"+proj+"/"+parameters.get("experiment")
       exp = tr.getExperiment(exp)
       sample.setExperiment(exp)
-      sample.setPropertyValue("Q_SECONDARY_NAME",parameters.get("sample_class"))
+      if parameters.get("Q_SECONDARY_NAME"):
+        sample.setPropertyValue("Q_SECONDARY_NAME",parameters.get("Q_SECONDARY_NAME"))
       if parameters.get("parents"):
         sample.setParentSampleIdentifiers(parameters.get("parents"))
       if parameters.get("metadata"):
