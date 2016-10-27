@@ -412,6 +412,7 @@ def process(transaction):
             vcfs = []
             fastqs = []
             gsvars = []
+            tsvs = []
             print "metadata read"
             for rawFile in rawFiles: #example: ["GS130715_03-GS130717_03_var_annotated.vcf.gz","GS130715_03-GS130717_03.GSvar"]
                 print rawFile
@@ -421,6 +422,9 @@ def process(transaction):
                     fastqs.append(rawFile)
                 if rawFile.endswith("GSvar") or rawFile.endswith("GSvar.gz"):
                     gsvars.append(rawFile)
+                if rawFile.endswith("tsv") or rawFile.endswith("tsv.gz"):
+                    tsvs.append(rawFile)
+
 
             #if rawFiles[0].endswith("vcf") or rawFiles[0].endswith("vcf.gz"):
             #	datasetSample = find_and_register_vcf(transaction, jsonContent)
@@ -447,6 +451,8 @@ def process(transaction):
         os.mkdir(fastqFolder)
         for f in fastqs:
             os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
+        for t in tsvs:
+            os.rename(os.path.join(folder, t), os.path.join(fastqFolder, t))
 
         metadatafilename = metadataPath.split('/')[-1]
         copyfile(metadataPath, os.path.join(fastqFolder,metadatafilename))
