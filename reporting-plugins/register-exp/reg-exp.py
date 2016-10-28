@@ -37,7 +37,7 @@ def process(tr, parameters, tableBuilder):
   user = parameters.get("user")
   if user:
     tr.setUserId(user)
-  codes = list(set(parameters.get("codes"))) # unique codes so no error is thrown
+  codes = parameters.get("codes") # unique codes so no error is thrown
   types = parameters.get("types")
   props = parameters.get("properties")
   #only one experiment
@@ -45,6 +45,7 @@ def process(tr, parameters, tableBuilder):
     props = [props]
     codes = [parameters.get("code")]
     types = [parameters.get("type")]
+  codes = list(set(codes)) # unique codes so no error is thrown
   project = parameters.get("project")
   space = parameters.get("space")
 
