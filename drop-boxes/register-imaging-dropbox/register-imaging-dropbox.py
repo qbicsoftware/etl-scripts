@@ -142,12 +142,15 @@ def process(transaction):
         # we'll get qbic code and patient id
         code = propertyMap['qbicID']
         patientID = propertyMap['patientID']
+        print "look for: ", code
 
         search_service = transaction.getSearchService()
         sc = SearchCriteria()    # Find the patient according to code
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, code))
         foundSamples = search_service.searchForSamples(sc)
+
+        print "found samples: ", len(foundSamples)
 
         sampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
