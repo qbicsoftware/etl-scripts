@@ -45,7 +45,7 @@ def process(tr, parameters, tableBuilder):
     props = [props]
     codes = [parameters.get("code")]
     types = [parameters.get("type")]
-  codes = list(set(codes)) # unique codes so no error is thrown
+  codes = removeDuplicates(codes) # unique codes so no error is thrown
   project = parameters.get("project")
   space = parameters.get("space")
 
@@ -54,3 +54,8 @@ def process(tr, parameters, tableBuilder):
     exp = tr.createNewExperiment(expId, data[1])
     if not data[2] == None:
       setProperties(tr, exp, data[2])
+
+def removeDuplicates(lis):
+  seen = set()
+  seen_add = seen.add
+  return [x for x in lis if not (x in seen or seen_add(x))]
