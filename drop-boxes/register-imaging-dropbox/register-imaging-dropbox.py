@@ -20,18 +20,34 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
+
 class PropertyParsingError(Exception):
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
 
-# that's a very very simple Property validator... make better ones in the future
+
+class SampleNotFoundError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+# that's a very very simple Property validator... make better ones in the
+# future
+
+
 def validateProperty(propStr):
     if propStr != '':
         return(True)
 
     return(False)
+
 
 def mangleFilenameForAttributes(filename):
     filename_split = filename.split('_')
@@ -69,7 +85,6 @@ def mangleFilenameForAttributes(filename):
         else:
             raise PropertyParsingError('tracer was empty')
 
-
         # do the suffix check here
         datestr = filename_split[5].strip()
         if '.tar' in datestr:
@@ -81,20 +96,22 @@ def mangleFilenameForAttributes(filename):
                 raise PropertyParsingError('datestr was empty')
 
         else:
-            raise PropertyParsingError('File does not have the correct suffix (*.tar)!')
+            raise PropertyParsingError(
+                'File does not have the correct suffix (*.tar)!')
     else:
-        raise PropertyParsingError('Filename does not seem to have the correct number of properties!')
+        raise PropertyParsingError(
+            'Filename does not seem to have the correct number of properties!')
 
     return propertyMap
 
 
 def isExpected(identifier):
-        try:
-                id = identifier[0:9]
-                #also checks for old checksums with lower case letters
-                return checksum.checksum(id)==identifier[9]
-        except:
-                return False
+    try:
+        id = identifier[0:9]
+        # also checks for old checksums with lower case letters
+        return checksum.checksum(id) == identifier[9]
+    except:
+        return False
 
 
 def isCurrentMSRun(tr, parentExpID, msExpID):
@@ -117,98 +134,108 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
                     return True
     return False
 
+
 def process(transaction):
-        context = transaction.getRegistrationContext().getPersistentMap()
+    context = transaction.getRegistrationContext().getPersistentMap()
 
-        # Get the incoming path of the transaction
-        incomingPath = transaction.getIncoming().getAbsolutePath()
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
 
-        key = context.get("RETRY_COUNT")
-        if (key == None):
-                key = 1
+    key = context.get("RETRY_COUNT")
+    if (key == None):
+        key = 1
+
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
+
+    # identifier = pattern.findall(name)[0]
+    # if isExpected(identifier):
+    #         project = identifier[:5]
+    #         #parentCode = identifier[:10]
+    # else:
+    # print "The identifier "+identifier+" did not match the pattern
+    # Q[A-Z]{4}\d{3}\w{2} or checksum"
+    propertyMap = mangleFilenameForAttributes(name)
+
+    # we'll get qbic code and patient id
+    code = propertyMap['qbicID']
+    projectCode = code[:5]
+    patientID = propertyMap['patientID']
 
 
-        # Get the name of the incoming file
-        name = transaction.getIncoming().getName()
+    # print "look for: ", code
 
-        # identifier = pattern.findall(name)[0]
-        # if isExpected(identifier):
-        #         project = identifier[:5]
-        #         #parentCode = identifier[:10]
-        # else:
-        #         print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
-        propertyMap = mangleFilenameForAttributes(name)
-
-        # we'll get qbic code and patient id
-        code = propertyMap['qbicID']
-        patientID = propertyMap['patientID']
-        print "look for: ", code
-
-        search_service = transaction.getSearchService()
-        sc = SearchCriteria()    # Find the patient according to code
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()    # Find the patient according to code
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, code))
-        foundSamples = search_service.searchForSamples(sc)
+    foundSamples = search_service.searchForSamples(sc)
 
-        print "found samples: ", len(foundSamples)
+    if not len(foundSamples) > 0:
+        raise SampleNotFoundError(
+            'openBIS query of ' + code + ' failed. Please recheck your QBiC code!')
 
-        sampleIdentifier = foundSamples[0].getSampleIdentifier()
-        space = foundSamples[0].getSpace()
-        sa = transaction.getSampleForUpdate(sampleIdentifier)
+    # produces an IndexError if sample code does not exist (will check before)
+    sampleIdentifier = foundSamples[0].getSampleIdentifier()
 
-        print code, "was found in space", space, "as", sampleIdentifier
+    space = foundSamples[0].getSpace()
+    sa = transaction.getSampleForUpdate(sampleIdentifier)
 
-        # get or create MS-specific experiment/sample and
-        # attach to the test sample
-        # expType = "Q_MS_MEASUREMENT"
-        # MSRawExperiment = None
-        # experiments = search_service.listExperiments("/" + space + "/" + project)
-        # experimentIDs = []
-        # for exp in experiments:
-        #     experimentIDs.append(exp.getExperimentIdentifier())
-        #     if exp.getExperimentType() == expType:
-        #         if isCurrentMSRun(
-        #             transaction,
-        #             sa.getExperiment().getExperimentIdentifier(),
-        #             exp.getExperimentIdentifier()
-        #         ):
-        #             MSRawExperiment = exp
-        # # no existing experiment for samples of this sample preparation found
-        # if not MSRawExperiment:
-        #     expID = experimentIDs[0]
-        #     i = 0
-        #     while expID in experimentIDs:
-        #         i += 1
-        #         expNum = len(experiments) + i
-        #         expID = '/' + space + '/' + project + \
-        #             '/' + project + 'E' + str(expNum)
-        #     MSRawExperiment = transaction.createNewExperiment(expID, expType)
-        # # does MS sample already exist?
-        # msCode = 'MS' + code
-        # sc = SearchCriteria()
-        # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        #     SearchCriteria.MatchClauseAttribute.CODE, msCode))
-        # foundSamples = search_service.searchForSamples(sc)
-        # if len(foundSamples) < 1:
-        #     msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
-        #     msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        #     msSample.setExperiment(MSRawExperiment)
-        # else:
-        #     msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
-        #
-        # # create new dataset
-        # rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-        # rawDataSet.setMeasuredData(False)
-        # rawDataSet.setSample(msSample)
-        #
-     #   	#cegat = False
-        # f = "source_dropbox.txt"
-        # sourceLabFile = open(os.path.join(incomingPath,f))
-     #   	sourceLab = sourceLabFile.readline().strip()
-        # sourceLabFile.close()
-        # os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-        #
-        # for f in os.listdir(incomingPath):
-        #     if ".origlabfilename" in f:
-        #         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-        # transaction.moveFile(incomingPath, rawDataSet)
+    #print code, "was found in space", space, "as", sampleIdentifier
+
+    # get or create MS-specific experiment/sample and
+    # attach to the test sample
+    expType = "Q_BMI_GENERIC_IMAGING"
+
+    MSRawExperiment = None
+    experiments = search_service.listExperiments("/" + space + "/" + project)
+    experimentIDs = []
+    for exp in experiments:
+        if exp.getExperimentType() == expType:
+            experimentIDs.append(exp.getExperimentIdentifier())
+
+
+
+    #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
+    # ('Punktion', 'None') -> QMSHS-BMI-001
+    # ('CTPerfusion', 'None') -> QMSHS-BMI-002
+    # ('MRPET', 'Cholin') -> QMSHS-BMI-003
+    # ('MRPET', 'FDG') -> QMSHS-BMI-004
+
+
+
+    # we assume there is no (imaging) experiment registered so far
+    expNum = len(experiments) + 1
+    expID  = '/' + space + '/' + project + '/' + project + '-BMI' + str(expNum).zfill(3)
+
+    genericImagingExperiment = transaction.createNewExperiment(expID, expType)
+
+    # does MS sample already exist?
+    msCode = 'MS' + code
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, msCode))
+    foundSamples = search_service.searchForSamples(sc)
+    if len(foundSamples) < 1:
+        msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+        msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        msSample.setExperiment(MSRawExperiment)
+    else:
+        msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+
+    # create new dataset
+    rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+    rawDataSet.setMeasuredData(False)
+    rawDataSet.setSample(msSample)
+
+   	#cegat = False
+    f = "source_dropbox.txt"
+    sourceLabFile = open(os.path.join(incomingPath,f))
+   	sourceLab = sourceLabFile.readline().strip()
+    sourceLabFile.close()
+    os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+
+    for f in os.listdir(incomingPath):
+        if ".origlabfilename" in f:
+            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+    transaction.moveFile(incomingPath, rawDataSet)
