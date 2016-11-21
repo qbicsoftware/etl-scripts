@@ -215,8 +215,8 @@ def process(transaction):
     experiments = search_service.listExperiments("/" + space + "/" + projectCode)
     experimentIDs = []
     for exp in experiments:
-        print "EXPID: ", exp.getExperimentIdentifier()
-        if exp.getExperimentType() == expType and exp.getExperimentIdentifier() == expID:
+        fullExpIdentifier = '/' + space + '/' + projectCode + '/' + expID
+        if exp.getExperimentType() == expType and exp.getExperimentIdentifier() == fullExpIdentifier:
             activeExperiment = exp
 
     # if expID is not found...
