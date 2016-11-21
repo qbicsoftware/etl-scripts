@@ -236,6 +236,12 @@ def process(transaction):
     imagingSample.setParentSampleIdentifiers(
         [rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
+    imagingSample.setProperty('Q_TIMEPOINT', timepoint)
+
+    # create new dataset
+    #rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+    #rawDataSet.setMeasuredData(False)
+    #rawDataSet.setSample(msSample)
 
     #raise SampleAlreadyCreatedError(
     #    'sampleQuery for Exp ' + expID + ": " + str(len(existingSamples)))
