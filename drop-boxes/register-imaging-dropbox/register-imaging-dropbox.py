@@ -38,12 +38,15 @@ class SampleNotFoundError(Exception):
     def __str__(self):
         return self.value
 
+
 class SampleAlreadyCreatedError(Exception):
+
     def __init__(self, value):
         self.value = value
 
     def __str__(self):
         return self.value
+
 
 class ExperimentNotFoundError(Exception):
 
@@ -75,7 +78,6 @@ def mangleFilenameForAttributes(filename):
             propertyMap['expID'] = expID
         else:
             raise PropertyParsingError('expID was empty')
-
 
         qbicID = filename_split[1].strip()
         if validateProperty(qbicID):
@@ -113,7 +115,6 @@ def mangleFilenameForAttributes(filename):
         else:
             raise PropertyParsingError('tracer was empty')
 
-
         # do the suffix check here
         datestr = filename_split[7].strip()
         if '.tar' in datestr:
@@ -141,6 +142,7 @@ def isExpected(identifier):
         return checksum.checksum(id) == identifier[9]
     except:
         return False
+
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -175,7 +177,6 @@ def process(transaction):
     tissue = propertyMap['tissue']
     timestamp = propertyMap['datestr']
 
-
     # print "look for: ", code
 
     search_service = transaction.getSearchService()
@@ -194,7 +195,7 @@ def process(transaction):
     space = foundSamples[0].getSpace()
     rootSample = transaction.getSampleForUpdate(sampleIdentifier)
 
-    #print code, "was found in space", space, "as", sampleIdentifier
+    # print code, "was found in space", space, "as", sampleIdentifier
 
     # get or create MS-specific experiment/sample and
     # attach to the test sample
@@ -202,7 +203,8 @@ def process(transaction):
 
     # load imaging experiments to append new data
     activeExperiment = None
-    experiments = search_service.listExperiments("/" + space + "/" + projectCode)
+    experiments = search_service.listExperiments(
+        "/" + space + "/" + projectCode)
     experimentIDs = []
     fullExpIdentifier = '/' + space + '/' + projectCode + '/' + expID
 
@@ -212,24 +214,36 @@ def process(transaction):
 
     # if expID is not found...
     if (activeExperiment == None):
-        raise ExperimentNotFoundError('Experiment with ID ' + expID + ' could not be found! Check the ID.')
+        raise ExperimentNotFoundError(
+            'Experiment with ID ' + expID + ' could not be found! Check the ID.')
+
+    sc = SearchCriteria()    # Find the patient according to code
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
+
+    SearchCriteria ec = new SearchCriteria()
+    ec.addMatchClause(MatchClause.createAttributeMatch(
+        MatchClauseAttribute.CODE, expID))
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
+
+    existingSamples = search_service.searchForSamples(sc)
 
 
-    existingSamples = search_service.listSamplesForExperiment(fullExpIdentifier)
-
-    imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + timepoint + '-' + str(len(existingSamples) + 1).zfill(3)
-    imagingSample = transaction.createNewSample('/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
-    imagingSample.setParentSampleIdentifiers([rootSample.getSampleIdentifier()])
+    imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + \
+        patientID + '-' + timepoint + '-' + \
+        str(len(existingSamples) + 1).zfill(3)
+    imagingSample = transaction.createNewSample(
+        '/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
+    imagingSample.setParentSampleIdentifiers(
+        [rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
 
-
+    raise SampleAlreadyCreatedError('sampleQuery for Exp ' + expID + ": " + len(existingSamples))
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
     # ('Punktion', 'None') -> QMSHS-BMI-001
     # ('CTPerfusion', 'None') -> QMSHS-BMI-002
     # ('MRPET', 'Cholin') -> QMSHS-BMI-003
     # ('MRPET', 'FDG') -> QMSHS-BMI-004
-
-
 
     # we assume there is no (imaging) experiment registered so far
 
@@ -242,9 +256,8 @@ def process(transaction):
     # since the imaging data is newly integrated here, there's no preregistered sample
     #msCode = 'MS' + code
 
-
     #sc = SearchCriteria()
-    #sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
     #    SearchCriteria.MatchClauseAttribute.CODE, msCode))
 
     #existingSamples = search_service.listSamplesForExperiment(fullExpIdentifier)
