@@ -38,6 +38,13 @@ class SampleNotFoundError(Exception):
     def __str__(self):
         return self.value
 
+class SampleAlreadyCreatedError(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 class ExperimentNotFoundError(Exception):
 
     def __init__(self, value):
@@ -135,28 +142,6 @@ def isExpected(identifier):
     except:
         return False
 
-
-def isCurrentMSRun(tr, parentExpID, msExpID):
-    search_service = tr.getSearchService()
-    sc = SearchCriteria()
-    sc.addMatchClause(
-        SearchCriteria.MatchClause.createAttributeMatch(
-            SearchCriteria.MatchClauseAttribute.TYPE, "Q_MS_RUN"
-        )
-    )
-    foundSamples = search_service.searchForSamples(sc)
-    for samp in foundSamples:
-        currentMSExp = samp.getExperiment()
-        if currentMSExp.getExperimentIdentifier() == msExpID:
-            for parID in samp.getParentSampleIdentifiers():
-                parExp = (tr.getSampleForUpdate(parID)
-                            .getExperiment()
-                            .getExperimentIdentifier())
-                if parExp == parentExpID:
-                    return True
-    return False
-
-
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -184,6 +169,11 @@ def process(transaction):
     code = propertyMap['qbicID']
     projectCode = code[:5]
     patientID = propertyMap['patientID']
+    timepoint = propertyMap['timepoint']
+    modality = propertyMap['modality']
+    tracer = propertyMap['tracer']
+    tissue = propertyMap['tissue']
+    timestamp = propertyMap['datestr']
 
 
     # print "look for: ", code
@@ -202,7 +192,7 @@ def process(transaction):
     sampleIdentifier = foundSamples[0].getSampleIdentifier()
 
     space = foundSamples[0].getSpace()
-    sa = transaction.getSampleForUpdate(sampleIdentifier)
+    rootSample = transaction.getSampleForUpdate(sampleIdentifier)
 
     #print code, "was found in space", space, "as", sampleIdentifier
 
@@ -214,14 +204,24 @@ def process(transaction):
     activeExperiment = None
     experiments = search_service.listExperiments("/" + space + "/" + projectCode)
     experimentIDs = []
+    fullExpIdentifier = '/' + space + '/' + projectCode + '/' + expID
+
     for exp in experiments:
-        fullExpIdentifier = '/' + space + '/' + projectCode + '/' + expID
         if exp.getExperimentType() == expType and exp.getExperimentIdentifier() == fullExpIdentifier:
             activeExperiment = exp
 
     # if expID is not found...
     if (activeExperiment == None):
         raise ExperimentNotFoundError('Experiment with ID ' + expID + ' could not be found! Check the ID.')
+
+
+    existingSamples = search_service.listSamplesForExperiment(fullExpIdentifier)
+
+    imagingSampleCode = modality + '-' tracer + '-' + tissue + '-' + timepoint + '-'+ str(len(existingSamples) + 1).zfill(3)
+    imagingSample = transaction.createNewSample('/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
+    imagingSample.setParentSampleIdentifiers([rootSample.getSampleIdentifier()])
+    imagingSample.setExperiment(activeExperiment)
+
 
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
     # ('Punktion', 'None') -> QMSHS-BMI-001
@@ -247,9 +247,9 @@ def process(transaction):
     #sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
     #    SearchCriteria.MatchClauseAttribute.CODE, msCode))
 
-    existingSamples = search_service.listSamplesForExperiment()
+    #existingSamples = search_service.listSamplesForExperiment(fullExpIdentifier)
 
-    print("number existing samples for " + expID + " " + str(len(existingSamples)))
+    #print("number existing samples for " + expID + " " + str(len(existingSamples)))
     # if len(foundSamples) < 1:
     #     msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
     #     msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
