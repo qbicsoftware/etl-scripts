@@ -266,6 +266,9 @@ def process(transaction):
     incomingFileSha256Sum = hashlib.sha256(open(incomingPath, 'rb').read()).hexdigest()
     imagingDataset.setPropertyValue('Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
     
+    # finish the transaction
+    transaction.moveFile(incomingPath, imagingDataset)
+    
     #raise SampleAlreadyCreatedError(
     #    'sampleQuery for Exp ' + expID + ": " + str(len(existingSamples)))
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
