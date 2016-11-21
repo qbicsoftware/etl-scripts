@@ -238,6 +238,11 @@ def process(transaction):
     imagingSample.setExperiment(activeExperiment)
     imagingSample.setPropertyValue('Q_TIMEPOINT', timepoint)
 
+    if tissue == 'liver':
+        imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'LIVER')
+    else if tissue = 'tumor':
+        imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
+
     # create new dataset
     #rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     #rawDataSet.setMeasuredData(False)
