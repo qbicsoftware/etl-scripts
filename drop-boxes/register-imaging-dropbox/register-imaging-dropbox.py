@@ -9,6 +9,7 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
+import datetime
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -143,6 +144,12 @@ def isExpected(identifier):
     except:
         return False
 
+def buildOpenBisTimestamp(datetimestr):
+    inDateFormat = '%Y%m%d'
+    outDateFormat = '%Y-%m-%d'
+
+    return datetime.datetime.strptime(datetimestr, inDateFormat).strftime(outDateFormat)
+
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -236,12 +243,18 @@ def process(transaction):
     imagingSample.setParentSampleIdentifiers(
         [rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
+
+    sampleLabel = modality + ' imaging of patient ' + patientID + ' (timepoint ' + timepoint + ')'
+    imagingSample.setPropertyValue('Q_SECONDARY_NAME', sampleLabel)
     imagingSample.setPropertyValue('Q_TIMEPOINT', timepoint)
 
     if tissue == 'liver':
         imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'LIVER')
     elif tissue == 'tumor':
         imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
+
+    openbisTimestamp = buildOpenBisTimestamp(timestamp)
+    imagingSample.setPropertyValue('Q_MSHCC_IMAGING_DATE', openbisTimestamp)
 
     # create new dataset
     #rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
