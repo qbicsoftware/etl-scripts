@@ -217,7 +217,7 @@ def process(transaction):
 
     existingSamples = search_service.listSamplesForExperiment(fullExpIdentifier)
 
-    imagingSampleCode = modality + '-' tracer + '-' + tissue + '-' + timepoint + '-'+ str(len(existingSamples) + 1).zfill(3)
+    imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + timepoint + '-' + str(len(existingSamples) + 1).zfill(3)
     imagingSample = transaction.createNewSample('/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
     imagingSample.setParentSampleIdentifiers([rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
