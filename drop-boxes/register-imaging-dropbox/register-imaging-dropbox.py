@@ -228,7 +228,6 @@ def process(transaction):
 
     existingSamples = search_service.searchForSamples(sc)
 
-
     imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + \
         patientID + '-' + timepoint + '-' + \
         str(len(existingSamples) + 1).zfill(3)
@@ -238,7 +237,8 @@ def process(transaction):
         [rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
 
-    raise SampleAlreadyCreatedError('sampleQuery for Exp ' + expID + ": " + len(existingSamples))
+    raise SampleAlreadyCreatedError(
+        'sampleQuery for Exp ' + expID + ": " + len(existingSamples))
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
     # ('Punktion', 'None') -> QMSHS-BMI-001
     # ('CTPerfusion', 'None') -> QMSHS-BMI-002
