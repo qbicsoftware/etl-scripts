@@ -4,7 +4,7 @@ def process(tr, parameters, tableBuilder):
   """
   ids = parameters.get("identifiers")
   expID = parameters.get("experiment")
-  exp = transaction.getExperiment(expID)
+  exp = tr.getExperiment(expID)
   for sampID in ids:
     sample = tr.getSampleForUpdate(sampID)
     sample.setExperiment(exp)
