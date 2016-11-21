@@ -212,7 +212,7 @@ def process(transaction):
 
     # load imaging experiments to append new data
     activeExperiment = None
-    experiments = search_service.listExperiments("/" + space + "/" + project)
+    experiments = search_service.listExperiments("/" + space + "/" + projectCode)
     experimentIDs = []
     for exp in experiments:
         print "EXPID: ", exp.getExperimentIdentifier()
