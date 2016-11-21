@@ -38,6 +38,14 @@ class SampleNotFoundError(Exception):
     def __str__(self):
         return self.value
 
+class ExperimentNotFoundError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 # that's a very very simple Property validator... make better ones in the
 # future
 
@@ -54,39 +62,46 @@ def mangleFilenameForAttributes(filename):
 
     propertyMap = {}
 
-    if len(filename_split) >= 6:
-        qbicID = filename_split[0].strip()
+    if len(filename_split) >= 7:
+        expID = filename_split[0].strip()
+        if validateProperty(qbicID):
+            propertyMap['expID'] = expID
+        else:
+            raise PropertyParsingError('expID was empty')
+
+
+        qbicID = filename_split[1].strip()
         if validateProperty(qbicID):
             propertyMap['qbicID'] = qbicID
         else:
             raise PropertyParsingError('qbicID was empty')
 
-        patientID = filename_split[1].strip()
+        patientID = filename_split[2].strip()
         if validateProperty(patientID):
             propertyMap['patientID'] = patientID
         else:
             raise PropertyParsingError('patientID was empty')
 
-        timepoint = filename_split[2].strip()
+        timepoint = filename_split[3].strip()
         if validateProperty(timepoint):
             propertyMap['timepoint'] = timepoint
         else:
             raise PropertyParsingError('timepoint was empty')
 
-        modality = filename_split[3].strip()
+        modality = filename_split[4].strip()
         if validateProperty(modality):
             propertyMap['modality'] = modality
         else:
             raise PropertyParsingError('modality was empty')
 
-        tracer = filename_split[4].strip()
+        tracer = filename_split[5].strip()
         if validateProperty(tracer):
             propertyMap['tracer'] = tracer
         else:
             raise PropertyParsingError('tracer was empty')
 
         # do the suffix check here
-        datestr = filename_split[5].strip()
+        datestr = filename_split[6].strip()
         if '.tar' in datestr:
             lastsplit = datestr.split('.')
 
@@ -158,6 +173,7 @@ def process(transaction):
     propertyMap = mangleFilenameForAttributes(name)
 
     # we'll get qbic code and patient id
+    expID = propertyMap['expID']
     code = propertyMap['qbicID']
     projectCode = code[:5]
     patientID = propertyMap['patientID']
@@ -187,14 +203,18 @@ def process(transaction):
     # attach to the test sample
     expType = "Q_BMI_GENERIC_IMAGING"
 
-    MSRawExperiment = None
+    # load imaging experiments to append new data
+    activeExperiment = None
     experiments = search_service.listExperiments("/" + space + "/" + project)
     experimentIDs = []
     for exp in experiments:
-        if exp.getExperimentType() == expType:
-            experimentIDs.append(exp.getExperimentIdentifier())
+        print "EXPID: ", exp.getExperimentIdentifier()
+        if exp.getExperimentType() == expType and exp.getExperimentIdentifier() == expID:
+            activeExperiment = exp
 
-
+    # if expID is not found...
+    if (activeExperiment == None):
+        raise ExperimentNotFoundError('Experiment with ID ' + expID + ' could not be found! Check the ID.')
 
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
     # ('Punktion', 'None') -> QMSHS-BMI-001
@@ -205,17 +225,23 @@ def process(transaction):
 
 
     # we assume there is no (imaging) experiment registered so far
-    expNum = len(experiments) + 1
-    expID  = '/' + space + '/' + project + '/' + project + '-BMI' + str(expNum).zfill(3)
 
-    genericImagingExperiment = transaction.createNewExperiment(expID, expType)
+    # CAVEAT: experiments were preregistered now! this means we need the exp ID in filenames
+    # expNum = len(experiments) + 1
+    # expID  = '/' + space + '/' + project + '/' + project + '-BMI' + str(expNum).zfill(3)
 
-    # does MS sample already exist?
-    msCode = 'MS' + code
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, msCode))
-    foundSamples = search_service.searchForSamples(sc)
+    # genericImagingExperiment = transaction.createNewExperiment(expID, expType)
+
+    # since the imaging data is newly integrated here, there's no preregistered sample
+    #msCode = 'MS' + code
+
+
+    #sc = SearchCriteria()
+    #sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #    SearchCriteria.MatchClauseAttribute.CODE, msCode))
+
+    existingSamples = search_service.listSamplesForExperiment()
+
     if len(foundSamples) < 1:
         msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
         msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
