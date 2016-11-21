@@ -45,17 +45,14 @@ def process(tr, parameters, tableBuilder):
     props = [props]
     codes = [parameters.get("code")]
     types = [parameters.get("type")]
-  codes = removeDuplicates(codes) # unique codes so no error is thrown
   project = parameters.get("project")
   space = parameters.get("space")
 
+  existing = [] #duplicates
   for data in zip(codes, types, props):
-    expId = "/" + space + "/" + project + "/" + data[0]
-    exp = tr.createNewExperiment(expId, data[1])
-    if not data[2] == None:
-      setProperties(tr, exp, data[2])
-
-def removeDuplicates(lis):
-  seen = set()
-  seen_add = seen.add
-  return [x for x in lis if not (x in seen or seen_add(x))]
+    if not data[0] in existing:
+      existing.append(data[0])
+      expId = "/" + space + "/" + project + "/" + data[0]
+      exp = tr.createNewExperiment(expId, data[1])
+      if not data[2] == None:
+        setProperties(tr, exp, data[2])
