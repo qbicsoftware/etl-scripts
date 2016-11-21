@@ -218,12 +218,12 @@ def process(transaction):
             'Experiment with ID ' + expID + ' could not be found! Check the ID.')
 
     sc = SearchCriteria()    # Find the patient according to code
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
 
-    SearchCriteria ec = new SearchCriteria()
-    ec.addMatchClause(MatchClause.createAttributeMatch(
-        MatchClauseAttribute.CODE, expID))
+    ec = SearchCriteria()
+
+    ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, expID))
     sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
 
     existingSamples = search_service.searchForSamples(sc)
