@@ -240,7 +240,7 @@ def process(transaction):
 
     if tissue == 'liver':
         imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'LIVER')
-    else if tissue = 'tumor':
+    else if tissue == 'tumor':
         imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
 
     # create new dataset
