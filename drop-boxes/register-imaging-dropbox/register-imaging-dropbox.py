@@ -242,26 +242,27 @@ def process(transaction):
 
     existingSamples = search_service.listSamplesForExperiment()
 
-    if len(foundSamples) < 1:
-        msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
-        msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        msSample.setExperiment(MSRawExperiment)
-    else:
-        msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
-
-    # create new dataset
-    rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-    rawDataSet.setMeasuredData(False)
-    rawDataSet.setSample(msSample)
-
-   	#cegat = False
-    f = "source_dropbox.txt"
-    sourceLabFile = open(os.path.join(incomingPath,f))
-   	sourceLab = sourceLabFile.readline().strip()
-    sourceLabFile.close()
-    os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-    for f in os.listdir(incomingPath):
-        if ".origlabfilename" in f:
-            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-    transaction.moveFile(incomingPath, rawDataSet)
+    print("number existing samples for " + expID + " " + str(len(existingSamples)))
+    # if len(foundSamples) < 1:
+    #     msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+    #     msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+    #     msSample.setExperiment(MSRawExperiment)
+    # else:
+    #     msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+    #
+    # # create new dataset
+    # rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
+    # rawDataSet.setMeasuredData(False)
+    # rawDataSet.setSample(msSample)
+    #
+ #   	#cegat = False
+    # f = "source_dropbox.txt"
+    # sourceLabFile = open(os.path.join(incomingPath,f))
+ #   	sourceLab = sourceLabFile.readline().strip()
+    # sourceLabFile.close()
+    # os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+    #
+    # for f in os.listdir(incomingPath):
+    #     if ".origlabfilename" in f:
+    #         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+    # transaction.moveFile(incomingPath, rawDataSet)
