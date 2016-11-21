@@ -62,7 +62,7 @@ def mangleFilenameForAttributes(filename):
 
     propertyMap = {}
 
-    if len(filename_split) >= 7:
+    if len(filename_split) >= 8:
         expID = filename_split[0].strip()
         if validateProperty(expID):
             propertyMap['expID'] = expID
@@ -100,8 +100,15 @@ def mangleFilenameForAttributes(filename):
         else:
             raise PropertyParsingError('tracer was empty')
 
+        tissue = filename_split[6].strip()
+        if validateProperty(tissue):
+            propertyMap['tissue'] = tissue
+        else:
+            raise PropertyParsingError('tracer was empty')
+
+
         # do the suffix check here
-        datestr = filename_split[6].strip()
+        datestr = filename_split[7].strip()
         if '.tar' in datestr:
             lastsplit = datestr.split('.')
 
