@@ -10,6 +10,7 @@ import checksum
 import re
 import os
 import datetime
+import hashlib
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -257,10 +258,14 @@ def process(transaction):
     imagingSample.setPropertyValue('Q_MSHCC_IMAGING_DATE', openbisTimestamp)
 
     # create new dataset
-    #rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
-    #rawDataSet.setMeasuredData(False)
-    #rawDataSet.setSample(msSample)
-
+    imagingDataset = transaction.createNewDataSet('Q_BMI_IMAGING_DATA')
+    imagingDataset.setMeasuredData(False)
+    imagingDataset.setSample(imagingSample)
+    imagingDataset.setPropertyValue('Q_SECONDARY_NAME', modality + ' data (' + patientID + ', ' + timepoint + ')')
+    
+    incomingFileSha256Sum = hashlib.sha256(open(incomingPath, 'rb').read()).hexdigest()
+    imagingDataset.setPropertyValue('Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
+    
     #raise SampleAlreadyCreatedError(
     #    'sampleQuery for Exp ' + expID + ": " + str(len(existingSamples)))
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
