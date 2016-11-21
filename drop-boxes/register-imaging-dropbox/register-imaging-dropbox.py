@@ -64,7 +64,7 @@ def mangleFilenameForAttributes(filename):
 
     if len(filename_split) >= 7:
         expID = filename_split[0].strip()
-        if validateProperty(qbicID):
+        if validateProperty(expID):
             propertyMap['expID'] = expID
         else:
             raise PropertyParsingError('expID was empty')
