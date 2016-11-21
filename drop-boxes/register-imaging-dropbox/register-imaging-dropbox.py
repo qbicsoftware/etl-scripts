@@ -236,7 +236,7 @@ def process(transaction):
     imagingSample.setParentSampleIdentifiers(
         [rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
-    imagingSample.setProperty('Q_TIMEPOINT', timepoint)
+    imagingSample.setPropertyValue('Q_TIMEPOINT', timepoint)
 
     # create new dataset
     #rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
