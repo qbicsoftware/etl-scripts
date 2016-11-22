@@ -58,6 +58,7 @@ class ExperimentNotFoundError(Exception):
     def __str__(self):
         return self.value
 
+
 # that's a very very simple Property validator... make better ones in the
 # future
 
@@ -145,6 +146,7 @@ def isExpected(identifier):
     except:
         return False
 
+
 def buildOpenBisTimestamp(datetimestr):
     inDateFormat = '%Y%m%d'
     outDateFormat = '%Y-%m-%d'
@@ -226,7 +228,8 @@ def process(transaction):
             'Experiment with ID ' + expID + ' could not be found! Check the ID.')
 
     sc = SearchCriteria()    # Find the patient according to code
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
 
     ec = SearchCriteria()
 
@@ -239,6 +242,17 @@ def process(transaction):
     imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + \
         patientID + '-' + timepoint + '-' + \
         str(len(existingSamples) + 1).zfill(3)
+
+    # let's first check if such an imaging run was registered before
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, imagingSampleCode))
+    foundSamples = search_service.searchForSamples(sc)
+
+    if len(foundSamples) > 0:
+        raise SampleAlreadyCreatedError(
+            'Sample ' + imagingSampleCode + ' has been created already. Please re-check to avoid duplicates! Offending file: ' + incomingPath)
+
     imagingSample = transaction.createNewSample(
         '/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
     imagingSample.setParentSampleIdentifiers(
@@ -252,7 +266,8 @@ def process(transaction):
     if tissue == 'liver':
         imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'LIVER')
     elif tissue == 'tumor':
-        imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
+        imagingSample.setPropertyValue(
+            'Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
 
     openbisTimestamp = buildOpenBisTimestamp(timestamp)
     imagingSample.setPropertyValue('Q_MSHCC_IMAGING_DATE', openbisTimestamp)
@@ -261,15 +276,18 @@ def process(transaction):
     imagingDataset = transaction.createNewDataSet('Q_BMI_IMAGING_DATA')
     imagingDataset.setMeasuredData(False)
     imagingDataset.setSample(imagingSample)
-    imagingDataset.setPropertyValue('Q_SECONDARY_NAME', modality + ' data (' + patientID + ', ' + timepoint + ')')
-    
-    incomingFileSha256Sum = hashlib.sha256(open(incomingPath, 'rb').read()).hexdigest()
-    imagingDataset.setPropertyValue('Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
-    
+    imagingDataset.setPropertyValue(
+        'Q_SECONDARY_NAME', modality + ' data (' + patientID + ', ' + timepoint + ')')
+
+    incomingFileSha256Sum = hashlib.sha256(
+        open(incomingPath, 'rb').read()).hexdigest()
+    imagingDataset.setPropertyValue(
+        'Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
+
     # finish the transaction
     transaction.moveFile(incomingPath, imagingDataset)
-    
-    #raise SampleAlreadyCreatedError(
+
+    # raise SampleAlreadyCreatedError(
     #    'sampleQuery for Exp ' + expID + ": " + str(len(existingSamples)))
     #set([('MRPET', 'FDG'), ('MRPET', 'Cholin'), ('CTPerfusion', 'None'), ('Punktion', 'None')])
     # ('Punktion', 'None') -> QMSHS-BMI-001
