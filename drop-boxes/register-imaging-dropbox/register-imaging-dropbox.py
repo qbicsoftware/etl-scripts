@@ -244,7 +244,7 @@ def process(transaction):
         [rootSample.getSampleIdentifier()])
     imagingSample.setExperiment(activeExperiment)
 
-    sampleLabel = modality + ' imaging of patient ' + patientID + ' (timepoint ' + timepoint + ')'
+    sampleLabel = modality + ' imaging (' + patientID + ', ' + timepoint + ')'
     imagingSample.setPropertyValue('Q_SECONDARY_NAME', sampleLabel)
     imagingSample.setPropertyValue('Q_TIMEPOINT', timepoint)
 
