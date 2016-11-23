@@ -368,15 +368,17 @@ def createRawDataSet(transaction, incomingPath, sample, format):
     rawDataSet.setSample(sample)
     transaction.moveFile(incomingPath, rawDataSet)
 
-def createMZMLDataSet(transaction, filepath, sample):
+def GZipAndMoveMZMLDataSet(transaction, filepath, sample):
     #TODO read metadata from this file path:
-    open(filepath)
+    #open(filepath)
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
     #TODO set property values from
     #mzmlDataSet.setPropertyValue()
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
-    transaction.moveFile(filepath, mzmlDataSet)
+    subprocess.call("gzip", filepath)
+    zipped = filepath+".gz"
+    transaction.moveFile(zipped, mzmlDataSet)
 
 '''Script written by Chris, handles everything but conversion'''
 def handleImmunoFiles(transaction):
@@ -493,7 +495,7 @@ def handleImmunoFiles(transaction):
         finally:
             shutil.rmtree(tmpdir)
         createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
-        createMZMLDataSet(transaction, mzml_dest, newMSSample)
+        GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
 
 def handle_BSA_Run(transaction):
     # Get the name of the incoming file
@@ -543,7 +545,7 @@ def handle_BSA_Run(transaction):
     msSample.setExperiment(msExp)
 
     createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-    createMZMLDataSet(transaction, mzml_dest, msSample)
+    GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
 
     for f in os.listdir(incomingPath):
         if ".testorig" in f:
@@ -651,7 +653,7 @@ def process(transaction):
             msSample.setExperiment(MSRawExperiment)
 
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-        createMZMLDataSet(transaction, mzml_dest, msSample)
+        GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
 
         for f in os.listdir(incomingPath):
             if ".testorig" in f:
