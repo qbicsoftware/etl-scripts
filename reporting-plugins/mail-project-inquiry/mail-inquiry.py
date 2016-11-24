@@ -23,7 +23,7 @@ def process(tr, parameters, tableBuilder):
   for mail in ["andreas.friedrich@uni-tuebingen.de"]:#test
     toA += '%s,' % mail
 
-  text = "Hi,\n\n%s would like to register the Project %s in Space %s.\nI've attached the project TSV for you.\n\nHave a nice day,\nYour friendly mail service plugin." % (user,project,space)
+  text = "Hi,\n\n%s would like to register the Project %s in Space %s.\nI've attached the project TSV for you.\n\nHave a nice day,\nYour friendly mail service plugin.\n\n" % (user,project,space)
   msg = MIMEMultipart()
   msg['From'] = fromA
   msg['To'] = toA
