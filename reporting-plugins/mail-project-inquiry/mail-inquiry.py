@@ -1,6 +1,7 @@
 import smtplib
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
+from email.mime.text import MIMEText
 from email import Encoders
 
 def process(tr, parameters, tableBuilder):
@@ -23,13 +24,13 @@ def process(tr, parameters, tableBuilder):
     toA += '%s,' % mail
 
   text = "Hi,\n\n%s would like to register the Project %s in Space %s.\nI've attached the project TSV for you.\n\nHave a nice day,\nYour friendly mail service plugin." % (user,project,space)
-  #msg = MIMEText(text)
-  msg = MIMEMultipart(text)
+  msg = MIMEMultipart()
   msg['From'] = fromA
   msg['To'] = toA
   msg['Subject'] = subject
   #msg['reply-to'] = "info@qbic.uni-tuebingen.de"
 
+  msg.attach(MIMEText(text))
   part = MIMEBase('application', "octet-stream")
   part.set_payload("multiline text\n to be found in the attached file\nkthxbye")
   Encoders.encode_base64(part)
