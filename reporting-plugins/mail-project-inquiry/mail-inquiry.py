@@ -24,7 +24,7 @@ def process(tr, parameters, tableBuilder):
 
   text = "Hi,\n\n%s would like to register the Project %s in Space %s.\nI've attached the project TSV for you.\n\nHave a nice day,\nYour friendly mail service plugin." % (user,project,space)
   #msg = MIMEText(text)
-  msg = MIMEMultipart()
+  msg = MIMEMultipart(text)
   msg['From'] = fromA
   msg['To'] = toA
   msg['Subject'] = subject
