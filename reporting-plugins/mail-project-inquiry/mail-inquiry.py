@@ -17,6 +17,7 @@ def process(tr, parameters, tableBuilder):
   project = parameters.get("project")
   space = parameters.get("space")
   user = parameters.get("user")
+  tsv = parameters.get("project-tsv")
 
   subject = user+" would like to register the new project "+project
   toA = ''
@@ -32,7 +33,7 @@ def process(tr, parameters, tableBuilder):
 
   msg.attach(MIMEText(text))
   part = MIMEBase('application', "octet-stream")
-  part.set_payload("multiline text\n to be found in the attached file\nkthxbye")
+  part.set_payload(tsv)
   Encoders.encode_base64(part)
 
   part.add_header('Content-Disposition', 'attachment; filename="%s"' % project+"_plan.tsv")
