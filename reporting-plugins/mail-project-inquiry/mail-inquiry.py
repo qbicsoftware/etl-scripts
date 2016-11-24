@@ -34,7 +34,7 @@ def process(tr, parameters, tableBuilder):
   part.set_payload("multiline text\n to be found in the attached file\nkthxbye")
   Encoders.encode_base64(part)
 
-  part.add_header('Content-Disposition', 'attachment; filename="{0}"'.format(project+"_plan.tsv")
+  part.add_header('Content-Disposition', 'attachment; filename="{0}"'.format(project+"_plan.tsv"))
   msg.attach(part)
 
   smtpServer = smtplib.SMTP(server)
