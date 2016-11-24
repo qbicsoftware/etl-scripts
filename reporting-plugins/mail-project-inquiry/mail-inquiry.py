@@ -17,9 +17,6 @@ def process(tr, parameters, tableBuilder):
   space = parameters.get("space")
   user = parameters.get("user")
 
-  roles = tr.getAuthorizationService().listRoleAssignments(). This returns you a collection of IRoleAssignmentImmutable. With this you can get the user id (IUserImmutable getUser()). When you use the email address as userID you have what you want. 
-
-
   subject = user+" would like to register the new project "+project
   toA = ''
   for mail in ["andreas.friedrich@uni-tuebingen.de"]:#test
