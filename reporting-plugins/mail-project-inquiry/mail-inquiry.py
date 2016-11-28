@@ -21,7 +21,7 @@ def process(tr, parameters, tableBuilder):
 
   subject = user+" would like to register the new project "+project
   toA = ''
-  for mail in ["andreas.friedrich@uni-tuebingen.de"]:#test
+  for mail in ["andreas.friedrich@uni-tuebingen.de", "sven.nahnsen@uni-tuebingen.de"]:#test
     toA += '%s,' % mail
 
   text = "Hi,\n\n%s would like to register the Project %s in Space %s.\nI've attached the project TSV for you.\n\nHave a nice day,\nYour friendly mail service plugin.\n\n" % (user,project,space)
