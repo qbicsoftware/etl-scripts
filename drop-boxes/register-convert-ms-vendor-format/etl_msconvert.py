@@ -568,7 +568,7 @@ def process(transaction):
     #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
     #bsa = len(bsa_run_pattern.findall(name) > 0)
-    bse = False
+    bsa = False
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
             source = open(os.path.join(incomingPath, f))
