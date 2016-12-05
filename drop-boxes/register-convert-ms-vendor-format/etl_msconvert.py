@@ -43,6 +43,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
+# pattern found in bovine serum albumin samples (controls). (different labs are then found through origin file)
+bsa_run_pattern = re.compile('TODOTODOTODO')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
 DROPBOX_PATH = "/mnt/DSS1/openbis_dss/QBiC-convert-register-ms-vendor-format/"
@@ -368,15 +370,17 @@ def createRawDataSet(transaction, incomingPath, sample, format):
     rawDataSet.setSample(sample)
     transaction.moveFile(incomingPath, rawDataSet)
 
-def createMZMLDataSet(transaction, filepath, sample):
+def GZipAndMoveMZMLDataSet(transaction, filepath, sample):
     #TODO read metadata from this file path:
-    open(filepath)
+    #open(filepath)
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
     #TODO set property values from
     #mzmlDataSet.setPropertyValue()
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
-    transaction.moveFile(filepath, mzmlDataSet)
+    subprocess.call(["gzip", filepath])
+    zipped = filepath+".gz"
+    transaction.moveFile(zipped, mzmlDataSet)
 
 '''Script written by Chris, handles everything but conversion'''
 def handleImmunoFiles(transaction):
@@ -493,20 +497,13 @@ def handleImmunoFiles(transaction):
         finally:
             shutil.rmtree(tmpdir)
         createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
-        createMZMLDataSet(transaction, mzml_dest, newMSSample)
+        GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
 
 def handle_BSA_Run(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
 
-    code = barcode_pattern.findall(name)[0]
-    if extract_barcode(code):
-        project = code[:5]
-    else:
-        raise ValueError("Invalid barcode: %s" % code)
-
     stem, ext = os.path.splitext(name)
-    search_service = transaction.getSearchService()
 
     # Convert the raw file and write it to an mzml tmp folder.
     # Sadly, I can not see a way to make this part of the transaction.
@@ -536,18 +533,29 @@ def handle_BSA_Run(transaction):
     # The MS experiment
     msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
 
-    #TODO create new ms sample? if so, use normal qbic barcodes? timestamp in name?
+    #TODO create new ms sample? if so, use normal qbic barcodes?
+    msCode = BSA_MPC_SAMPLE_ID
     msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
     #set parent sample, always the same for bsa run
     msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
     msSample.setExperiment(msExp)
 
     createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-    createMZMLDataSet(transaction, mzml_dest, msSample)
+    GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
 
     for f in os.listdir(incomingPath):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+
+#unused, can't be decided just by source at the moment
+def decideOnMethod(transaction, source_dropbox):
+    switch={
+        'cloud-immuno': handleImmunoFiles,
+        'qeana05-mpc': handle_BSA_Run}
+    try:
+        switch[source_dropbox](transaction)
+    except KeyError:
+        handleDefault(transaction)
 
 def process(transaction):
     """Ask Andreas"""
@@ -555,19 +563,22 @@ def process(transaction):
 
     # Get the incoming path of the transaction
     incomingPath = transaction.getIncoming().getAbsolutePath()
-
+    name = transaction.getIncoming().getName()
     # If special format from Immuno Dropbox handle separately
     #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
+    #bsa = len(bsa_run_pattern.findall(name) > 0)
+    bsa = False
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
             source = open(os.path.join(incomingPath, f))
             if "cloud-immuno" in source.readline():
                 immuno = True
                 handleImmunoFiles(transaction)
-    if not immuno:
+    if not immuno and bsa:
+        handle_BSA_Run(transaction)
+    if not immuno and not bsa:
         # Get the name of the incoming file
-        name = transaction.getIncoming().getName()
 
         code = barcode_pattern.findall(name)[0]
         if extract_barcode(code):
@@ -651,7 +662,7 @@ def process(transaction):
             msSample.setExperiment(MSRawExperiment)
 
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-        createMZMLDataSet(transaction, mzml_dest, msSample)
+        GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
 
         for f in os.listdir(incomingPath):
             if ".testorig" in f:

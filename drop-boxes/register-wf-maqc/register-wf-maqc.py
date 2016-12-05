@@ -55,10 +55,14 @@ def process(transaction):
 	sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
 	parents = samplehit.getParentSampleIdentifiers()
-	parentcodes = []
-	for parent in parents:
-		parentcodes.append(parent.split("/")[-1])
-	parentInfos = "_".join(parentcodes)
+	if len(parents) > 6:
+		first = parents[0].split("/")[-1]
+		parentInfos = first+"_and_"+str(len(parents)-1)+"others"
+	else:
+		parentcodes = []
+		for parent in parents:
+			parentcodes.append(parent.split("/")[-1])
+		parentInfos = "_".join(parentcodes)
 	
 	experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
 
