@@ -279,8 +279,10 @@ def process(transaction):
     imagingDataset.setPropertyValue(
         'Q_SECONDARY_NAME', modality + ' data (' + patientID + ', ' + timepoint + ')')
 
-    incomingFileSha256Sum = hashlib.sha256(
-        open(incomingPath, 'rb').read()).hexdigest()
+    # disable hash computation for now... resulted in outOfMemory errors for some bigger files
+    #incomingFileSha256Sum = hashlib.sha256(
+    #    open(incomingPath, 'rb').read()).hexdigest()
+    incomingFileSha256Sum = 'MISSING!'
     imagingDataset.setPropertyValue(
         'Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
 
