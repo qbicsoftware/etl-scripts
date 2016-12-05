@@ -120,7 +120,7 @@ def mangleFilenameForAttributes(filename):
 
         # do the suffix check here
         datestr = filename_split[7].strip()
-        if '.tar' in datestr:
+        if '.tar.gz' in datestr:
             lastsplit = datestr.split('.')
 
             if validateProperty(lastsplit[0]):
@@ -130,7 +130,7 @@ def mangleFilenameForAttributes(filename):
 
         else:
             raise PropertyParsingError(
-                'File does not have the correct suffix (*.tar)!')
+                'File does not have the correct suffix (*.tar.gz)!')
     else:
         raise PropertyParsingError(
             'Filename does not seem to have the correct number of properties!')
