@@ -502,6 +502,7 @@ def handleImmunoFiles(transaction):
 def handle_BSA_Run(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
+    incomingPath = transaction.getIncoming().getAbsolutePath()
 
     stem, ext = os.path.splitext(name)
 
