@@ -578,7 +578,7 @@ def process(transaction):
     # If special format from Immuno Dropbox handle separately
     #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
-    bsa = len(bsa_run_pattern.findall(name) > 0)
+    bsa = len(bsa_run_pattern.findall(name)) > 0
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
             source = open(os.path.join(incomingPath, f))
