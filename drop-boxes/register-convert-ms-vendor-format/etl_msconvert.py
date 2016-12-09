@@ -54,6 +54,7 @@ REMOTE_BASE = "/cygdrive/d/etl-convert"
 CONVERSION_TIMEOUT = 7200
 
 # Standard BSA sample and experiment
+BSA_MPC_SPACE = "MFT_QC_MPC"
 BSA_MPC_SAMPLE_ID = "/MFT_QC_MPC/QCMPC002AO"
 BSA_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE4"
 BSA_MPC_BARCODE = "QCMPC002AO"
@@ -547,7 +548,7 @@ def handle_BSA_Run(transaction):
         if existingRun >= run:
             run = existingRun + 1
 
-    msSample = transaction.createNewSample('/' + space + '/' + msCode + "_" + run, "Q_MS_RUN")
+    msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + run, "Q_MS_RUN")
     #set parent sample, always the same for bsa run
     msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
     msSample.setExperiment(msExp)
