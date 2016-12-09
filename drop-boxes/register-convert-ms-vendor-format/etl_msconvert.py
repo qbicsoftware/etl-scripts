@@ -43,8 +43,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
-# pattern found in bovine serum albumin samples (controls). (different labs are then found through origin file)
-bsa_run_pattern = re.compile('TODOTODOTODO')
+
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
 DROPBOX_PATH = "/mnt/DSS1/openbis_dss/QBiC-convert-register-ms-vendor-format/"
@@ -58,6 +57,7 @@ CONVERSION_TIMEOUT = 7200
 BSA_MPC_SAMPLE_ID = "/MFT_QC_MPC/QCMPC002AO"
 BSA_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE4"
 BSA_MPC_BARCODE = "QCMPC002AO"
+bsa_run_pattern = re.compile(BSA_MPC_BARCODE)
 
 try:
     TimeoutError
@@ -534,8 +534,19 @@ def handle_BSA_Run(transaction):
     msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
 
     #TODO create new ms sample? if so, use normal qbic barcodes?
-    msCode = BSA_MPC_SAMPLE_ID
-    msSample = transaction.createNewSample('/' + space + '/' + msCode, "Q_MS_RUN")
+    msCode = "MS"+BSA_MPC_BARCODE
+
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, msCode))
+    foundSamples = search_service.searchForSamples(sc)
+    run = 1
+    for samp in foundSamples:
+        existingRun = int(samp.getCode().split("_")[-1])
+        if existingRun >= run:
+            run = existingRun + 1
+
+    msSample = transaction.createNewSample('/' + space + '/' + msCode + "_" + run, "Q_MS_RUN")
     #set parent sample, always the same for bsa run
     msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
     msSample.setExperiment(msExp)
@@ -567,8 +578,7 @@ def process(transaction):
     # If special format from Immuno Dropbox handle separately
     #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
-    #bsa = len(bsa_run_pattern.findall(name) > 0)
-    bsa = False
+    bsa = len(bsa_run_pattern.findall(name) > 0)
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
             source = open(os.path.join(incomingPath, f))
