@@ -55,6 +55,7 @@ CONVERSION_TIMEOUT = 7200
 
 # Standard BSA sample and experiment
 BSA_MPC_SPACE = "MFT_QC_MPC"
+BSA_MPC_PROJECT = "QCMPC"
 BSA_MPC_SAMPLE_ID = "/MFT_QC_MPC/QCMPC002AO"
 BSA_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE4"
 BSA_MPC_BARCODE = "QCMPC002AO"
@@ -540,13 +541,18 @@ def handle_BSA_Run(transaction):
 
     search_service = transaction.getSearchService()
     sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, msCode))
+    pc = SearchCriteria()
+    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, BSA_MPC_PROJECT));
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+
     foundSamples = search_service.searchForSamples(sc)
+
     run = 1
     for samp in foundSamples:
-        existingRun = int(samp.getCode().split("_")[-1])
-        if existingRun >= run:
-            run = existingRun + 1
+        if samp.getSampleType() == "Q_MS_RUN":
+            existingRun = int(samp.getCode().split("_")[-1])
+            if existingRun >= run:
+                run = existingRun + 1
 
     msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + str(run), "Q_MS_RUN")
     #set parent sample, always the same for bsa run
