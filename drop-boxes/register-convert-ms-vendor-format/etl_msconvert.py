@@ -548,7 +548,7 @@ def handle_BSA_Run(transaction):
         if existingRun >= run:
             run = existingRun + 1
 
-    msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + run, "Q_MS_RUN")
+    msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + str(run), "Q_MS_RUN")
     #set parent sample, always the same for bsa run
     msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
     msSample.setExperiment(msExp)
