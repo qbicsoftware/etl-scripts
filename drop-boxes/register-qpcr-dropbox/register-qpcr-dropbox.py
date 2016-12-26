@@ -69,7 +69,7 @@ def process(transaction):
                 existingExperimentIDs.append(eexp.getExperimentIdentifier())
 
         suffixNum = 1
-        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(suffixNum)
         while newExpID in existingExperimentIDs:
                 suffixNum += 1
                 newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(suffixNum)
