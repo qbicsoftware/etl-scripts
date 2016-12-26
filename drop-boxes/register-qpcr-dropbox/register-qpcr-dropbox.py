@@ -18,6 +18,8 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 expType = "Q_HT_QPCR"
+sType = "Q_HT_QPCR"
+dsType = "Q_HT_QPCR_DATA"
 
 def isExpected(identifier):
         try:
@@ -63,27 +65,24 @@ def process(transaction):
         existingExperimentIDs = []
         existingExperiments = search_service.listExperiments("/" + space + "/" + project)
 
-        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-
         for eexp in existingExperiments:
                 existingExperimentIDs.append(eexp.getExperimentIdentifier())
 
+        suffixNum = 1
         newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
         while newExpID in existingExperimentIDs:
-                numberOfExperiments += 1 
-                newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+                suffixNum += 1
+                newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(suffixNum)
 
-        newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
-        newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+        newPCRExperiment = transaction.createNewExperiment(newExpID, expType)
 
-        newHLATypingSample = transaction.createNewSample('/' + space + '/' + 'HLA'+ parentCode, "Q_NGS_HLATYPING")
-        newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newHLATypingSample.setExperiment(newHLATypingExperiment)
+        newPCRSample = transaction.createNewSample('/' + space + '/' + 'PCR'+ parentCode, sType)
+        newPCRSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        newPCRSample.setExperiment(newPCRExperiment)
 
         # create new dataset 
-        dataSet = transaction.createNewDataSet("Q_NGS_HLATYPING_DATA")
+        dataSet = transaction.createNewDataSet(dsType)
         dataSet.setMeasuredData(False)
-        dataSet.setSample(newHLATypingSample)
+        dataSet.setSample(newPCRSample)
 
         transaction.moveFile(incomingPath, dataSet)
