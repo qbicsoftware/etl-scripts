@@ -18,7 +18,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 expType = "Q_HT_QPCR"
-sType = "Q_HT_QPCR"
+sType = "Q_HT_QPCR_RUN"
 dsType = "Q_HT_QPCR_DATA"
 
 def isExpected(identifier):
