@@ -363,6 +363,77 @@ def find_and_register_ngs(transaction, jsonContent):
         datasetSample = newNGSrunSample
     return datasetSample
 
+def find_and_register_ngs_without_metadata(transaction):
+    context = transaction.getRegistrationContext().getPersistentMap()
+
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    key = context.get("RETRY_COUNT")
+    if (key == None):
+            key = 1
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
+    identifier = pattern.findall(name)[0]
+    if isExpected(identifier):
+            project = identifier[:5]
+    else:
+        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, identifier))
+    foundSamples = search_service.searchForSamples(sc)
+
+    sampleIdentifier = foundSamples[0].getSampleIdentifier()
+    space = foundSamples[0].getSpace()
+    sa = transaction.getSampleForUpdate(sampleIdentifier)
+
+    sampleType = "Q_NGS_SINGLE_SAMPLE_RUN"
+    if sa.getSampleType() != sampleType:
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "NGS"+identifier))
+        foundSamples = search_service.searchForSamples(sc)
+        if len(foundSamples) > 0:
+            sampleIdentifier = foundSamples[0].getSampleIdentifier()
+            sa = transaction.getSampleForUpdate(sampleIdentifier)
+        else:
+            # create NGS-specific experiment/sample and
+            # attach to the test sample
+            expType = "Q_NGS_MEASUREMENT"
+            ngsExperiment = None
+            experiments = search_service.listExperiments("/" + space + "/" + project)
+            experimentIDs = []
+            for exp in experiments:
+                experimentIDs.append(exp.getExperimentIdentifier())
+            expID = experimentIDs[0]
+            i = 0
+            while expID in experimentIDs:
+                i += 1
+                expNum = len(experiments) + i
+                expID = '/' + space + '/' + project + \
+                    '/' + project + 'E' + str(expNum)
+            ngsExperiment = transaction.createNewExperiment(expID, expType)
+            ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
+            newID = 'NGS'+identifier
+            ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
+            ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+            ngsSample.setExperiment(ngsExperiment)
+            sa = ngsSample
+    # create new dataset
+    dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
+    dataSet.setMeasuredData(False)
+    dataSet.setSample(sa)
+
+    for f in os.listdir(incomingPath):
+        if "source_dropbox.txt" in f:
+            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+        if ".origlabfilename" in f:
+            nameFile = open(os.path.join(incomingPath,f))
+            origName = nameFile.readline().strip()
+            nameFile.close()
+            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+    transaction.moveFile(incomingPath, dataSet)
+
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -396,16 +467,15 @@ def process(transaction):
     numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
 
     src = os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt'))
-    numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
-
-    src = os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt'))
     if os.path.isfile(src):
         os.remove(src)
 
     print "imgag start registration"
     #dataSet = None
+    metadataFound = False
     for f in os.listdir(os.path.join(incomingPath,name)):
         if f.endswith('metadata'):
+            metadataFound = True
             metadataPath = os.path.realpath(os.path.join(os.path.join(incomingPath, name),f))
             jsonContent = parse_metadata_file(metadataPath)
             rawFiles = jsonContent["files"]
@@ -442,40 +512,41 @@ def process(transaction):
         else:
             pass
     folder = os.path.join(incomingPath, name)
-    if len(fastqs) > 0:
-        fastqSample = find_and_register_ngs(transaction, jsonContent)
-        fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
-        fastqDataSet.setSample(fastqSample)
+    if(metadataFound):
+        if len(fastqs) > 0:
+            fastqSample = find_and_register_ngs(transaction, jsonContent)
+            fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
+            fastqDataSet.setSample(fastqSample)
 
-        fastqFolder = os.path.join(folder, name+"_fastq_files")
-        os.mkdir(fastqFolder)
-        for f in fastqs:
-            os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
-        for t in tsvs:
-            os.rename(os.path.join(folder, t), os.path.join(fastqFolder, t))
+            fastqFolder = os.path.join(folder, name+"_fastq_files")
+            os.mkdir(fastqFolder)
+            for f in fastqs:
+                os.rename(os.path.join(folder, f), os.path.join(fastqFolder, f))
+            for t in tsvs:
+                os.rename(os.path.join(folder, t), os.path.join(fastqFolder, t))
 
-        metadatafilename = metadataPath.split('/')[-1]
-        copyfile(metadataPath, os.path.join(fastqFolder,metadatafilename))
+            metadatafilename = metadataPath.split('/')[-1]
+            copyfile(metadataPath, os.path.join(fastqFolder,metadatafilename))
 
-        transaction.moveFile(fastqFolder, fastqDataSet)
-        #transaction.moveFile(folder, fastqDataSet)
-    for vc in vcfs:
-        ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','') #example: GS130715_03-GS130717_03
-        print ident
-        vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
-        vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
-        vcfDataSet.setSample(vcfSample)
-        vcfFolder = os.path.join(folder, name+"_vcf_files")
-        os.mkdir(vcfFolder)
-        os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
+            transaction.moveFile(fastqFolder, fastqDataSet)
+            #transaction.moveFile(folder, fastqDataSet)
+        for vc in vcfs:
+            ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','') #example: GS130715_03-GS130717_03
+            print ident
+            vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
+            vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
+            vcfDataSet.setSample(vcfSample)
+            vcfFolder = os.path.join(folder, name+"_vcf_files")
+            os.mkdir(vcfFolder)
+            os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
 
-        for g in gsvars:
-            if(ident == g.split('.')[0]):
-                os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
+            for g in gsvars:
+                if(ident == g.split('.')[0]):
+                    os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
-        metadatafilename = metadataPath.split('/')[-1]
-        copyfile(metadataPath, os.path.join(vcfFolder,metadatafilename))
-        #transaction.moveFile(folder, vcfDataSet)
-        transaction.moveFile(vcfFolder, vcfDataSet)
-
-
+            metadatafilename = metadataPath.split('/')[-1]
+            copyfile(metadataPath, os.path.join(vcfFolder,metadatafilename))
+            #transaction.moveFile(folder, vcfDataSet)
+            transaction.moveFile(vcfFolder, vcfDataSet)
+    else:
+            find_and_register_ngs_without_metadata(transaction)
