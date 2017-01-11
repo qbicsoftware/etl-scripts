@@ -424,15 +424,19 @@ def find_and_register_ngs_without_metadata(transaction):
     dataSet.setMeasuredData(False)
     dataSet.setSample(sa)
 
+    datafolder = os.path.join(incomingPath,name)
     for f in os.listdir(incomingPath):
+        fPath = os.path.join(incomingPath,f)
         if "source_dropbox.txt" in f:
-            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+            os.remove(os.path.realpath(fPath))
         if ".origlabfilename" in f:
-            nameFile = open(os.path.join(incomingPath,f))
+            nameFile = open(fPath)
             origName = nameFile.readline().strip()
             nameFile.close()
-            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-    transaction.moveFile(incomingPath, dataSet)
+            os.remove(os.path.realpath(fPath))
+        if ".sha256sum" in f:
+            os.rename(fPath, os.path.join(datafolder, t))
+    transaction.moveFile(datafolder, dataSet)
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
