@@ -474,10 +474,7 @@ def handleImmunoFiles(transaction):
 
         tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
         raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
-        print raw_path
         stem, ext = os.path.splitext(fileName)
-        print stem
-        print ext
         try:
             convert = partial(convert_raw,
                       remote_base=REMOTE_BASE,
