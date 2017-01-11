@@ -435,7 +435,7 @@ def find_and_register_ngs_without_metadata(transaction):
             nameFile.close()
             os.remove(os.path.realpath(fPath))
         if ".sha256sum" in f:
-            os.rename(fPath, os.path.join(datafolder, t))
+            os.rename(fPath, os.path.join(datafolder, f))
     transaction.moveFile(datafolder, dataSet)
 
 def process(transaction):
