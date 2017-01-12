@@ -70,7 +70,7 @@ def process(transaction):
         experiment.setPropertyValue("Q_WF_STATUS", "FINISHED")
         endpoint = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         experiment.setPropertyValue("Q_WF_FINISHED_AT", endpoint)
-        sample.setExperiment(experiment)
+        #wfSample.setExperiment(experiment)
 
         dataSetLogs = transaction.createNewDataSet('Q_WF_MS_PEAKPICKING_LOGS')
         dataSetLogs.setMeasuredData(False)
