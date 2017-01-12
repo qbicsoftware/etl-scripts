@@ -24,7 +24,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 ePattern = re.compile('Q\w{4}E[0-9]+')
 pPattern = re.compile('Q\w{4}')
-pattern = re.compile('MSQ\w{4}[0-9]{3}[a-zA-Z]\w')
+pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 def isExpected(identifier):
         try:
@@ -88,7 +88,7 @@ def process(transaction):
                 code = pattern.findall(mzml)[0]
                 search_service = transaction.getSearchService()
                 sc = SearchCriteria()
-                sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+                sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
                 foundSamples = search_service.searchForSamples(sc)
                 sampleID = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
