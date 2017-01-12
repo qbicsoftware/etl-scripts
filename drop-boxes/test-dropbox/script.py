@@ -24,7 +24,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 ePattern = re.compile('Q\w{4}E[0-9]+')
 pPattern = re.compile('Q\w{4}')
-pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
+pattern = re.compile('MSQ\w{4}[0-9]{3}[a-zA-Z]\w')
 
 def isExpected(identifier):
         try:
@@ -85,11 +85,7 @@ def process(transaction):
         for mzml in os.listdir(results):
                 mzmlPath = os.path.join(results,"centroided_"+mzml)
                 os.rename(os.path.join(results,mzml),mzmlPath)
-                identifier = pattern.findall(mzml)[0]
-                if isExpected(identifier):
-                        code = identifier[:10]
-                else:
-                        print "The identifier "+identifier+" did not match the pattern 'Q\w{4}[0-9]{3}[a-zA-Z]\w' or checksum"
+                code = pattern.findall(mzml)[0]
                 search_service = transaction.getSearchService()
                 sc = SearchCriteria()
                 sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
