@@ -82,7 +82,7 @@ def process(transaction):
 
         #Register Results
         results = os.path.join(incomingPath,"result")
-        for mzml in os.listdir():
+        for mzml in os.listdir(results):
                 mzmlPath = os.path.join(results,"centroided_"+mzml)
                 os.rename(os.path.join(results,mzml),mzmlPath)
                 identifier = pattern.findall(mzml)[0]
