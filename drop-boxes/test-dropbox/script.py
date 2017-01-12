@@ -97,6 +97,6 @@ def process(transaction):
                 sampleID = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
                 sa = transaction.getSampleForUpdate(sampleID)
-                dataSetRes = transaction.createNewDataSet('Q_MS_MEASUREMENT')
+                dataSetRes = transaction.createNewDataSet('Q_MS_MZML_DATA')
                 dataSetRes.setSample(sa)
                 transaction.moveFile(mzmlPath, dataSetRes)
