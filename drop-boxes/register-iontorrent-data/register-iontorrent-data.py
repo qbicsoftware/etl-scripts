@@ -11,6 +11,7 @@ import re
 import os
 import datetime
 import hashlib
+import glob
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -22,17 +23,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
-
-class PropertyParsingError(Exception):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return self.value
-
-
-class SampleNotFoundError(Exception):
+class IonTorrentDropboxError(Exception):
 
     def __init__(self, value):
         self.value = value
@@ -41,22 +32,7 @@ class SampleNotFoundError(Exception):
         return self.value
 
 
-class SampleAlreadyCreatedError(Exception):
 
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return self.value
-
-
-class ExperimentNotFoundError(Exception):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return self.value
 
 
 # that's a very very simple Property validator... make better ones in the
@@ -70,72 +46,6 @@ def validateProperty(propStr):
     return(False)
 
 
-def mangleFilenameForAttributes(filename):
-    filename_split = filename.split('_')
-
-    propertyMap = {}
-
-    if len(filename_split) >= 8:
-        expID = filename_split[0].strip()
-        if validateProperty(expID):
-            propertyMap['expID'] = expID
-        else:
-            raise PropertyParsingError('expID was empty')
-
-        qbicID = filename_split[1].strip()
-        if validateProperty(qbicID):
-            propertyMap['qbicID'] = qbicID
-        else:
-            raise PropertyParsingError('qbicID was empty')
-
-        patientID = filename_split[2].strip()
-        if validateProperty(patientID):
-            propertyMap['patientID'] = patientID
-        else:
-            raise PropertyParsingError('patientID was empty')
-
-        timepoint = filename_split[3].strip()
-        if validateProperty(timepoint):
-            propertyMap['timepoint'] = timepoint
-        else:
-            raise PropertyParsingError('timepoint was empty')
-
-        modality = filename_split[4].strip()
-        if validateProperty(modality):
-            propertyMap['modality'] = modality
-        else:
-            raise PropertyParsingError('modality was empty')
-
-        tracer = filename_split[5].strip()
-        if validateProperty(tracer):
-            propertyMap['tracer'] = tracer
-        else:
-            raise PropertyParsingError('tracer was empty')
-
-        tissue = filename_split[6].strip()
-        if validateProperty(tissue):
-            propertyMap['tissue'] = tissue
-        else:
-            raise PropertyParsingError('tracer was empty')
-
-        # do the suffix check here
-        datestr = filename_split[7].strip()
-        if '.tar.gz' in datestr:
-            lastsplit = datestr.split('.')
-
-            if validateProperty(lastsplit[0]):
-                propertyMap['datestr'] = lastsplit[0]
-            else:
-                raise PropertyParsingError('datestr was empty')
-
-        else:
-            raise PropertyParsingError(
-                'File does not have the correct suffix (*.tar.gz)!')
-    else:
-        raise PropertyParsingError(
-            'Filename does not seem to have the correct number of properties!')
-
-    return propertyMap
 
 
 def isExpected(identifier):
@@ -167,10 +77,23 @@ def process(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
 
-    print incomingPath
-    print name
+    #print incomingPath
+    #print name
+
+    varCallRunFolders = glob.glob(os.path.join(incomingPath, 'plugin_out/variantCaller*'))
+
+    if len(varCallRunFolders) == 0:
+        raise IonTorrentDropboxError('No variant calling data found in dataset! Aborting...')
+    # should be just one variant calling folder... if not, we take the most recent ones
+    latestVarCallFolder = varCallRunFolders[-1]
+
+    print latestVarCallFolder
 
 
+
+
+
+    raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
 
 
     # identifier = pattern.findall(name)[0]
