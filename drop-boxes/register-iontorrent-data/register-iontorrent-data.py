@@ -87,7 +87,30 @@ def process(transaction):
     # should be just one variant calling folder... if not, we take the most recent ones
     latestVarCallFolder = varCallRunFolders[-1]
 
-    print latestVarCallFolder
+    varCallVcfFile = glob.glob(os.path.join(latestVarCallFolder, 'R_*.vcf.zip'))
+    varCallXlsFile = glob.glob(os.path.join(latestVarCallFolder, 'R_*.xls.zip'))
+
+    # better check if there are really two zip files in there
+    if len(varCallXlsFile) == 0 or len(varCallVcfFile) == 0:
+        raise IonTorrentDropboxError('No VCF/XLS zipfiles found in variantCaller folder! Aborting...')
+
+    # unzip the stuff in a temporary folder. Unfortunately, /tmp is too small
+    # unpack it to /mnt/DSS1/iisek01/fakeTmp for now
+
+    vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
+    vcf_zip_file.extractall('/mnt/DSS1/iisek01/fakeTmp')
+    vcf_zip_file.close()
+
+    xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
+    xls_zip_file.extractall('/mnt/DSS1/iisek01/fakeTmp')
+    xls_zip_file.close()
+
+    
+
+
+
+
+
 
 
 
