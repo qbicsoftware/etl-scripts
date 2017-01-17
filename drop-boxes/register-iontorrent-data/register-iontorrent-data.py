@@ -98,25 +98,21 @@ def process(transaction):
     # unzip the stuff in a temporary folder. Unfortunately, /tmp is too small
     # unpack it to /mnt/DSS1/iisek01/fakeTmp for now
     fakeTmpBaseDir = '/mnt/DSS1/iisek01/fakeTmp'
-    vcfUnzippedDir = os.path.join(fakeTmpBaseDir, name + '_vcf')
-    xlsUnzippedDir = os.path.join(fakeTmpBaseDir, name + '_xls')
+    unzipDir = os.path.join(fakeTmpBaseDir, name)
 
-    if not os.path.exists(vcfUnzippedDir):
-        os.makedirs(vcfUnzippedDir)
-
-    if not os.path.exists(xlsUnzippedDir):
-        os.makedirs(xlsUnzippedDir)
+    if not os.path.exists(unzipDir):
+        os.makedirs(unzipDir)
 
     vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
     for zFile in vcf_zip_file.namelist():
         zFileContent = vcf_zip_file.read(zFile)
-        open(os.path.join(vcfUnzippedDir, zFile), 'w').write(zFileContent)
+        open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
     vcf_zip_file.close()
 
     xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
     for zFile in xls_zip_file.namelist():
         zFileContent = xls_zip_file.read(zFile)
-        open(os.path.join(xlsUnzippedDir, zFile), 'w').write(zFileContent)
+        open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
     xls_zip_file.close()
 
 
