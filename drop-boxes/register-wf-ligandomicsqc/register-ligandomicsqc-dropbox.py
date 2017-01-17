@@ -54,16 +54,10 @@ def process(transaction):
         samplehit = foundSamples[0]
         sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
-        parents = samplehit.getParentSampleIdentifiers()
-        parentcodes = []
-        for parent in parents:
-                parentcodes.append(parent.split("/")[-1])
-        parentInfos = "_".join(parentcodes)
-
         experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
         experiment.setPropertyValue("Q_WF_STATUS", "FINISHED")
-        
-	endpoint = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+
+        endpoint = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         experiment.setPropertyValue("Q_WF_FINISHED_AT", endpoint)
         sample.setExperiment(experiment)
 
@@ -76,8 +70,8 @@ def process(transaction):
         dataSetRes.setSample(sample)
         dataSetLogs.setSample(sample)
 
-        resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
-        logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+        resultsname = incomingPath+"/"+experiment_id+"_workflow_results"
+        logname = incomingPath+"/"+experiment_id+"_workflow_logs"
         os.rename(incomingPath+"/logs", logname)
         os.rename(incomingPath+"/result", resultsname)
 
