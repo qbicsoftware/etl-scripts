@@ -108,14 +108,15 @@ def process(transaction):
         os.makedirs(xlsUnzippedDir)
 
     vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
-
     for zFile in vcf_zip_file.namelist():
-        vcf_zip_file.extract(zFile, vcfUnzippedDir)
+        zFileContent = vcf_zip_file.read(zFile)
+        open(os.path.join(vcfUnzippedDir, zFile), 'w').write(zFileContent)
     vcf_zip_file.close()
 
     xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
     for zFile in xls_zip_file.namelist():
-        xls_zip_file.extract(zFile, xlsUnzippedDir)
+        zFileContent = xls_zip_file.read(zFile)
+        open(os.path.join(xlsUnzippedDir, zFile), 'w').write(zFileContent)
     xls_zip_file.close()
 
 
