@@ -12,6 +12,7 @@ import os
 import datetime
 import hashlib
 import glob
+import zipfile
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -105,7 +106,7 @@ def process(transaction):
     xls_zip_file.extractall('/mnt/DSS1/iisek01/fakeTmp')
     xls_zip_file.close()
 
-    
+
 
 
 
