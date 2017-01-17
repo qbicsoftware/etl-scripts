@@ -167,6 +167,12 @@ def process(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
 
+    print incomingPath
+    print name
+
+
+
+
     # identifier = pattern.findall(name)[0]
     # if isExpected(identifier):
     #         project = identifier[:5]
@@ -174,120 +180,122 @@ def process(transaction):
     # else:
     # print "The identifier "+identifier+" did not match the pattern
     # Q[A-Z]{4}\d{3}\w{2} or checksum"
-    propertyMap = mangleFilenameForAttributes(name)
-
-    # we'll get qbic code and patient id
-    expID = propertyMap['expID']
-    code = propertyMap['qbicID']
-    projectCode = code[:5]
-    patientID = propertyMap['patientID']
-    timepoint = propertyMap['timepoint']
-    modality = propertyMap['modality']
-    tracer = propertyMap['tracer']
-    tissue = propertyMap['tissue']
-    timestamp = propertyMap['datestr']
+    # propertyMap = mangleFilenameForAttributes(name)
+    #
+    # # we'll get qbic code and patient id
+    # expID = propertyMap['expID']
+    # code = propertyMap['qbicID']
+    # projectCode = code[:5]
+    # patientID = propertyMap['patientID']
+    # timepoint = propertyMap['timepoint']
+    # modality = propertyMap['modality']
+    # tracer = propertyMap['tracer']
+    # tissue = propertyMap['tissue']
+    # timestamp = propertyMap['datestr']
 
     # print "look for: ", code
 
-    search_service = transaction.getSearchService()
-    sc = SearchCriteria()    # Find the patient according to code
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, code))
-    foundSamples = search_service.searchForSamples(sc)
+    # all pathology iontorrent data goes to the same openBIS space
 
-    if not len(foundSamples) > 0:
-        raise SampleNotFoundError(
-            'openBIS query of ' + code + ' failed. Please recheck your QBiC code!')
-
-    # produces an IndexError if sample code does not exist (will check before)
-    sampleIdentifier = foundSamples[0].getSampleIdentifier()
-
-    space = foundSamples[0].getSpace()
-    rootSample = transaction.getSampleForUpdate(sampleIdentifier)
-
-    # print code, "was found in space", space, "as", sampleIdentifier
-
-    # get or create MS-specific experiment/sample and
-    # attach to the test sample
-    expType = "Q_BMI_GENERIC_IMAGING"
-
-    # load imaging experiments to append new data
-    activeExperiment = None
-    experiments = search_service.listExperiments(
-        "/" + space + "/" + projectCode)
-    experimentIDs = []
-    fullExpIdentifier = '/' + space + '/' + projectCode + '/' + expID
-
-    for exp in experiments:
-        if exp.getExperimentType() == expType and exp.getExperimentIdentifier() == fullExpIdentifier:
-            activeExperiment = exp
-
-    # if expID is not found...
-    if (activeExperiment == None):
-        raise ExperimentNotFoundError(
-            'Experiment with ID ' + expID + ' could not be found! Check the ID.')
-
-    sc = SearchCriteria()    # Find the patient according to code
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
-
-    ec = SearchCriteria()
-
-    ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, expID))
-    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
-
-    existingSamples = search_service.searchForSamples(sc)
-
-    imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + \
-        patientID + '-' + timepoint + '-' + \
-        str(len(existingSamples) + 1).zfill(3)
-
-    # let's first check if such an imaging run was registered before
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, imagingSampleCode))
-    foundSamples = search_service.searchForSamples(sc)
-
-    if len(foundSamples) > 0:
-        raise SampleAlreadyCreatedError(
-            'Sample ' + imagingSampleCode + ' has been created already. Please re-check to avoid duplicates! Offending file: ' + incomingPath)
-
-    imagingSample = transaction.createNewSample(
-        '/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
-    imagingSample.setParentSampleIdentifiers(
-        [rootSample.getSampleIdentifier()])
-    imagingSample.setExperiment(activeExperiment)
-
-    sampleLabel = modality + ' imaging (' + patientID + ', ' + timepoint + ')'
-    imagingSample.setPropertyValue('Q_SECONDARY_NAME', sampleLabel)
-    imagingSample.setPropertyValue('Q_TIMEPOINT', timepoint)
-
-    if tissue == 'liver':
-        imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'LIVER')
-    elif tissue == 'tumor':
-        imagingSample.setPropertyValue(
-            'Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
-
-    openbisTimestamp = buildOpenBisTimestamp(timestamp)
-    imagingSample.setPropertyValue('Q_MSHCC_IMAGING_DATE', openbisTimestamp)
-
-    # create new dataset
-    imagingDataset = transaction.createNewDataSet('Q_BMI_IMAGING_DATA')
-    imagingDataset.setMeasuredData(False)
-    imagingDataset.setSample(imagingSample)
-    imagingDataset.setPropertyValue(
-        'Q_SECONDARY_NAME', modality + ' data (' + patientID + ', ' + timepoint + ')')
-
-    # disable hash computation for now... resulted in outOfMemory errors for some bigger files
-    #incomingFileSha256Sum = hashlib.sha256(
-    #    open(incomingPath, 'rb').read()).hexdigest()
-    incomingFileSha256Sum = 'MISSING!'
-    imagingDataset.setPropertyValue(
-        'Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
-
-    # finish the transaction
-    transaction.moveFile(incomingPath, imagingDataset)
+    # search_service = transaction.getSearchService()
+    # sc = SearchCriteria()    # Find the patient according to code
+    # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #     SearchCriteria.MatchClauseAttribute.CODE, code))
+    # foundSamples = search_service.searchForSamples(sc)
+    #
+    # if not len(foundSamples) > 0:
+    #     raise SampleNotFoundError(
+    #         'openBIS query of ' + code + ' failed. Please recheck your QBiC code!')
+    #
+    # # produces an IndexError if sample code does not exist (will check before)
+    # sampleIdentifier = foundSamples[0].getSampleIdentifier()
+    #
+    # space = foundSamples[0].getSpace()
+    # rootSample = transaction.getSampleForUpdate(sampleIdentifier)
+    #
+    # # print code, "was found in space", space, "as", sampleIdentifier
+    #
+    # # get or create MS-specific experiment/sample and
+    # # attach to the test sample
+    # expType = "Q_BMI_GENERIC_IMAGING"
+    #
+    # # load imaging experiments to append new data
+    # activeExperiment = None
+    # experiments = search_service.listExperiments(
+    #     "/" + space + "/" + projectCode)
+    # experimentIDs = []
+    # fullExpIdentifier = '/' + space + '/' + projectCode + '/' + expID
+    #
+    # for exp in experiments:
+    #     if exp.getExperimentType() == expType and exp.getExperimentIdentifier() == fullExpIdentifier:
+    #         activeExperiment = exp
+    #
+    # # if expID is not found...
+    # if (activeExperiment == None):
+    #     raise ExperimentNotFoundError(
+    #         'Experiment with ID ' + expID + ' could not be found! Check the ID.')
+    #
+    # sc = SearchCriteria()    # Find the patient according to code
+    # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #     SearchCriteria.MatchClauseAttribute.TYPE, "Q_BMI_GENERIC_IMAGING_RUN"))
+    #
+    # ec = SearchCriteria()
+    #
+    # ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #     SearchCriteria.MatchClauseAttribute.CODE, expID))
+    # sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
+    #
+    # existingSamples = search_service.searchForSamples(sc)
+    #
+    # imagingSampleCode = modality + '-' + tracer + '-' + tissue + '-' + \
+    #     patientID + '-' + timepoint + '-' + \
+    #     str(len(existingSamples) + 1).zfill(3)
+    #
+    # # let's first check if such an imaging run was registered before
+    # sc = SearchCriteria()
+    # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #     SearchCriteria.MatchClauseAttribute.CODE, imagingSampleCode))
+    # foundSamples = search_service.searchForSamples(sc)
+    #
+    # if len(foundSamples) > 0:
+    #     raise SampleAlreadyCreatedError(
+    #         'Sample ' + imagingSampleCode + ' has been created already. Please re-check to avoid duplicates! Offending file: ' + incomingPath)
+    #
+    # imagingSample = transaction.createNewSample(
+    #     '/' + space + '/' + imagingSampleCode, "Q_BMI_GENERIC_IMAGING_RUN")
+    # imagingSample.setParentSampleIdentifiers(
+    #     [rootSample.getSampleIdentifier()])
+    # imagingSample.setExperiment(activeExperiment)
+    #
+    # sampleLabel = modality + ' imaging (' + patientID + ', ' + timepoint + ')'
+    # imagingSample.setPropertyValue('Q_SECONDARY_NAME', sampleLabel)
+    # imagingSample.setPropertyValue('Q_TIMEPOINT', timepoint)
+    #
+    # if tissue == 'liver':
+    #     imagingSample.setPropertyValue('Q_IMAGED_TISSUE', 'LIVER')
+    # elif tissue == 'tumor':
+    #     imagingSample.setPropertyValue(
+    #         'Q_IMAGED_TISSUE', 'HEPATOCELLULAR_CARCINOMA')
+    #
+    # openbisTimestamp = buildOpenBisTimestamp(timestamp)
+    # imagingSample.setPropertyValue('Q_MSHCC_IMAGING_DATE', openbisTimestamp)
+    #
+    # # create new dataset
+    # imagingDataset = transaction.createNewDataSet('Q_BMI_IMAGING_DATA')
+    # imagingDataset.setMeasuredData(False)
+    # imagingDataset.setSample(imagingSample)
+    # imagingDataset.setPropertyValue(
+    #     'Q_SECONDARY_NAME', modality + ' data (' + patientID + ', ' + timepoint + ')')
+    #
+    # # disable hash computation for now... resulted in outOfMemory errors for some bigger files
+    # #incomingFileSha256Sum = hashlib.sha256(
+    # #    open(incomingPath, 'rb').read()).hexdigest()
+    # incomingFileSha256Sum = 'MISSING!'
+    # imagingDataset.setPropertyValue(
+    #     'Q_TARBALL_SHA256SUM', incomingFileSha256Sum)
+    #
+    # # finish the transaction
+    # transaction.moveFile(incomingPath, imagingDataset)
 
     # raise SampleAlreadyCreatedError(
     #    'sampleQuery for Exp ' + expID + ": " + str(len(existingSamples)))
