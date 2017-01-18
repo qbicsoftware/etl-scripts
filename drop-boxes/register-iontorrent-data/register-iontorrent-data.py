@@ -117,10 +117,15 @@ def process(transaction):
         open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
     xls_zip_file.close()
 
+    # let's do some sanity checks first; number of XLS/VCF should be same as BAM files
+    xtrVCFPaths = glob.glob(unzipDir + '/*.vcf.gz')
+    xtrXLSPaths = glob.glob(unzipDir + '/*.xls')
+    bamFilePaths = glob.glob(incomingPath + '/*.bam')
 
-
-
-
+    if (len(xtrXLSPaths) != len(bamFilePaths)) or (len(xtrVCFPaths) != len(bamFilePaths)):
+        raise IonTorrentDropboxError('Number of BAM files and VCF/XLS were diverging! Aborting...')
+    else:
+        print "Numbers are all A-OK!"
 
 
 
