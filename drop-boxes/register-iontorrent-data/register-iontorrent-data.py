@@ -26,7 +26,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 # snpEff jar
-snpEffJarPath = /mnt/DSS1/iisek01/snpEff/snpEff.jar
+snpEffJarPath = '/mnt/DSS1/iisek01/snpEff/snpEff.jar'
 
 
 class IonTorrentDropboxError(Exception):
