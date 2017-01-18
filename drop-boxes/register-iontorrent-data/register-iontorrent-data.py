@@ -13,7 +13,7 @@ import datetime
 import hashlib
 import glob
 import zipfile
-import gzip
+import subprocess
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -105,20 +105,25 @@ def process(transaction):
         os.makedirs(unzipDir)
 
     # workaround for older Python/Jython versions which don't have extractall method
-    vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'rU')
-    for zFile in vcf_zip_file.namelist():
-        if not '.vcf.gz.tbi' in zFile:
-            zFileContent = vcf_zip_file.read(zFile)
-            zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
-            zFileOut.write(zFileContent)
-            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
-            gzFileContent = gzFile.read()
-            gzFile.close()
-            unzippedName, gzExt = os.path.splitext(zFile)
-            gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'wb')
-            gunzipFileOut.write(gzFileContent)
-            gunzipFileOut.close()
-    vcf_zip_file.close()
+    # we will use the OS' unzip command
+
+    # vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
+    # for zFile in vcf_zip_file.namelist():
+    #     if not '.vcf.gz.tbi' in zFile:
+    #         zFileContent = vcf_zip_file.read(zFile)
+    #         zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
+    #         zFileOut.write(zFileContent)
+    #         gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
+    #         gzFileContent = gzFile.read()
+    #         gzFile.close()
+    #         unzippedName, gzExt = os.path.splitext(zFile)
+    #         gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'wb')
+    #         gunzipFileOut.write(gzFileContent)
+    #         gunzipFileOut.close()
+    # vcf_zip_file.close()
+
+    unzipCommand = ['unzip', '-o', varCallVcfFile[-1], '-d', unzipDir]
+    p = subprocess.call(unzipCommand)
 
     xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
     for zFile in xls_zip_file.namelist():
