@@ -155,9 +155,11 @@ def process(transaction):
         print 'Processing', vcffile
         basename, suffix = os.path.splitext(vcffile)
         annfile = basename + '_ann' + suffix
-        snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile + ' > ' + annfile]
+        snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
         print 'Starting', snpEffCommand
-        p = subprocess.call(snpEffCommand)
+        annfile_out = open(annfile, 'w')
+        p = subprocess.call(snpEffCommand, stdout=annfile_out)
+        annfile_out.close()
 
 
 
