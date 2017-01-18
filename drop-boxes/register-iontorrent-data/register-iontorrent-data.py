@@ -104,13 +104,13 @@ def process(transaction):
         os.makedirs(unzipDir)
 
     # workaround for older Python/Jython versions which don't have extractall method
-    vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'rb')
+    vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
     for zFile in vcf_zip_file.namelist():
         if not '.vcf.gz.tbi' in zFile:
             zFileContent = vcf_zip_file.read(zFile)
             zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
             zFileOut.write(zFileContent)
-            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'r')
+            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
             gzFileContent = gzFile.read()
             gzFile.close()
             unzippedName, gzExt = os.path.splitext(zFile)
