@@ -109,13 +109,13 @@ def process(transaction):
     for zFile in vcf_zip_file.namelist():
         if not '.vcf.gz.tbi' in zFile:
             zFileContent = vcf_zip_file.read(zFile)
-            zFileOut = open(os.path.join(unzipDir, zFile), 'w')
+            zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
             zFileOut.write(zFileContent)
-            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'r')
+            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
             gzFileContent = gzFile.read()
             gzFile.close()
             unzippedName, gzExt = os.path.splitext(zFile)
-            gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'w')
+            gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'wb')
             gunzipFileOut.write(gzFileContent)
             gunzipFileOut.close()
     vcf_zip_file.close()
