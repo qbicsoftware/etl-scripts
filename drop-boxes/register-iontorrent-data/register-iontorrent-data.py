@@ -13,6 +13,7 @@ import datetime
 import hashlib
 import glob
 import zipfile
+import gzip
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
