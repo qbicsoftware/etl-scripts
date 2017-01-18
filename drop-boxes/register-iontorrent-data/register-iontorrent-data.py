@@ -103,10 +103,12 @@ def process(transaction):
     if not os.path.exists(unzipDir):
         os.makedirs(unzipDir)
 
+    # workaround for older Python/Jython versions which don't have extractall method
     vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
     for zFile in vcf_zip_file.namelist():
-        zFileContent = vcf_zip_file.read(zFile)
-        open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
+        if not '.vcf.gz.tbi' in zFile:
+            zFileContent = vcf_zip_file.read(zFile)
+            open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
     vcf_zip_file.close()
 
     xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
