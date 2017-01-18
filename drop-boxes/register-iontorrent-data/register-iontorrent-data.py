@@ -25,6 +25,10 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
+# snpEff jar
+snpEffJarPath = /mnt/DSS1/iisek01/snpEff/snpEff.jar
+
+
 class IonTorrentDropboxError(Exception):
 
     def __init__(self, value):
@@ -124,12 +128,18 @@ def process(transaction):
 
     unzipCommand = ['unzip', '-o', varCallVcfFile[-1], '-d', unzipDir]
     p = subprocess.call(unzipCommand)
+    #xtrVcfGzPaths = glob.glob(unzipDir + '/*.vcf.gz')
+    gunzipCommand = ['gunzip', os.path.join(unzipDir, '*.vcf.gz')]
+    p = subprocess.call(unzipCommand)
 
-    xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
-    for zFile in xls_zip_file.namelist():
-        zFileContent = xls_zip_file.read(zFile)
-        open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
-    xls_zip_file.close()
+    # xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
+    # for zFile in xls_zip_file.namelist():
+    #     zFileContent = xls_zip_file.read(zFile)
+    #     open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
+    # xls_zip_file.close()
+
+    unzipCommand = ['unzip', '-o', varCallXlsFile[-1], '-d', unzipDir]
+    p = subprocess.call(unzipCommand)
 
     # let's do some sanity checks first; number of XLS/VCF should be same as BAM files
     xtrVCFPaths = glob.glob(unzipDir + '/*.vcf')
@@ -141,8 +151,11 @@ def process(transaction):
     else:
         print "Numbers are all A-OK!"
 
-
-
+    for vcffile in xtrVCFPaths:
+        basename, suffix = os.path.splitext(vcffile)
+        annfile = basename + '_ann' + suffix
+        snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile, annfile]
+        p = subprocess.call(snpEffCommand)
 
 
 
