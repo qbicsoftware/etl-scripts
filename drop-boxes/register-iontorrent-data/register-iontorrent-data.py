@@ -152,9 +152,11 @@ def process(transaction):
         print "Numbers are all A-OK!"
 
     for vcffile in xtrVCFPaths:
+        print 'Processing', vcffile
         basename, suffix = os.path.splitext(vcffile)
         annfile = basename + '_ann' + suffix
         snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile, annfile]
+        print 'Starting', snpEffCommand
         p = subprocess.call(snpEffCommand)
 
 
