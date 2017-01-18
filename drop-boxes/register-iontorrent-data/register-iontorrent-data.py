@@ -104,21 +104,31 @@ def process(transaction):
         os.makedirs(unzipDir)
 
     # workaround for older Python/Jython versions which don't have extractall method
-    vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
+    vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'rb')
     for zFile in vcf_zip_file.namelist():
         if not '.vcf.gz.tbi' in zFile:
             zFileContent = vcf_zip_file.read(zFile)
-            open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
+            zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
+            zFileOut.write(zFileContent)
+
+            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb'))
+            gzFileContent = gzFile.read()
+            gzFile.close()
+            unzippedName, gzExt = os.path.splitext(zFile)
+            gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'wb')
+            gunzipFileOut.write(gzFileContent)
+            gunzipFileOut.close()
+
     vcf_zip_file.close()
 
-    xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
+    xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'rb')
     for zFile in xls_zip_file.namelist():
         zFileContent = xls_zip_file.read(zFile)
         open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
     xls_zip_file.close()
 
     # let's do some sanity checks first; number of XLS/VCF should be same as BAM files
-    xtrVCFPaths = glob.glob(unzipDir + '/*.vcf.gz')
+    xtrVCFPaths = glob.glob(unzipDir + '/*.vcf')
     xtrXLSPaths = glob.glob(unzipDir + '/*.xls')
     bamFilePaths = glob.glob(incomingPath + '/*.bam')
 
