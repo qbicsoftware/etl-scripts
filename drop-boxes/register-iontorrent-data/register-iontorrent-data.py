@@ -110,15 +110,13 @@ def process(transaction):
             zFileContent = vcf_zip_file.read(zFile)
             zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
             zFileOut.write(zFileContent)
-
-            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb'))
+            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
             gzFileContent = gzFile.read()
             gzFile.close()
             unzippedName, gzExt = os.path.splitext(zFile)
             gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'wb')
             gunzipFileOut.write(gzFileContent)
             gunzipFileOut.close()
-
     vcf_zip_file.close()
 
     xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'rb')
