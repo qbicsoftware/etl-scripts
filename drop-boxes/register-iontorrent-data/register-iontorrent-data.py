@@ -110,7 +110,7 @@ def process(transaction):
             zFileContent = vcf_zip_file.read(zFile)
             zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
             zFileOut.write(zFileContent)
-            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
+            gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'r')
             gzFileContent = gzFile.read()
             gzFile.close()
             unzippedName, gzExt = os.path.splitext(zFile)
@@ -119,7 +119,7 @@ def process(transaction):
             gunzipFileOut.close()
     vcf_zip_file.close()
 
-    xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'rb')
+    xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
     for zFile in xls_zip_file.namelist():
         zFileContent = xls_zip_file.read(zFile)
         open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
