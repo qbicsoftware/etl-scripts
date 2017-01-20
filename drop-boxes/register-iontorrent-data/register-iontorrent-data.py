@@ -151,15 +151,22 @@ def process(transaction):
     else:
         print "Numbers are all A-OK!"
 
-    for vcffile in xtrVCFPaths:
-        print 'Processing', vcffile
-        basename, suffix = os.path.splitext(vcffile)
-        annfile = basename + '_ann' + suffix
-        snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
-        print 'Starting', snpEffCommand
-        annfile_out = open(annfile, 'w')
-        p = subprocess.call(snpEffCommand, stdout=annfile_out)
-        annfile_out.close()
+    # vcfs are extracted, now it's time to tar the whole iontorrent folder
+    # get parent of incomingPath
+    prestagingDir = os.path.dirname(incomingPath)
+    tarCommand = ['tar', '-cf', os.path.join(fakeTmpBaseDir, name + '.tar'), '-C', prestagingDir, name]
+    p = subprocess.call(tarCommand)
+
+    # annotate all vcf files with snpEff
+    # for vcffile in xtrVCFPaths:
+    #     print 'Processing', vcffile
+    #     basename, suffix = os.path.splitext(vcffile)
+    #     annfile = basename + '_ann' + suffix
+    #     snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
+    #     print 'Starting', snpEffCommand
+    #     annfile_out = open(annfile, 'w')
+    #     p = subprocess.call(snpEffCommand, stdout=annfile_out)
+    #     annfile_out.close()
 
 
 
