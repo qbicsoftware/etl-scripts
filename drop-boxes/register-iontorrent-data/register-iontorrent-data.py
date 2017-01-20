@@ -158,7 +158,7 @@ def process(transaction):
     tarCommand = ['tar', '-cf', os.path.join(fakeTmpBaseDir, name + '.tar'), '-C', prestagingDir, name]
     p = subprocess.call(tarCommand)
 
-    annotate all vcf files with snpEff
+    # annotate all vcf files with snpEff
     for vcffile in xtrVCFPaths:
         print 'Processing', vcffile
         justFileName = os.path.basename(vcffile)
@@ -167,6 +167,7 @@ def process(transaction):
         annBaseDir = os.path.join(unzipDir, 'snpEff')
         annfile = os.path.join(annBaseDir, basename + '_ann' + suffix)
 
+        # if the files are already there, don't redo it... it's a costly operation
         if not os.path.exists(annfile):
             snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
             print 'Starting', snpEffCommand
