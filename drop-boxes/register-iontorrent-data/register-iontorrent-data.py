@@ -156,9 +156,9 @@ def process(transaction):
     # get parent of incomingPath
     prestagingDir = os.path.dirname(incomingPath)
     tarCommand = ['tar', '-cf', os.path.join(fakeTmpBaseDir, name + '.tar'), '-C', prestagingDir, name]
+    print tarCommand
     p = subprocess.call(tarCommand)
 
-    # annotate all vcf files with snpEff
     for vcffile in xtrVCFPaths:
         print 'Processing', vcffile
         justFileName = os.path.basename(vcffile)
