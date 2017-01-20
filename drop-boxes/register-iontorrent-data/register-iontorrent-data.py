@@ -143,6 +143,7 @@ def process(transaction):
 
     # let's do some sanity checks first; number of XLS/VCF should be same as BAM files
     xtrVCFPaths = glob.glob(unzipDir + '/*.vcf')
+    #annVCFPaths = [f for f in xtrVCFPaths if '_ann.vcf' in f]
     xtrXLSPaths = glob.glob(unzipDir + '/*.xls')
     bamFilePaths = glob.glob(incomingPath + '/*.bam')
 
@@ -157,16 +158,21 @@ def process(transaction):
     tarCommand = ['tar', '-cf', os.path.join(fakeTmpBaseDir, name + '.tar'), '-C', prestagingDir, name]
     p = subprocess.call(tarCommand)
 
-    # annotate all vcf files with snpEff
-    # for vcffile in xtrVCFPaths:
-    #     print 'Processing', vcffile
-    #     basename, suffix = os.path.splitext(vcffile)
-    #     annfile = basename + '_ann' + suffix
-    #     snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
-    #     print 'Starting', snpEffCommand
-    #     annfile_out = open(annfile, 'w')
-    #     p = subprocess.call(snpEffCommand, stdout=annfile_out)
-    #     annfile_out.close()
+    annotate all vcf files with snpEff
+    for vcffile in xtrVCFPaths:
+        print 'Processing', vcffile
+        justFileName = os.path.basename(vcffile)
+        print 'filename only:', justFileName
+        basename, suffix = os.path.splitext(justFileName)
+        annBaseDir = os.path.join(unzipDir, 'snpEff')
+        annfile = os.path.join(annBaseDir, basename + '_ann' + suffix)
+
+        if not os.path.exists(annfile):
+            snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
+            print 'Starting', snpEffCommand
+            annfile_out = open(annfile, 'w')
+            p = subprocess.call(snpEffCommand, stdout=annfile_out)
+            annfile_out.close()
 
 
 
