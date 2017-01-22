@@ -9,7 +9,7 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
-import datetime
+from datetime import datetime
 import hashlib
 import glob
 import zipfile
@@ -38,7 +38,8 @@ class IonTorrentDropboxError(Exception):
         return self.value
 
 
-
+def printInfosToStdOut(message):
+    print '[' + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ']', 'IonTorrentDropbox:', message
 
 
 # that's a very very simple Property validator... make better ones in the
@@ -150,19 +151,19 @@ def process(transaction):
     if (len(xtrXLSPaths) != len(bamFilePaths)) or (len(xtrVCFPaths) != len(bamFilePaths)):
         raise IonTorrentDropboxError('Number of BAM files and VCF/XLS were diverging! Aborting...')
     else:
-        print "Numbers are all A-OK!"
+        printInfosToStdOut('VCF/XLS files correspond to BAM file numbers.'
 
     # vcfs are extracted, now it's time to tar the whole iontorrent folder
     # get parent of incomingPath
     prestagingDir = os.path.dirname(incomingPath)
     tarCommand = ['tar', '-cf', os.path.join(fakeTmpBaseDir, name + '.tar'), '-C', prestagingDir, name]
-    print tarCommand
+
     p = subprocess.call(tarCommand)
 
     for vcffile in xtrVCFPaths:
-        print 'Processing', vcffile
+        printInfosToStdOut('Processing ' + vcffile)
         justFileName = os.path.basename(vcffile)
-        print 'filename only:', justFileName
+        printInfosToStdOut('filename only: ' + justFileName)
         basename, suffix = os.path.splitext(justFileName)
         annBaseDir = os.path.join(unzipDir, 'snpEff')
         annfile = os.path.join(annBaseDir, basename + '_ann' + suffix)
@@ -170,7 +171,7 @@ def process(transaction):
         # if the files are already there, don't redo it... it's a costly operation
         if not os.path.exists(annfile):
             snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
-            print 'Starting', snpEffCommand
+            printInfosToStdOut('Starting ' + snpEffCommand)
             annfile_out = open(annfile, 'w')
             p = subprocess.call(snpEffCommand, stdout=annfile_out)
             annfile_out.close()
