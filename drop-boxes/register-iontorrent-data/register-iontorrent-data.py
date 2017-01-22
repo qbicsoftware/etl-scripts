@@ -151,7 +151,7 @@ def process(transaction):
     if (len(xtrXLSPaths) != len(bamFilePaths)) or (len(xtrVCFPaths) != len(bamFilePaths)):
         raise IonTorrentDropboxError('Number of BAM files and VCF/XLS were diverging! Aborting...')
     else:
-        printInfosToStdOut('VCF/XLS files correspond to BAM file numbers.'
+        printInfosToStdOut('VCF/XLS files correspond to BAM file numbers.')
 
     # vcfs are extracted, now it's time to tar the whole iontorrent folder
     # get parent of incomingPath
