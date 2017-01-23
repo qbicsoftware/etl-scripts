@@ -56,12 +56,11 @@ def validateProperty(propStr):
 # compute sha256sum on huge files (need to do it chunk-wise)
 def computeSha256Sum(fileFullPath, chunkSize = 8*1024):
     sumObject = hashlib.sha256()
-    with open(fileFullPath, 'rb') as infile:
-        while True:
-            fileChunk = infile.read(chunkSize)
-            if not fileChunk:
-                break
-            sumObject.update(fileChunk)
+    infile = open(fileFullPath, 'rb')
+    fileChunk = infile.read(chunkSize)
+    while fileChunk:
+        sumObject.update(fileChunk)
+        fileChunk = infile.read(chunkSize)
     return sumObject.hexdigest()
 
 
