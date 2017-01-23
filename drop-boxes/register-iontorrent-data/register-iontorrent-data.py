@@ -53,6 +53,13 @@ def validateProperty(propStr):
     return(False)
 
 
+# compute sha256sum on huge files (need to do it chunk-wise)
+def computeSha256Sum(fileFullPath, chunkSize = 8*1024):
+    sumObject = hashlib.sha256()
+    with open(fileFullPath, 'rb') as infile:
+        for fileChunk in iter(lambda: infile.read(chunkSize), b'')
+            sumObject.update(fileChunk)
+    return sumObject.hexdigest()
 
 
 def isExpected(identifier):
@@ -164,7 +171,7 @@ def process(transaction):
         p = subprocess.call(tarCommand)
 
     # compute the sha256sum of the tar and check against openBIS
-    tarFileSha256Sum = hashlib.sha256(open(tarFileFullPath, 'rb').read()).hexdigest()
+    tarFileSha256Sum = computeSha256Sum(tarFileFullPath)
 
     printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
 
