@@ -171,6 +171,7 @@ def process(transaction):
         p = subprocess.call(tarCommand)
 
     # compute the sha256sum of the tar and check against openBIS
+    printInfosToStdOut('computing sha256sum...')
     tarFileSha256Sum = computeSha256Sum(tarFileFullPath)
 
     printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
