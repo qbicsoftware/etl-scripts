@@ -178,8 +178,10 @@ def process(transaction):
     # TODO: computation works fine but to speed things up we disable it
     tarFileSha256Sum = '24dc899d5023675a34b4777fa4209c037d90e9c79f7d0d9a523b3f6cfd59252f'
 
-
     printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
+
+    # check if there is a Q_NGS_IONTORRENT_DATA object with this checksum
+    
 
 
     for vcffile in xtrVCFPaths:
