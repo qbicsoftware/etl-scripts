@@ -156,9 +156,18 @@ def process(transaction):
     # vcfs are extracted, now it's time to tar the whole iontorrent folder
     # get parent of incomingPath
     prestagingDir = os.path.dirname(incomingPath)
-    tarCommand = ['tar', '-cf', os.path.join(fakeTmpBaseDir, name + '.tar'), '-C', prestagingDir, name]
+    tarFileFullPath = os.path.join(fakeTmpBaseDir, name + '.tar')
 
-    p = subprocess.call(tarCommand)
+    # only tar it if file is not existing yet (TODO: leave check only for testing/development)
+    if not os.path.exists(tarFileFullPath):
+        tarCommand = ['tar', '-cf', tarFileFullPath, '-C', prestagingDir, name]
+        p = subprocess.call(tarCommand)
+
+    # compute the sha256sum of the tar and check against openBIS
+    tarFileSha256Sum = hashlib.sha256(open(tarFileFullPath, 'rb').read()).hexdigest()
+
+    printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
+
 
     for vcffile in xtrVCFPaths:
         printInfosToStdOut('Processing ' + vcffile)
