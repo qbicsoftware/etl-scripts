@@ -180,8 +180,8 @@ def process(transaction):
 
     printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
 
-    # check if there is a Q_NGS_IONTORRENT_DATA object with this checksum
-    
+    # TODO: check if there is a Q_NGS_IONTORRENT_DATA object with this checksum
+    # if yes, stop it right here
 
 
     for vcffile in xtrVCFPaths:
@@ -200,8 +200,21 @@ def process(transaction):
             p = subprocess.call(snpEffCommand, stdout=annfile_out)
             annfile_out.close()
 
+    # we create a new experiment here: one PGM run -> one experiment (container)
+    # as always, check if the experiment already exists
+    experimentCode = 'PGM84'
+    experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, experimentCode))
+    foundSamples = search_service.searchForExperiments(sc)
 
+    printInfosToStdOut(foundSamples)
 
+    # freshIonPGMExperiment = transaction.createNewExperiment(experimentCode, 'Q_NGS_MEASUREMENT')
+    # freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
+    # freshIonPGMExperiment.setPropertyValue('Q_EXTERNALDB_ID', experimentCode)
+    # freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
 
     raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
 
