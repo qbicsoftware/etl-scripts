@@ -220,7 +220,6 @@ def process(transaction):
     if not expExists:
         freshIonPGMExperiment = transaction.createNewExperiment(experimentFullIdentifier, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
-        freshIonPGMExperiment.setPropertyValue('Q_EXTERNALDB_ID', experimentCode)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
 
     #raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
