@@ -208,17 +208,20 @@ def process(transaction):
     search_service = transaction.getSearchService()
     experiments = search_service.listExperiments('/UKT_PATHOLOGY_PGM/QPATH')
 
+    expExists = False
+
     for exp in experiments:
         printInfosToStdOut(exp.getExperimentIdentifier())
         if exp.getExperimentIdentifier() == experimentFullIdentifier:
             printInfosToStdOut(expCode + ' was found!')
+            expExists = True
+            break
 
-    
-
-    # freshIonPGMExperiment = transaction.createNewExperiment(experimentCode, 'Q_NGS_MEASUREMENT')
-    # freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
-    # freshIonPGMExperiment.setPropertyValue('Q_EXTERNALDB_ID', experimentCode)
-    # freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+    if not expExists:
+        freshIonPGMExperiment = transaction.createNewExperiment(experimentCode, 'Q_NGS_MEASUREMENT')
+        freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
+        freshIonPGMExperiment.setPropertyValue('Q_EXTERNALDB_ID', experimentCode)
+        freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
 
     raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
 
