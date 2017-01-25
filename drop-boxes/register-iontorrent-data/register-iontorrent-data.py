@@ -206,12 +206,14 @@ def process(transaction):
     experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
 
     search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, experimentCode))
-    queryResults = search_service.searchForExperiments(sc)
+    experiments = search_service.listExperiments('/UKT_PATHOLOGY_PGM/QPATH')
 
-    printInfosToStdOut(queryResults)
+    for exp in experiments:
+        printInfosToStdOut(exp.getExperimentIdentifier())
+        if exp.getExperimentIdentifier() == experimentFullIdentifier:
+            printInfosToStdOut(expCode + ' was found!')
+
+    
 
     # freshIonPGMExperiment = transaction.createNewExperiment(experimentCode, 'Q_NGS_MEASUREMENT')
     # freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
