@@ -223,7 +223,7 @@ def process(transaction):
         freshIonPGMExperiment.setPropertyValue('Q_EXTERNALDB_ID', experimentCode)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
 
-    raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
+    #raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
 
 
     # identifier = pattern.findall(name)[0]
