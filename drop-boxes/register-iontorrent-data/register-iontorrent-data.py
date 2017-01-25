@@ -204,12 +204,14 @@ def process(transaction):
     # as always, check if the experiment already exists
     experimentCode = 'PGM84'
     experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
+
+    search_service = transaction.getSearchService()
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, experimentCode))
-    foundSamples = search_service.searchForExperiments(sc)
+    queryResults = search_service.searchForExperiments(sc)
 
-    printInfosToStdOut(foundSamples)
+    printInfosToStdOut(queryResults)
 
     # freshIonPGMExperiment = transaction.createNewExperiment(experimentCode, 'Q_NGS_MEASUREMENT')
     # freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
