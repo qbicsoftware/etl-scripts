@@ -79,6 +79,20 @@ def buildOpenBisTimestamp(datetimestr):
 
     return datetime.datetime.strptime(datetimestr, inDateFormat).strftime(outDateFormat)
 
+def findExperimentByID(expIdentifier, transaction):
+    # expIdentifier needs to be /SPACE/PROJECT/EXPERIMENT_CODE
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments('/UKT_PATHOLOGY_PGM/QPATH')
+
+    results = []
+
+    for exp in experiments:
+        if exp.getExperimentIdentifier() == expIdentifier:
+            printInfosToStdOut(expCode + ' was found!')
+            results.append(exp)
+            break
+
+    return results
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -205,19 +219,9 @@ def process(transaction):
     experimentCode = 'PGM84'
     experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
 
-    search_service = transaction.getSearchService()
-    experiments = search_service.listExperiments('/UKT_PATHOLOGY_PGM/QPATH')
-
-    expExists = False
-
-    for exp in experiments:
-        printInfosToStdOut(exp.getExperimentIdentifier())
-        if exp.getExperimentIdentifier() == experimentFullIdentifier:
-            printInfosToStdOut(expCode + ' was found!')
-            expExists = True
-            break
-
-    if not expExists:
+    queryResults = findExperimentByID(experimentFullIdentifier, transaction)
+    printInfosToStdOut(queryResults)
+    if len(queryResults) == 0:
         freshIonPGMExperiment = transaction.createNewExperiment(experimentFullIdentifier, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
