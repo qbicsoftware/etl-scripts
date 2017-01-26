@@ -88,7 +88,7 @@ def findExperimentByID(expIdentifier, transaction):
 
     for exp in experiments:
         if exp.getExperimentIdentifier() == expIdentifier:
-            printInfosToStdOut(expCode + ' was found!')
+            printInfosToStdOut(expIdentifier + ' was found!')
             results.append(exp)
             break
 
