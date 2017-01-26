@@ -226,7 +226,7 @@ def process(transaction):
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
 
-    #raise IonTorrentDropboxError('sorry, developing and testing the new dropbox :-)')
+    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
