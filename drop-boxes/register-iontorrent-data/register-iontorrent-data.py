@@ -9,8 +9,11 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
-import datetime
+from datetime import datetime
 import hashlib
+import glob
+import zipfile
+import subprocess
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -22,17 +25,11 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
-
-class PropertyParsingError(Exception):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return self.value
+# snpEff jar
+snpEffJarPath = '/mnt/DSS1/iisek01/snpEff/snpEff.jar'
 
 
-class SampleNotFoundError(Exception):
+class IonTorrentDropboxError(Exception):
 
     def __init__(self, value):
         self.value = value
@@ -41,22 +38,8 @@ class SampleNotFoundError(Exception):
         return self.value
 
 
-class SampleAlreadyCreatedError(Exception):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return self.value
-
-
-class ExperimentNotFoundError(Exception):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return self.value
+def printInfosToStdOut(message):
+    print '[' + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ']', 'IonTorrentDropbox:', message
 
 
 # that's a very very simple Property validator... make better ones in the
@@ -70,72 +53,15 @@ def validateProperty(propStr):
     return(False)
 
 
-def mangleFilenameForAttributes(filename):
-    filename_split = filename.split('_')
-
-    propertyMap = {}
-
-    if len(filename_split) >= 8:
-        expID = filename_split[0].strip()
-        if validateProperty(expID):
-            propertyMap['expID'] = expID
-        else:
-            raise PropertyParsingError('expID was empty')
-
-        qbicID = filename_split[1].strip()
-        if validateProperty(qbicID):
-            propertyMap['qbicID'] = qbicID
-        else:
-            raise PropertyParsingError('qbicID was empty')
-
-        patientID = filename_split[2].strip()
-        if validateProperty(patientID):
-            propertyMap['patientID'] = patientID
-        else:
-            raise PropertyParsingError('patientID was empty')
-
-        timepoint = filename_split[3].strip()
-        if validateProperty(timepoint):
-            propertyMap['timepoint'] = timepoint
-        else:
-            raise PropertyParsingError('timepoint was empty')
-
-        modality = filename_split[4].strip()
-        if validateProperty(modality):
-            propertyMap['modality'] = modality
-        else:
-            raise PropertyParsingError('modality was empty')
-
-        tracer = filename_split[5].strip()
-        if validateProperty(tracer):
-            propertyMap['tracer'] = tracer
-        else:
-            raise PropertyParsingError('tracer was empty')
-
-        tissue = filename_split[6].strip()
-        if validateProperty(tissue):
-            propertyMap['tissue'] = tissue
-        else:
-            raise PropertyParsingError('tracer was empty')
-
-        # do the suffix check here
-        datestr = filename_split[7].strip()
-        if '.tar.gz' in datestr:
-            lastsplit = datestr.split('.')
-
-            if validateProperty(lastsplit[0]):
-                propertyMap['datestr'] = lastsplit[0]
-            else:
-                raise PropertyParsingError('datestr was empty')
-
-        else:
-            raise PropertyParsingError(
-                'File does not have the correct suffix (*.tar.gz)!')
-    else:
-        raise PropertyParsingError(
-            'Filename does not seem to have the correct number of properties!')
-
-    return propertyMap
+# compute sha256sum on huge files (need to do it chunk-wise)
+def computeSha256Sum(fileFullPath, chunkSize = 8*4096):
+    sumObject = hashlib.sha256()
+    infile = open(fileFullPath, 'rb')
+    fileChunk = infile.read(chunkSize)
+    while fileChunk:
+        sumObject.update(fileChunk)
+        fileChunk = infile.read(chunkSize)
+    return sumObject.hexdigest()
 
 
 def isExpected(identifier):
@@ -153,6 +79,20 @@ def buildOpenBisTimestamp(datetimestr):
 
     return datetime.datetime.strptime(datetimestr, inDateFormat).strftime(outDateFormat)
 
+def findExperimentByID(expIdentifier, transaction):
+    # expIdentifier needs to be /SPACE/PROJECT/EXPERIMENT_CODE
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments('/UKT_PATHOLOGY_PGM/QPATH')
+
+    results = []
+
+    for exp in experiments:
+        if exp.getExperimentIdentifier() == expIdentifier:
+            printInfosToStdOut(expIdentifier + ' was found!')
+            results.append(exp)
+            break
+
+    return results
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -167,10 +107,126 @@ def process(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
 
-    print incomingPath
-    print name
+    #print incomingPath
+    #print name
+
+    varCallRunFolders = glob.glob(os.path.join(incomingPath, 'plugin_out/variantCaller*'))
+
+    if len(varCallRunFolders) == 0:
+        raise IonTorrentDropboxError('No variant calling data found in dataset! Aborting...')
+    # should be just one variant calling folder... if not, we take the most recent ones
+    latestVarCallFolder = varCallRunFolders[-1]
+
+    varCallVcfFile = glob.glob(os.path.join(latestVarCallFolder, 'R_*.vcf.zip'))
+    varCallXlsFile = glob.glob(os.path.join(latestVarCallFolder, 'R_*.xls.zip'))
+
+    # better check if there are really two zip files in there
+    if len(varCallXlsFile) == 0 or len(varCallVcfFile) == 0:
+        raise IonTorrentDropboxError('No VCF/XLS zipfiles found in variantCaller folder! Aborting...')
+
+    # unzip the stuff in a temporary folder. Unfortunately, /tmp is too small
+    # unpack it to /mnt/DSS1/iisek01/fakeTmp for now
+    fakeTmpBaseDir = '/mnt/DSS1/iisek01/fakeTmp'
+    unzipDir = os.path.join(fakeTmpBaseDir, name)
+
+    if not os.path.exists(unzipDir):
+        os.makedirs(unzipDir)
+
+    # workaround for older Python/Jython versions which don't have extractall method
+    # we will use the OS' unzip command
+
+    # vcf_zip_file = zipfile.ZipFile(varCallVcfFile[-1], 'r')
+    # for zFile in vcf_zip_file.namelist():
+    #     if not '.vcf.gz.tbi' in zFile:
+    #         zFileContent = vcf_zip_file.read(zFile)
+    #         zFileOut = open(os.path.join(unzipDir, zFile), 'wb')
+    #         zFileOut.write(zFileContent)
+    #         gzFile = gzip.GzipFile(os.path.join(unzipDir, zFile), 'rb')
+    #         gzFileContent = gzFile.read()
+    #         gzFile.close()
+    #         unzippedName, gzExt = os.path.splitext(zFile)
+    #         gunzipFileOut = open(os.path.join(unzipDir, unzippedName), 'wb')
+    #         gunzipFileOut.write(gzFileContent)
+    #         gunzipFileOut.close()
+    # vcf_zip_file.close()
+
+    unzipCommand = ['unzip', '-o', varCallVcfFile[-1], '-d', unzipDir]
+    p = subprocess.call(unzipCommand)
+    #xtrVcfGzPaths = glob.glob(unzipDir + '/*.vcf.gz')
+    gunzipCommand = ['gunzip', os.path.join(unzipDir, '*.vcf.gz')]
+    p = subprocess.call(unzipCommand)
+
+    # xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
+    # for zFile in xls_zip_file.namelist():
+    #     zFileContent = xls_zip_file.read(zFile)
+    #     open(os.path.join(unzipDir, zFile), 'wb').write(zFileContent)
+    # xls_zip_file.close()
+
+    unzipCommand = ['unzip', '-o', varCallXlsFile[-1], '-d', unzipDir]
+    p = subprocess.call(unzipCommand)
+
+    # let's do some sanity checks first; number of XLS/VCF should be same as BAM files
+    xtrVCFPaths = glob.glob(unzipDir + '/*.vcf')
+    #annVCFPaths = [f for f in xtrVCFPaths if '_ann.vcf' in f]
+    xtrXLSPaths = glob.glob(unzipDir + '/*.xls')
+    bamFilePaths = glob.glob(incomingPath + '/*.bam')
+
+    if (len(xtrXLSPaths) != len(bamFilePaths)) or (len(xtrVCFPaths) != len(bamFilePaths)):
+        raise IonTorrentDropboxError('Number of BAM files and VCF/XLS were diverging! Aborting...')
+    else:
+        printInfosToStdOut('VCF/XLS files correspond to BAM file numbers.')
+
+    # vcfs are extracted, now it's time to tar the whole iontorrent folder
+    # get parent of incomingPath
+    prestagingDir = os.path.dirname(incomingPath)
+    tarFileFullPath = os.path.join(fakeTmpBaseDir, name + '.tar')
+
+    # only tar it if file is not existing yet (TODO: leave check only for testing/development)
+    if not os.path.exists(tarFileFullPath):
+        tarCommand = ['tar', '-cf', tarFileFullPath, '-C', prestagingDir, name]
+        p = subprocess.call(tarCommand)
+
+    # compute the sha256sum of the tar and check against openBIS
+    printInfosToStdOut('computing sha256sum...')
+    #tarFileSha256Sum = computeSha256Sum(tarFileFullPath)
+    # TODO: computation works fine but to speed things up we disable it
+    tarFileSha256Sum = '24dc899d5023675a34b4777fa4209c037d90e9c79f7d0d9a523b3f6cfd59252f'
+
+    printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
+
+    # TODO: check if there is a Q_NGS_IONTORRENT_DATA object with this checksum
+    # if yes, stop it right here
 
 
+    for vcffile in xtrVCFPaths:
+        printInfosToStdOut('Processing ' + vcffile)
+        justFileName = os.path.basename(vcffile)
+        printInfosToStdOut('filename only: ' + justFileName)
+        basename, suffix = os.path.splitext(justFileName)
+        annBaseDir = os.path.join(unzipDir, 'snpEff')
+        annfile = os.path.join(annBaseDir, basename + '_ann' + suffix)
+
+        # if the files are already there, don't redo it... it's a costly operation
+        if not os.path.exists(annfile):
+            snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
+            printInfosToStdOut('Starting ' + snpEffCommand)
+            annfile_out = open(annfile, 'w')
+            p = subprocess.call(snpEffCommand, stdout=annfile_out)
+            annfile_out.close()
+
+    # we create a new experiment here: one PGM run -> one experiment (container)
+    # as always, check if the experiment already exists
+    experimentCode = 'PGM84'
+    experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
+
+    queryResults = findExperimentByID(experimentFullIdentifier, transaction)
+    printInfosToStdOut(queryResults)
+    if len(queryResults) == 0:
+        freshIonPGMExperiment = transaction.createNewExperiment(experimentFullIdentifier, 'Q_NGS_MEASUREMENT')
+        freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
+        freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+
+    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
