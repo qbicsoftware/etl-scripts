@@ -62,7 +62,7 @@ def process(transaction):
         sample.setExperiment(experiment)
 
         #Register files
-        dataSetRes = transaction.createNewDataSet('Q_WF_NGS_16S_TAXONOMIC_PROFILING_RESULTS')
+        dataSetRes = transaction.createNewDataSet('Q_NGS_READ_MATCH_ARCHIVE')
         dataSetRes.setMeasuredData(False)
         dataSetLogs = transaction.createNewDataSet('Q_WF_NGS_16S_TAXONOMIC_PROFILING_LOGS')
         dataSetLogs.setMeasuredData(False)
