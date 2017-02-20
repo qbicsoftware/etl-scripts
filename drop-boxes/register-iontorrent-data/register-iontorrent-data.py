@@ -14,6 +14,8 @@ import hashlib
 import glob
 import zipfile
 import subprocess
+from pandas import DataFrame
+from pandas import read_csv
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
@@ -221,10 +223,16 @@ def process(transaction):
 
     queryResults = findExperimentByID(experimentFullIdentifier, transaction)
     printInfosToStdOut(queryResults)
+
+    # expected case: there is no experiment with this PGM number yet
     if len(queryResults) == 0:
         freshIonPGMExperiment = transaction.createNewExperiment(experimentFullIdentifier, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+    # TODO: else we should quit the dropbox since we don't want to overwrite existing data
+    # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
+
+
 
     raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
