@@ -6,16 +6,16 @@ print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_
 import sys
 sys.path.append('/home-link/qeana10/bin/')
 
+
 import checksum
 import re
 import os
 from datetime import datetime
 import hashlib
 import glob
+import csv
 import zipfile
 import subprocess
-from pandas import DataFrame
-from pandas import read_csv
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
