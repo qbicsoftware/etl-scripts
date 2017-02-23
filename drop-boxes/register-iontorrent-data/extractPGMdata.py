@@ -1,4 +1,5 @@
-import os
+sys.path.append('/home-link/qeana10/bin/')
+
 import sys
 import glob
 import csv

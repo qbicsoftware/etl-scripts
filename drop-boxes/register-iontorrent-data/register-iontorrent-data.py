@@ -4,8 +4,8 @@ Note:
 print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_log.txt
 '''
 import sys
-sys.path.append('/home-link/qeana10/bin/')
 
+import extractPGMdata
 
 import checksum
 import re
@@ -13,7 +13,6 @@ import os
 from datetime import datetime
 import hashlib
 import glob
-import csv
 import zipfile
 import subprocess
 import ch.systemsx.cisd.etlserver.registrator.api.v2
@@ -22,8 +21,6 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-# ETL script for registration of VCF files
-# expected:
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
