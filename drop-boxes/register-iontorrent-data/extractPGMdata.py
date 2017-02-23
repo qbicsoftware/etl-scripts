@@ -32,7 +32,7 @@ def extractXLSdata(xlsFilename):
         alleleCall = row['Allele Call']
         alleleFreq = float(row['Frequency'])
 
-        if varType == 'SNP' and alleleCall == 'Heterozygous' and ((alleleFreq > 5.0 and alleleFreq < 35.0) or (alleleFreq > 65.0 and alleleFreq < 0.85)):
+        if varType == 'SNP' and alleleCall == 'Heterozygous' and ((alleleFreq > 5.0 and alleleFreq < 35.0) or (alleleFreq > 65.0 and alleleFreq < 85.0)):
             #print chrom, position, refBase, varBase, alleleCall, alleleFreq
             dictKey = chrom + ':' + position
             resultsDict[dictKey].append((refBase, varBase, alleleCall, alleleFreq))
@@ -81,21 +81,14 @@ def mangleSnpEffAnnotationString(annstring):
 
 
 
-
-
-
-
-
-
-
-
 def extractPGMdata(vcfFilename, xlsFilename):
 
     xlsVarDict = extractXLSdata(xlsFilename)
     vcfVarDict = extractVCFdata(vcfFilename)
 
-    print xlsVarDict
+    #print xlsVarDict
 
+    extractedVariants = []
 
     for xlsRow, xlsCoords in xlsVarDict.iteritems():
         #xlsRefBase = v[]
@@ -116,183 +109,27 @@ def extractPGMdata(vcfFilename, xlsFilename):
                 continue
 
 
-
+            blackList = []
             for ann in annField:
                 annDict = mangleSnpEffAnnotationString(ann)
 
                 annAllele = annDict['allele']
-                blackList = []
+
 
                 if annAllele == xlsAltBase:
-                    genename = annDict['gene_name']
-                    dnaChange = annDict['HGVS_c']
-                    aaChange = annDict['HGVS_p']
+                    genename = annDict['gene_name'].strip()
+                    dnaChange = annDict['HGVS_c'].strip()
+                    aaChange = annDict['HGVS_p'].strip()
                     combinedChange = '|'.join([genename, dnaChange, aaChange])
-                    print combinedChange
+                    #print combinedChange
 
                     if dnaChange != '' and aaChange != '' and combinedChange not in blackList:
-                        print xlsRow, vcfRecord.CHROM, vcfRecord.POS, refBase, altBase, genename, annAllele, dnaChange, aaChange
+                        #print genename, dnaChange, aaChange
+                        extractedVariants.append((genename, dnaChange, aaChange, xlsVarFreq))
                         blackList.append(combinedChange)
-            #for vcfRow, vcfRecord in vcfVarDict.iteritems():
-            #v.INFO['ANN']
-    # vcfFile = open(vcfFilename, 'r')
-    # vcfLines = vcfFile.readlines()
-    # vcfFile.close()
+
+    return(extractedVariants)
 
 
 
-    #localDict = defaultdict(int)
-    #localDict = {}
-
-    # xlsFilename = filename + '.xls'
-    # filenameTmp = filename.split('/')[1]
-    # filenameTmp = filenameTmp.replace('alleles', 'TSVC_variants')
-
-    #vcfFilename = glob.glob('results/' + filenameTmp + '*')[0]
-
-    #print vcfFilename
-    #variantsDF = read_csv(xlsFilename, index_col=[0,1,2,3], sep='\t')
-
-    #if variantsDF.empty:
-    #    return localDict
-
-    #print variantsDF
-    #vcfDF = read_csv(vcfFilename, sep='\t', comment='#', header=None, index_col=[0,1])
-
-
-
-    #print variantsDF
-
-    #chromosome = variantsDF['Chrom']
-    #alleleCall = variantsDF['Allele Call']
-    #alleleSource = variantsDF['Allele Source']
-    #alleleFrequency = variantsDF['Frequency']
-    #alleleCoverage = variantsDF['Allele Cov']
-
-
-    #print sortedVariantsDF['HotSpot ID']
-
-#     for ix, row in variantsDF.iterrows():
-#         if blockingDict.has_key(ix):
-#             continue
-#         #print ix, row
-#         #print "!!!" + str(row['Var Cov'])
-#         #cosmicID = row['Allele Name']
-#
-#         #print ix, row['Frequency'], cosmicID, row['Allele Cov']
-#         #print ix, '---',
-#
-#         refBase = ix[2].strip()
-#         altBase = ix[3].strip()
-#
-#         try:
-#             rowList = vcfDF.ix[ix[0:2]].tolist()
-#
-#         except:
-#             #print 'Warning: Could not find ',
-#             #print ix[0:2],
-#             #print ' in ' + vcfFilename
-#             continue
-#
-#
-#
-#         vcfRowReconstructed = '\t'.join(map(str, ix[0:2])) + '\t' + '\t'.join(map(str, rowList))
-#
-#         tmpFile = open('tmpFile', 'w')
-#         #print headerContent
-#         tmpFile.write(headerContent)
-#         tmpFile.write(vcfRowReconstructed + '\n')
-#         tmpFile.close()
-#
-#         tmpFile = open('tmpFile', 'r')
-#
-#
-#         vcf_reader = vcf.Reader(tmpFile)
-#
-#         for record in vcf_reader:
-#             #print record
-#             #print refBase, altBase, record.REF, record.ALT
-#             #print refBase == record.REF, record.ALT.index(altBase)
-#             #if not refBase == record.REF:
-#             #    continue
-#
-#             #altBaseIndex = record.ALT.index(altBase)
-#             altBaseIndex = 0
-#             annstr = record.INFO['ANN'][altBaseIndex]
-#             annsplit = annstr.split('|')
-#
-#             #effect = annsplit[1].strip()
-#             #impact = annsplit[2].strip()
-#             genename = annsplit[3].strip()
-#             #mutation = annsplit[9].strip()
-#
-#             #print genename, mutation
-#             localDict[genename] = 1
-#             blockingDict[ix] = 1
-#
-#
-#             # if impact != 'HIGH' and impact != 'MODERATE':
-#             #     continue
-#             #
-#             #
-#             # #print record.INFO
-#             #
-#             # #print genename, mutation, impact, effect,
-#             #
-#             # lof = ''
-#             # nmd = ''
-#             # metasvm = ''
-#             # lrt = ''
-#             #
-#             # if record.INFO.has_key('LOF'):
-#             #     lof = record.INFO['LOF'][altBaseIndex]
-#             #
-#             # if record.INFO.has_key('NMD'):
-#             #     nmd = record.INFO['NMD'][altBaseIndex]
-#             #
-#             # if record.INFO.has_key('dbNSFP_MetaSVM_pred'):
-#             #     metasvm = record.INFO['dbNSFP_MetaSVM_pred'][altBaseIndex]
-#             #
-#             # if record.INFO.has_key('dbNSFP_MetaSVM_pred'):
-#             #     lrt = record.INFO['dbNSFP_MetaSVM_pred'][altBaseIndex]
-#             #
-#             # if metasvm == 'D' and lrt == 'D':
-#             #     key = genename + '_' + mutation
-#             #     localDict[key] = 1
-#         tmpFile.close()
-#
-#
-#
-#     return localDict
-#
-#
-# infile = open(sys.argv[1], 'r')
-# inlines = infile.readlines()
-#
-# hotspotNum = 0
-# missingNumber = 0
-#
-# fileCounter = 0
-#
-# for i in inlines:
-#     sys.stderr.write(str(fileCounter) + ' of ' + str(len(inlines)) + '\n')
-#     fileStats = loadGeneVariantsFromVCF(i.strip())
-#     fileCounter += 1
-#
-#     for k in fileStats.keys():
-#         histDict[k] += 1
-
-# for k in sorted(panelStatsDict, key=panelStatsDict.get, reverse=True):
-#     print k, '\t', panelStatsDict[k]
-#
-# print
-# print
-#
-
-extractPGMdata(sys.argv[1], sys.argv[2])
-
-# print len(histDict)
-#
-# for key in sorted(histDict, key=histDict.get, reverse=True):
-#     if histDict[key] > 1:
-#         print key, '\t', histDict[key]
+#print extractPGMdata(sys.argv[1], sys.argv[2])
