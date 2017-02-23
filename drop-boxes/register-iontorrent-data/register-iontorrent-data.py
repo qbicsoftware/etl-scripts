@@ -215,6 +215,13 @@ def process(transaction):
             p = subprocess.call(snpEffCommand, stdout=annfile_out)
             annfile_out.close()
 
+    annVCFPaths = glob.glob(annBaseDir + '/*_ann.vcf')
+
+    if len(xtrXLSPaths) != len(xtrVCFPaths):
+        raise IonTorrentDropboxError('Not all VCF were annotated! Please check for snpEff errors!')
+
+    print xtrXLSPaths
+    print annVCFPaths
     # we create a new experiment here: one PGM run -> one experiment (container)
     # as always, check if the experiment already exists
     experimentCode = 'PGM84'
