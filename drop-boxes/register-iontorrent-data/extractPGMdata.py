@@ -2,10 +2,10 @@
 
 import sys
 
-sys.path.append('/home-link/qeana10/bin/')
+sys.path.append('/home-link/qeana10/bin/PyVCF-0.6.8')
 
 import csv
-import PyVCF
+import vcf
 
 from collections import defaultdict
 
