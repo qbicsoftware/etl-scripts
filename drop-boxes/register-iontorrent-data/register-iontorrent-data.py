@@ -20,7 +20,7 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-import extractPGMdata
+from extractPGMdata import *
 
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
