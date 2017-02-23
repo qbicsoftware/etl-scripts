@@ -4,9 +4,6 @@ Note:
 print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_log.txt
 '''
 import sys
-
-import extractPGMdata
-
 import checksum
 import re
 import os
@@ -20,6 +17,8 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+import extractPGMdata
+
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
