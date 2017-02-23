@@ -10,16 +10,6 @@ import csv
 from collections import defaultdict
 
 
-histDict = defaultdict(int)
-metaInfoDict = {}
-#panelStatsDict = defaultdict(int)
-
-blockingDict = {}
-
-headerFile = open('vcfFileHeader.vcf')
-headerContent = headerFile.read()
-headerFile.close()
-
 def extractXLSdata(xlsFilename):
     xlsFile = open(xlsFilename, 'r')
     csvreader = csv.DictReader(xlsFile, delimiter='\t')
