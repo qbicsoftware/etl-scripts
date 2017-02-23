@@ -5,6 +5,8 @@ print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_
 '''
 import sys
 
+sys.path.append('/home-link/qeana10/bin/')
+
 import extractPGMdata
 
 import checksum
