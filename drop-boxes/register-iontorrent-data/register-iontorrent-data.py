@@ -220,8 +220,11 @@ def process(transaction):
     if len(xtrXLSPaths) != len(xtrVCFPaths):
         raise IonTorrentDropboxError('Not all VCF were annotated! Please check for snpEff errors!')
 
-    print xtrXLSPaths
-    print annVCFPaths
+    for i in sorted(xtrXLSPaths):
+        print i
+
+    for i in sorted(annVCFPaths):
+        print i
     # we create a new experiment here: one PGM run -> one experiment (container)
     # as always, check if the experiment already exists
     experimentCode = 'PGM84'
