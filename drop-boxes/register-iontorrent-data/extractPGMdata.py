@@ -2,7 +2,7 @@
 
 import sys
 
-sys.path.append('/home-link/qeana10/bin/PyVCF-0.6.8')
+sys.path.append('/home-link/qeana10/bin/PyVCF-0.6.0')
 
 import csv
 import vcf
@@ -42,6 +42,8 @@ def extractXLSdata(xlsFilename):
 
     return resultsDict
 
+
+# works only with the pyvcf module. Unfortunately, it does not work under Jython 2.5.x (openbis 13.04)
 def extractVCFdata(vcfFilename):
     vcfDict = {}
 
@@ -56,6 +58,32 @@ def extractVCFdata(vcfFilename):
         vcfDict[dictKey] = record
 
     return vcfDict
+
+# class DummyVCFRecord:
+#     def __init__(self, )
+#
+#
+# # super-rudimentary vcf file reader... since pyvcf module does not work
+# def extractVCFdata(vcfFilename):
+#     vcfDict = {}
+#     vcfFile = open(vcfFilename, 'r')
+#     #vcfreader = csv.DictReader(vcfFile, delimiter='\t', quotechar='#')
+#     vcflines = vcfFile.readlines()
+#
+#     for row in vcflines:
+#         if row.startswith('#'):
+#             continue
+#
+#         rowsplit = row.strip().split('\t')
+#         print len(rowsplit)
+#         chrom = rowsplit[0]
+#         position = rowsplit[1]
+#         dictKey = str(chrom) + ':' + str(position)
+#
+#
+#         vcfDict[dictKey] = record
+#
+#     return vcfDict
 
 #Annotation      : T|missense_variant|MODERATE|CCT8L2|ENSG00000198445|transcript|ENST00000359963|protein_coding|1/1|c.1406G>A|p.Gly469Glu|1666/2034|1406/1674|469/557|  |
 #SubField number : 1|       2        |    3   |  4   |       5       |    6     |      7        |      8       | 9 |    10   |    11     |   12    |   13    |   14  |15| 16
@@ -135,4 +163,4 @@ def extractPGMdata(vcfFilename, xlsFilename):
 
 
 
-#print extractPGMdata(sys.argv[1], sys.argv[2])
+print extractPGMdata(sys.argv[1], sys.argv[2])
