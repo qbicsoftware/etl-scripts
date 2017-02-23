@@ -220,11 +220,7 @@ def process(transaction):
     if len(xtrXLSPaths) != len(xtrVCFPaths):
         raise IonTorrentDropboxError('Not all VCF were annotated! Please check for snpEff errors!')
 
-    xtrXLSPaths = sorted(xtrXLSPaths)
-    annVCFPaths = sorted(annVCFPaths)
 
-    for i in range(0,len(xtrXLSPaths)):
-        print annVCFPaths[i], extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
     # we create a new experiment here: one PGM run -> one experiment (container)
     # as always, check if the experiment already exists
     experimentCode = 'PGM84'
@@ -240,6 +236,39 @@ def process(transaction):
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
     # TODO: else we should quit the dropbox since we don't want to overwrite existing data
     # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
+
+
+    xtrXLSPaths = sorted(xtrXLSPaths)
+    annVCFPaths = sorted(annVCFPaths)
+
+    # sc = SearchCriteria()    # Find the patient according to code
+    # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #     SearchCriteria.MatchClauseAttribute.TYPE, 'Q_EXPERIMENTAL_DESIGN'))
+    #
+    # ec = SearchCriteria()
+    #
+    # ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+    #     SearchCriteria.MatchClauseAttribute.CODE, expID))
+    # sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
+    #
+    # existingSamples = search_service.searchForSamples(sc)
+
+    # this is "the main loop" here: create openBIS samples for each VCF/XLS, extract the relevant variants for centraXX, ...
+    for i in range(0,len(xtrXLSPaths)):
+        print annVCFPaths[i], extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+
+        # newPatient = transaction.createNewSample('/UKT_PATHOLOGY_PGM/' + , "Q_BIOLOGICAL_ENTITY")
+        # newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        # newMSSample.setExperiment(msExperiment)
+        # create new dataset
+        # dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
+        # dataSet.setMeasuredData(False)
+        # dataSet.setSample(newMSSample)
+
+        #transaction.moveFile(incomingPath, dataSet)
+
+
+
 
 
 
