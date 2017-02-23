@@ -4,6 +4,9 @@ Note:
 print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_log.txt
 '''
 import sys
+
+sys.path.append('/home-link/qeana10/bin')
+
 import checksum
 import re
 import os
