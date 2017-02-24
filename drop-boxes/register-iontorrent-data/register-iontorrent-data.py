@@ -246,6 +246,7 @@ def process(transaction):
     xtrXLSPaths = sorted(xtrXLSPaths)
     annVCFPaths = sorted(annVCFPaths)
 
+    search_service = transaction.getSearchService()
     experiments = search_service.listExperiments(projectFullIdentifier)
     #experimentIDs = []
     for exp in experiments:
