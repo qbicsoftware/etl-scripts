@@ -250,7 +250,7 @@ def process(transaction):
     experiments = search_service.listExperiments(projectFullIdentifier)
     #experimentIDs = []
     for exp in experiments:
-        expID = exp.getIdentifier()
+        expID = exp.getExperimentIdentifier()
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
             SearchCriteria.MatchClauseAttribute.TYPE, 'Q_NGS_MEASUREMENT'))
