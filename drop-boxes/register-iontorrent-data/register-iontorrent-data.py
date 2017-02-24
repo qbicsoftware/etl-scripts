@@ -351,9 +351,10 @@ def process(transaction):
         print newPatientID, extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
 
         newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
+        newPatient.setPropertyValue('Q_NCBI_ORGANISM', '9606')
         newPatient.setExperiment(freshIonPGMDesign)
 
-        newNGSsampleID = create_barcode('QPATH', subjectCounter, 'A')
+        newNGSsampleID = create_barcode('QPATH', sampleCounter, 'A')
         newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
         newNGSrun.setExperiment(freshIonPGMExperiment)
