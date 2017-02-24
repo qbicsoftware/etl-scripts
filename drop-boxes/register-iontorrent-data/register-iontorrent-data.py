@@ -4,7 +4,8 @@ Note:
 print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_log.txt
 '''
 import sys
-sys.path.append('/home-link/qeana10/bin/')
+
+sys.path.append('/home-link/qeana10/bin')
 
 import checksum
 import re
@@ -20,8 +21,9 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-# ETL script for registration of VCF files
-# expected:
+from extractPGMdata import *
+
+
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
@@ -52,6 +54,27 @@ def validateProperty(propStr):
 
     return(False)
 
+# barcode creation stuff
+def create_count_string(firstFreeBarcodeId):
+    return "%03d" % firstFreeBarcodeId
+
+def map_to_char(num):
+    num += 48
+    if num > 57:
+      num += 7
+    return chr(num)
+def create_checksum(code):
+    i = 1
+    sum = 0
+    for s in code:
+        sum += ord(s) * i
+        i += 1
+    return map_to_char(sum % 34)
+
+def create_barcode(projectCode, firstFreeBarcodeId, classChar):
+    code = projectCode + create_count_string(firstFreeBarcodeId) + classChar
+    return code + create_checksum(code)
+
 
 # compute sha256sum on huge files (need to do it chunk-wise)
 def computeSha256Sum(fileFullPath, chunkSize = 8*4096):
@@ -78,6 +101,32 @@ def buildOpenBisTimestamp(datetimestr):
     outDateFormat = '%Y-%m-%d'
 
     return datetime.datetime.strptime(datetimestr, inDateFormat).strftime(outDateFormat)
+
+def sampleExists(searchService, sampleCode):
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
+    foundSamples = searchService.searchForSamples(sc)
+
+    if len(foundSamples) > 0:
+        return True
+
+    return False
+
+def listSamplesForExperiment(searchService, expType, expID):
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.TYPE, expType))
+
+    ec = SearchCriteria()
+
+    ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, expID))
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
+
+    existingSamples = searchService.searchForSamples(sc)
+
+    return existingSamples
 
 def findExperimentByID(expIdentifier, transaction):
     # expIdentifier needs to be /SPACE/PROJECT/EXPERIMENT_CODE
@@ -214,19 +263,121 @@ def process(transaction):
             p = subprocess.call(snpEffCommand, stdout=annfile_out)
             annfile_out.close()
 
+    annVCFPaths = glob.glob(annBaseDir + '/*_ann.vcf')
+
+    if len(xtrXLSPaths) != len(xtrVCFPaths):
+        raise IonTorrentDropboxError('Not all VCF were annotated! Please check for snpEff errors!')
+
+
     # we create a new experiment here: one PGM run -> one experiment (container)
     # as always, check if the experiment already exists
-    experimentCode = 'PGM84'
-    experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
 
-    queryResults = findExperimentByID(experimentFullIdentifier, transaction)
-    printInfosToStdOut(queryResults)
-    if len(queryResults) == 0:
-        freshIonPGMExperiment = transaction.createNewExperiment(experimentFullIdentifier, 'Q_NGS_MEASUREMENT')
+    spaceCode = 'UKT_PATHOLOGY_PGM'
+    projectCode = 'QPATH'
+
+    projectFullIdentifier = '/' + spaceCode + '/' + projectCode
+
+
+
+
+    xtrXLSPaths = sorted(xtrXLSPaths)
+    annVCFPaths = sorted(annVCFPaths)
+
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments(projectFullIdentifier)
+    #experimentIDs = []
+    subjectCounter = 1
+    sampleCounter = 0
+
+
+    for exp in experiments:
+        expID = exp.getExperimentIdentifier()
+
+        if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
+            foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expID)
+
+            print expID, ' holds ', len(foundSamples), ' patients'
+            subjectCounter += len(foundSamples)
+
+        if exp.getExperimentType() == 'Q_NGS_MEASUREMENT':
+            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
+
+            print expID, ' holds ', len(foundSamples), ' NGS runs'
+            sampleCounter += len(foundSamples)
+
+
+    newExperimentCode = 'PGM84'
+    newExperimentFullIdentifier1 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-DESIGN'
+    newExperimentFullIdentifier2 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-RUN'
+
+
+    queryResults1 = findExperimentByID(newExperimentFullIdentifier1, transaction)
+    queryResults2 = findExperimentByID(newExperimentFullIdentifier2, transaction)
+
+    printInfosToStdOut(queryResults1)
+
+    # expected case: there is no experiment with this PGM number yet
+    # TODO: else we should quit the dropbox since we don't want to overwrite existing data
+    # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
+    freshIonPGMDesign = None
+    freshIonPGMExperiment = None
+
+    # we need to create two experiment objects: Q_EXPERIMENTAL_DESIGN and Q_NGS_MEASUREMENT
+    if len(queryResults1) == 0:
+        freshIonPGMDesign = transaction.createNewExperiment(newExperimentFullIdentifier1, 'Q_EXPERIMENTAL_DESIGN')
+        freshIonPGMDesign.setPropertyValue('Q_SECONDARY_NAME', name)
+
+        freshIonPGMExperiment = transaction.createNewExperiment(newExperimentFullIdentifier2, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+    else:
+        # experiment exists, check if there are samples attached
+        # foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', newExperimentFullIdentifier2)
+        #
+        # if len(foundSamples) > 0:
+        #     raise IonTorrentDropboxError(newExperimentCode + 'contains samples! Aborting...')
+        freshIonPGMDesign = queryResults1[0]
+        freshIonPGMExperiment = queryResults2[0]
 
-    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    patientIDprefix = 'QPATH-PAT-'
+
+    # this is "the main loop" here: create openBIS samples for each VCF/XLS, extract the relevant variants for centraXX, ...
+    for i in range(0,len(xtrXLSPaths)):
+        newPatientID = patientIDprefix + str(subjectCounter).zfill(5)
+
+        #if sampleExists(search_service, newPatientID):
+        #    raise IonTorrentDropboxError('')
+
+        print newPatientID, extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+
+        newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
+        newPatient.setPropertyValue('Q_NCBI_ORGANISM', '9606')
+        newPatient.setExperiment(freshIonPGMDesign)
+
+        newNGSsampleID = create_barcode('QPATH', sampleCounter, 'A')
+        newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
+        newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
+        newNGSrun.setExperiment(freshIonPGMExperiment)
+        #print
+
+        subjectCounter += 1
+        sampleCounter += 1
+        #newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, "Q_BIOLOGICAL_ENTITY")
+        # newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        # newMSSample.setExperiment(msExperiment)
+        # create new dataset
+        # dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
+        # dataSet.setMeasuredData(False)
+        # dataSet.setSample(newMSSample)
+
+        #transaction.moveFile(incomingPath, dataSet)
+
+
+
+
+
+
+    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
