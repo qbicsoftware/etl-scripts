@@ -20,6 +20,7 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+
 from extractPGMdata import *
 
 
@@ -223,8 +224,12 @@ def process(transaction):
 
     # we create a new experiment here: one PGM run -> one experiment (container)
     # as always, check if the experiment already exists
+
+    spaceCode = 'UKT_PATHOLOGY_PGM'
+    projectCode = 'QPATH'
     experimentCode = 'PGM84'
-    experimentFullIdentifier = '/UKT_PATHOLOGY_PGM/QPATH/' + experimentCode
+    projectFullIdentifier = '/' + spaceCode + '/' + projectCode
+    experimentFullIdentifier = '/' + spaceCode + '/' + projectCode + '/' + experimentCode
 
     queryResults = findExperimentByID(experimentFullIdentifier, transaction)
     printInfosToStdOut(queryResults)
@@ -241,17 +246,26 @@ def process(transaction):
     xtrXLSPaths = sorted(xtrXLSPaths)
     annVCFPaths = sorted(annVCFPaths)
 
-    # sc = SearchCriteria()    # Find the patient according to code
-    # sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-    #     SearchCriteria.MatchClauseAttribute.TYPE, 'Q_EXPERIMENTAL_DESIGN'))
-    #
-    # ec = SearchCriteria()
-    #
-    # ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-    #     SearchCriteria.MatchClauseAttribute.CODE, expID))
-    # sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
-    #
-    # existingSamples = search_service.searchForSamples(sc)
+    experiments = search_service.listExperiments(projectFullIdentifier)
+    #experimentIDs = []
+    for exp in experiments:
+        expID = exp.getIdentifier()
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.TYPE, 'Q_NGS_MEASUREMENT'))
+
+        ec = SearchCriteria()
+
+        ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+            SearchCriteria.MatchClauseAttribute.CODE, expID))
+        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
+
+        existingSamples = search_service.searchForSamples(sc)
+
+        print expID, ' holds ', len(existingSamples)
+
+
+
 
     # this is "the main loop" here: create openBIS samples for each VCF/XLS, extract the relevant variants for centraXX, ...
     for i in range(0,len(xtrXLSPaths)):
