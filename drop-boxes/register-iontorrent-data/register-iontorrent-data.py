@@ -54,6 +54,27 @@ def validateProperty(propStr):
 
     return(False)
 
+# barcode creation stuff
+def create_count_string(firstFreeBarcodeId):
+    return "%03d" % firstFreeBarcodeId
+
+def map_to_char(num):
+    num += 48
+    if num > 57:
+      num += 7
+    return chr(num)
+def create_checksum(code):
+    i = 1
+    sum = 0
+    for s in code:
+        sum += ord(s) * i
+        i += 1
+    return map_to_char(sum % 34)
+
+def create_barcode(projectCode, firstFreeBarcodeId, classChar):
+    code = projectCode + create_count_string(firstFreeBarcodeId) + classChar
+    return code + create_checksum(code)
+
 
 # compute sha256sum on huge files (need to do it chunk-wise)
 def computeSha256Sum(fileFullPath, chunkSize = 8*4096):
@@ -80,6 +101,32 @@ def buildOpenBisTimestamp(datetimestr):
     outDateFormat = '%Y-%m-%d'
 
     return datetime.datetime.strptime(datetimestr, inDateFormat).strftime(outDateFormat)
+
+def sampleExists(searchService, sampleCode):
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
+    foundSamples = searchService.searchForSamples(sc)
+
+    if len(foundSamples) > 0:
+        return True
+
+    return False
+
+def listSamplesForExperiment(searchService, expType, expID):
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.TYPE, expType))
+
+    ec = SearchCriteria()
+
+    ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, expID))
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
+
+    existingSamples = search_service.searchForSamples(sc)
+
+    return existingSamples
 
 def findExperimentByID(expIdentifier, transaction):
     # expIdentifier needs to be /SPACE/PROJECT/EXPERIMENT_CODE
@@ -227,20 +274,10 @@ def process(transaction):
 
     spaceCode = 'UKT_PATHOLOGY_PGM'
     projectCode = 'QPATH'
-    experimentCode = 'PGM84'
+
     projectFullIdentifier = '/' + spaceCode + '/' + projectCode
-    experimentFullIdentifier = '/' + spaceCode + '/' + projectCode + '/' + experimentCode
 
-    queryResults = findExperimentByID(experimentFullIdentifier, transaction)
-    printInfosToStdOut(queryResults)
 
-    # expected case: there is no experiment with this PGM number yet
-    if len(queryResults) == 0:
-        freshIonPGMExperiment = transaction.createNewExperiment(experimentFullIdentifier, 'Q_NGS_MEASUREMENT')
-        freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
-        freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
-    # TODO: else we should quit the dropbox since we don't want to overwrite existing data
-    # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
 
 
     xtrXLSPaths = sorted(xtrXLSPaths)
@@ -249,30 +286,54 @@ def process(transaction):
     search_service = transaction.getSearchService()
     experiments = search_service.listExperiments(projectFullIdentifier)
     #experimentIDs = []
+    subjectCounter = 1
+
     for exp in experiments:
         expID = exp.getExperimentIdentifier()
-        sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-            SearchCriteria.MatchClauseAttribute.TYPE, 'Q_NGS_MEASUREMENT'))
 
-        ec = SearchCriteria()
-
-        ec.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-            SearchCriteria.MatchClauseAttribute.CODE, expID))
-        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
-
-        existingSamples = search_service.searchForSamples(sc)
+        foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
 
         print expID, ' holds ', len(existingSamples)
+        subjectCounter += len(existingSamples)
 
 
+    newExperimentCode = 'PGM84'
+    newExperimentFullIdentifier = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode
 
+    queryResults = findExperimentByID(newExperimentFullIdentifier, transaction)
+    printInfosToStdOut(queryResults)
+
+    # expected case: there is no experiment with this PGM number yet
+    # TODO: else we should quit the dropbox since we don't want to overwrite existing data
+    # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
+
+    if len(queryResults) == 0:
+        freshIonPGMExperiment = transaction.createNewExperiment(newExperimentFullIdentifier, 'Q_NGS_MEASUREMENT')
+        freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
+        freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+    else:
+        # experiment exists, check if there are samples attached
+        foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', newExperimentFullIdentifier)
+
+        if len(foundSamples) > 0:
+            raise IonTorrentDropboxError(newExperimentCode + 'contains samples! Aborting...')
+
+    patientIDprefix = 'QPATH-PAT-'
 
     # this is "the main loop" here: create openBIS samples for each VCF/XLS, extract the relevant variants for centraXX, ...
     for i in range(0,len(xtrXLSPaths)):
-        print annVCFPaths[i], extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+        newPatientID = patientIDprefix + str(subjectCounter).zfill(5)
 
-        # newPatient = transaction.createNewSample('/UKT_PATHOLOGY_PGM/' + , "Q_BIOLOGICAL_ENTITY")
+        #if sampleExists(search_service, newPatientID):
+        #    raise IonTorrentDropboxError('')
+
+        print newPatientID, extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+
+        newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, "Q_BIOLOGICAL_ENTITY")
+        print create_barcode('QPATH', subjectCounter, 'A')
+
+        subjectCounter += 1
+        #newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, "Q_BIOLOGICAL_ENTITY")
         # newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         # newMSSample.setExperiment(msExperiment)
         # create new dataset
