@@ -287,36 +287,57 @@ def process(transaction):
     experiments = search_service.listExperiments(projectFullIdentifier)
     #experimentIDs = []
     subjectCounter = 1
+    sampleCounter = 0
+
 
     for exp in experiments:
         expID = exp.getExperimentIdentifier()
 
-        foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
+        if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
+            foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expID)
 
-        print expID, ' holds ', len(foundSamples)
-        subjectCounter += len(foundSamples)
+            print expID, ' holds ', len(foundSamples), ' patients'
+            subjectCounter += len(foundSamples)
+
+        if exp.getExperimentType() == 'Q_NGS_MEASUREMENT':
+            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
+
+            print expID, ' holds ', len(foundSamples), ' NGS runs'
+            sampleCounter += len(foundSamples)
 
 
     newExperimentCode = 'PGM84'
-    newExperimentFullIdentifier = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode
+    newExperimentFullIdentifier1 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-DESIGN'
+    newExperimentFullIdentifier2 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-RUN'
 
-    queryResults = findExperimentByID(newExperimentFullIdentifier, transaction)
-    printInfosToStdOut(queryResults)
+
+    queryResults1 = findExperimentByID(newExperimentFullIdentifier1, transaction)
+    queryResults2 = findExperimentByID(newExperimentFullIdentifier2, transaction)
+
+    printInfosToStdOut(queryResults1)
 
     # expected case: there is no experiment with this PGM number yet
     # TODO: else we should quit the dropbox since we don't want to overwrite existing data
     # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
+    freshIonPGMDesign = None
+    freshIonPGMExperiment = None
 
-    if len(queryResults) == 0:
-        freshIonPGMExperiment = transaction.createNewExperiment(newExperimentFullIdentifier, 'Q_NGS_MEASUREMENT')
+    # we need to create two experiment objects: Q_EXPERIMENTAL_DESIGN and Q_NGS_MEASUREMENT
+    if len(queryResults1) == 0:
+        freshIonPGMDesign = transaction.createNewExperiment(newExperimentFullIdentifier1, 'Q_EXPERIMENTAL_DESIGN')
+        freshIonPGMDesign.setPropertyValue('Q_SECONDARY_NAME', name)
+
+        freshIonPGMExperiment = transaction.createNewExperiment(newExperimentFullIdentifier2, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
     else:
         # experiment exists, check if there are samples attached
-        foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', newExperimentFullIdentifier)
-
-        if len(foundSamples) > 0:
-            raise IonTorrentDropboxError(newExperimentCode + 'contains samples! Aborting...')
+        # foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', newExperimentFullIdentifier2)
+        #
+        # if len(foundSamples) > 0:
+        #     raise IonTorrentDropboxError(newExperimentCode + 'contains samples! Aborting...')
+        freshIonPGMDesign = queryResults1[0]
+        freshIonPGMExperiment = queryResults2[0]
 
     patientIDprefix = 'QPATH-PAT-'
 
@@ -329,10 +350,17 @@ def process(transaction):
 
         print newPatientID, extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
 
-        newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, "Q_BIOLOGICAL_ENTITY")
-        print create_barcode('QPATH', subjectCounter, 'A')
+        newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
+        newPatient.setExperiment(freshIonPGMDesign)
+
+        newNGSsampleID = create_barcode('QPATH', subjectCounter, 'A')
+        newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
+        newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
+        newNGSrun.setExperiment(freshIonPGMExperiment)
+        #print
 
         subjectCounter += 1
+        sampleCounter += 1
         #newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, "Q_BIOLOGICAL_ENTITY")
         # newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         # newMSSample.setExperiment(msExperiment)
@@ -348,7 +376,7 @@ def process(transaction):
 
 
 
-    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
