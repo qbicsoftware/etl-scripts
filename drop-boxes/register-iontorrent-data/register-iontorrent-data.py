@@ -293,8 +293,8 @@ def process(transaction):
 
         foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
 
-        print expID, ' holds ', len(existingSamples)
-        subjectCounter += len(existingSamples)
+        print expID, ' holds ', len(foundSamples)
+        subjectCounter += len(foundSamples)
 
 
     newExperimentCode = 'PGM84'
