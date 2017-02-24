@@ -124,7 +124,7 @@ def listSamplesForExperiment(searchService, expType, expID):
         SearchCriteria.MatchClauseAttribute.CODE, expID))
     sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(ec))
 
-    existingSamples = search_service.searchForSamples(sc)
+    existingSamples = searchService.searchForSamples(sc)
 
     return existingSamples
 
