@@ -373,8 +373,8 @@ def process(transaction):
         #files2export = glob.glob(os.path.join(exportDir, '*'))
         #printInfosToStdOut(files2export)
 
-        transaction.moveFile(os.path.join(exportDir, os.path.basename(annVCFPaths[i])))
-        transaction.moveFile(os.path.join(exportDir, os.path.basename(xtrXLSPaths[i])))
+        transaction.moveFile(os.path.join(exportDir, os.path.basename(annVCFPaths[i])), newVCFdataset)
+        transaction.moveFile(os.path.join(exportDir, os.path.basename(xtrXLSPaths[i])), newVCFdataset)
 
         subjectCounter += 1
         sampleCounter += 1
