@@ -77,9 +77,18 @@ def process(transaction):
     newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
     newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
-    newHLATypingSample = transaction.createNewSample('/' + space + '/' + 'HLA'+ parentCode, "Q_NGS_HLATYPING")
-    newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-    newHLATypingSample.setExperiment(newHLATypingExperiment)
+    # does HLA sample already exist?
+    hlaCode = 'HLA' + parentCode
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, hlaCode))
+    foundSamples = search_service.searchForSamples(sc)
+    if len(foundSamples) < 1:
+        newHLATypingSample = transaction.createNewSample('/' + space + '/' + hlaCode, "Q_NGS_HLATYPING")
+        newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+        newHLATypingSample.setExperiment(newHLATypingExperiment)
+    else:
+        newHLATypingSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
 
     for root, subFolders, files in os.walk(incomingPath):
         if subFolders:

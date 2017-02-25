@@ -21,6 +21,7 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
+
 from extractPGMdata import *
 
 
@@ -113,10 +114,10 @@ def sampleExists(searchService, sampleCode):
 
     return False
 
-def listSamplesForExperiment(searchService, expType, expID):
+def listSamplesForExperiment(searchService, sampleType, expID):
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.TYPE, expType))
+        SearchCriteria.MatchClauseAttribute.TYPE, sampleType))
 
     ec = SearchCriteria()
 
@@ -142,6 +143,17 @@ def findExperimentByID(expIdentifier, transaction):
             break
 
     return results
+
+def grepPanelNameFromVCF(fileName):
+    vcffile = open(fileName, 'r')
+
+    panelName = ''
+    for line in vcffile:
+        if line.startswith('##parametersName='):
+            panelName = line.strip().split('=')[1].strip('\"')
+            break
+
+    return panelName
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -287,20 +299,21 @@ def process(transaction):
     experiments = search_service.listExperiments(projectFullIdentifier)
     #experimentIDs = []
     subjectCounter = 1
-    sampleCounter = 0
+    sampleCounter = 1
 
 
     for exp in experiments:
         expID = exp.getExperimentIdentifier()
-
+        expCode = expID.split('/')[-1]
+        printInfosToStdOut('looking for expCode ' + expCode)
         if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
-            foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expID)
+            foundSamples = listSamplesForExperiment(search_service, 'Q_BIOLOGICAL_ENTITY', expCode)
 
             print expID, ' holds ', len(foundSamples), ' patients'
             subjectCounter += len(foundSamples)
 
         if exp.getExperimentType() == 'Q_NGS_MEASUREMENT':
-            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
+            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_SINGLE_SAMPLE_RUN', expCode)
 
             print expID, ' holds ', len(foundSamples), ' NGS runs'
             sampleCounter += len(foundSamples)
@@ -309,6 +322,8 @@ def process(transaction):
     newExperimentCode = 'PGM84'
     newExperimentFullIdentifier1 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-DESIGN'
     newExperimentFullIdentifier2 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-RUN'
+    newExperimentFullIdentifier3 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-VARCALL'
+
 
 
     queryResults1 = findExperimentByID(newExperimentFullIdentifier1, transaction)
@@ -321,6 +336,7 @@ def process(transaction):
     # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
     freshIonPGMDesign = None
     freshIonPGMExperiment = None
+    freshVarCallExperiment = None
 
     # we need to create two experiment objects: Q_EXPERIMENTAL_DESIGN and Q_NGS_MEASUREMENT
     if len(queryResults1) == 0:
@@ -330,14 +346,14 @@ def process(transaction):
         freshIonPGMExperiment = transaction.createNewExperiment(newExperimentFullIdentifier2, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+
+        freshVarCallExperiment = transaction.createNewExperiment(newExperimentFullIdentifier3, 'Q_NGS_VARIANT_CALLING')
+        freshVarCallExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
     else:
         # experiment exists, check if there are samples attached
-        # foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', newExperimentFullIdentifier2)
-        #
-        # if len(foundSamples) > 0:
-        #     raise IonTorrentDropboxError(newExperimentCode + 'contains samples! Aborting...')
-        freshIonPGMDesign = queryResults1[0]
-        freshIonPGMExperiment = queryResults2[0]
+        raise IonTorrentDropboxError(newExperimentCode + 'already contains samples! Aborting...')
+        #freshIonPGMDesign = queryResults1[0]
+        #freshIonPGMExperiment = queryResults2[0]
 
     patientIDprefix = 'QPATH-PAT-'
 
@@ -348,8 +364,11 @@ def process(transaction):
         #if sampleExists(search_service, newPatientID):
         #    raise IonTorrentDropboxError('')
 
-        print newPatientID, extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+        panelName = grepPanelNameFromVCF(annVCFPaths[i])
 
+        print newPatientID, panelName
+
+        #extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
         newPatient.setPropertyValue('Q_NCBI_ORGANISM', '9606')
         newPatient.setExperiment(freshIonPGMDesign)
@@ -357,8 +376,33 @@ def process(transaction):
         newNGSsampleID = create_barcode('QPATH', sampleCounter, 'A')
         newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
+        newNGSrun.setPropertyValue('Q_SECONDARY_NAME', panelName)
         newNGSrun.setExperiment(freshIonPGMExperiment)
-        #print
+
+        newVarCallRun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID + '-VCF', 'Q_NGS_VARIANT_CALLING')
+        newVarCallRun.setParentSampleIdentifiers([newNGSrun.getSampleIdentifier()])
+        newVarCallRun.setPropertyValue('Q_SECONDARY_NAME', panelName)
+        newVarCallRun.setExperiment(freshVarCallExperiment)
+
+        newVCFdataset = transaction.createNewDataSet('Q_NGS_VARIANT_CALLING_DATA')
+        newVCFdataset.setMeasuredData(False)
+        newVCFdataset.setSample(newVarCallRun)
+
+        # create temporary export folder to simulate file copy
+        exportDir = os.path.join(fakeTmpBaseDir, 'export')
+        datasetTmpDir = os.path.join(exportDir, newNGSsampleID + '-VCF')
+
+        if not os.path.exists(datasetTmpDir):
+            os.makedirs(datasetTmpDir)
+
+
+        copyCommand = ['cp', annVCFPaths[i], xtrXLSPaths[i], datasetTmpDir]
+        p = subprocess.call(copyCommand)
+
+        #files2export = glob.glob(os.path.join(exportDir, '*'))
+        #printInfosToStdOut(files2export)
+
+        transaction.moveFile(datasetTmpDir, newVCFdataset)
 
         subjectCounter += 1
         sampleCounter += 1
