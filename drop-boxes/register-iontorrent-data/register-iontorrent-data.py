@@ -311,6 +311,8 @@ def process(transaction):
     newExperimentCode = 'PGM84'
     newExperimentFullIdentifier1 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-DESIGN'
     newExperimentFullIdentifier2 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-RUN'
+    newExperimentFullIdentifier3 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-VARCALL'
+
 
 
     queryResults1 = findExperimentByID(newExperimentFullIdentifier1, transaction)
@@ -323,6 +325,7 @@ def process(transaction):
     # TODO: alternatively, we could create PGMxy-1, PGMxy-2, etc.
     freshIonPGMDesign = None
     freshIonPGMExperiment = None
+    freshVarCallExperiment = None
 
     # we need to create two experiment objects: Q_EXPERIMENTAL_DESIGN and Q_NGS_MEASUREMENT
     if len(queryResults1) == 0:
@@ -332,6 +335,9 @@ def process(transaction):
         freshIonPGMExperiment = transaction.createNewExperiment(newExperimentFullIdentifier2, 'Q_NGS_MEASUREMENT')
         freshIonPGMExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
+
+        freshVarCallExperiment = transaction.createNewExperiment(newExperimentFullIdentifier3, 'Q_NGS_VARIANT_CALLING')
+        freshVarCallExperiment.setPropertyValue('Q_SECONDARY_NAME', name)
     else:
         # experiment exists, check if there are samples attached
         raise IonTorrentDropboxError(newExperimentCode + 'already contains samples! Aborting...')
@@ -357,9 +363,14 @@ def process(transaction):
         newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
         newNGSrun.setExperiment(freshIonPGMExperiment)
+
+        newVarCallRun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID + '-VCF', 'Q_NGS_VARIANT_CALLING')
+        newVarCallRun.setParentSampleIdentifiers([newNGSrun.getSampleIdentifier()])
+        newVarCallRun.setExperiment(freshVarCallExperiment)
+
         newVCFdataset = transaction.createNewDataSet('Q_NGS_VARIANT_CALLING_DATA')
         newVCFdataset.setMeasuredData(False)
-        newVCFdataset.setSample(newNGSrun)
+        newVCFdataset.setSample(newVarCallRun)
 
         # create temporary export folder to simulate file copy
         exportDir = os.path.join(fakeTmpBaseDir, 'export')
