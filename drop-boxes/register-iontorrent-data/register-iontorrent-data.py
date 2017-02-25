@@ -288,7 +288,7 @@ def process(transaction):
     experiments = search_service.listExperiments(projectFullIdentifier)
     #experimentIDs = []
     subjectCounter = 1
-    sampleCounter = 0
+    sampleCounter = 1
 
 
     for exp in experiments:
@@ -334,12 +334,9 @@ def process(transaction):
         freshIonPGMExperiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UKT_PATHOLOGY_THERMO_IONPGM')
     else:
         # experiment exists, check if there are samples attached
-        # foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', newExperimentFullIdentifier2)
-        #
-        # if len(foundSamples) > 0:
-        #     raise IonTorrentDropboxError(newExperimentCode + 'contains samples! Aborting...')
-        freshIonPGMDesign = queryResults1[0]
-        freshIonPGMExperiment = queryResults2[0]
+        raise IonTorrentDropboxError(newExperimentCode + 'already contains samples! Aborting...')
+        #freshIonPGMDesign = queryResults1[0]
+        #freshIonPGMExperiment = queryResults2[0]
 
     patientIDprefix = 'QPATH-PAT-'
 
@@ -360,7 +357,21 @@ def process(transaction):
         newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
         newNGSrun.setExperiment(freshIonPGMExperiment)
-        #print
+        newVCFdataset = transaction.createNewDataSet('Q_NGS_VARIANT_CALLING_DATA')
+        newVCFdataset.setMeasuredData(False)
+        newVCFdataset.setSample(newNGSrun)
+
+        # create temporary export folder to simulate file copy
+        exportDir = os.path.join(fakeTmpBaseDir, 'export')
+
+        if not os.path.exists(exportDir):
+            os.makedirs(exportDir)
+
+        copyCommand = ['cp', annVCFPaths[i], xtrXLSPaths[i], exportDir]
+        p = subprocess.call(copyCommand)
+
+        files2export = glob.glob(exportDir, '*')
+        printInfosToStdOut(files2export)
 
         subjectCounter += 1
         sampleCounter += 1
