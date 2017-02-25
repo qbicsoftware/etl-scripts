@@ -20,6 +20,8 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import Experiment
+
 
 from extractPGMdata import *
 
