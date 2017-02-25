@@ -20,7 +20,6 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import Experiment
 
 
 from extractPGMdata import *
@@ -293,8 +292,9 @@ def process(transaction):
 
 
     for exp in experiments:
-        #expID = exp.getExperimentIdentifier()
-        expCode = exp.getCode()
+        expID = exp.getExperimentIdentifier()
+        expCode = expID.split('/')[-1]
+        printInfosToStdOut('looking for expCode ' + expCode)
         if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
             foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expCode)
 
