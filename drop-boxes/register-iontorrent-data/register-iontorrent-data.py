@@ -114,10 +114,10 @@ def sampleExists(searchService, sampleCode):
 
     return False
 
-def listSamplesForExperiment(searchService, expType, expID):
+def listSamplesForExperiment(searchService, sampleType, expID):
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.TYPE, expType))
+        SearchCriteria.MatchClauseAttribute.TYPE, sampleType))
 
     ec = SearchCriteria()
 
@@ -296,13 +296,13 @@ def process(transaction):
         expCode = expID.split('/')[-1]
         printInfosToStdOut('looking for expCode ' + expCode)
         if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
-            foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expCode)
+            foundSamples = listSamplesForExperiment(search_service, 'Q_BIOLOGICAL_ENTITY', expCode)
 
             print expID, ' holds ', len(foundSamples), ' patients'
             subjectCounter += len(foundSamples)
 
         if exp.getExperimentType() == 'Q_NGS_MEASUREMENT':
-            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expCode)
+            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_SINGLE_SAMPLE_RUN', expCode)
 
             print expID, ' holds ', len(foundSamples), ' NGS runs'
             sampleCounter += len(foundSamples)
