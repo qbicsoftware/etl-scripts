@@ -363,18 +363,19 @@ def process(transaction):
 
         # create temporary export folder to simulate file copy
         exportDir = os.path.join(fakeTmpBaseDir, 'export')
+        datasetTmpDir = os.path.join(exportDir, newNGSsampleID)
 
-        if not os.path.exists(exportDir):
-            os.makedirs(exportDir)
+        if not os.path.exists(datasetTmpDir):
+            os.makedirs(datasetTmpDir)
 
-        copyCommand = ['cp', annVCFPaths[i], xtrXLSPaths[i], exportDir]
+
+        copyCommand = ['cp', annVCFPaths[i], xtrXLSPaths[i], datasetTmpDir]
         p = subprocess.call(copyCommand)
 
         #files2export = glob.glob(os.path.join(exportDir, '*'))
         #printInfosToStdOut(files2export)
 
-        transaction.moveFile(os.path.join(exportDir, os.path.basename(annVCFPaths[i])), newVCFdataset)
-        transaction.moveFile(os.path.join(exportDir, os.path.basename(xtrXLSPaths[i])), newVCFdataset)
+        transaction.moveFile(datasetTmpDir, newVCFdataset)
 
         subjectCounter += 1
         sampleCounter += 1
