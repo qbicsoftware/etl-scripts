@@ -144,6 +144,17 @@ def findExperimentByID(expIdentifier, transaction):
 
     return results
 
+def grepPanelNameFromVCF(fileName):
+    vcffile = open(fileName, 'r')
+
+    panelName = ''
+    for line in vcffile:
+        if line.startswith('##parametersName='):
+            panelName = line.strip().split('=')[1].strip('\"')
+            break
+
+    return panelName
+
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -353,8 +364,13 @@ def process(transaction):
         #if sampleExists(search_service, newPatientID):
         #    raise IonTorrentDropboxError('')
 
-        print newPatientID, extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
 
+
+        panelName = grepPanelNameFromVCF(annVCFPaths[i])
+
+        print newPatientID, panelName
+
+        #extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
         newPatient.setPropertyValue('Q_NCBI_ORGANISM', '9606')
         newPatient.setExperiment(freshIonPGMDesign)
@@ -374,7 +390,7 @@ def process(transaction):
 
         # create temporary export folder to simulate file copy
         exportDir = os.path.join(fakeTmpBaseDir, 'export')
-        datasetTmpDir = os.path.join(exportDir, newNGSsampleID)
+        datasetTmpDir = os.path.join(exportDir, newNGSsampleID + '-VCF')
 
         if not os.path.exists(datasetTmpDir):
             os.makedirs(datasetTmpDir)
