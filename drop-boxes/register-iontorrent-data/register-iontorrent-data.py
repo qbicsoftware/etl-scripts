@@ -292,7 +292,7 @@ def process(transaction):
 
     for exp in experiments:
         #expID = exp.getExperimentIdentifier()
-        expCode = exp.getExperimentCode()
+        expCode = exp.getCode()
         if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
             foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expCode)
 
@@ -377,7 +377,7 @@ def process(transaction):
 
 
 
-    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
