@@ -364,8 +364,6 @@ def process(transaction):
         #if sampleExists(search_service, newPatientID):
         #    raise IonTorrentDropboxError('')
 
-
-
         panelName = grepPanelNameFromVCF(annVCFPaths[i])
 
         print newPatientID, panelName
@@ -378,10 +376,12 @@ def process(transaction):
         newNGSsampleID = create_barcode('QPATH', sampleCounter, 'A')
         newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
+        newNGSrun.setPropertyValue('Q_SECONDARY_NAME', panelName)
         newNGSrun.setExperiment(freshIonPGMExperiment)
 
         newVarCallRun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID + '-VCF', 'Q_NGS_VARIANT_CALLING')
         newVarCallRun.setParentSampleIdentifiers([newNGSrun.getSampleIdentifier()])
+        newVarCallRun.setPropertyValue('Q_SECONDARY_NAME', panelName)
         newVarCallRun.setExperiment(freshVarCallExperiment)
 
         newVCFdataset = transaction.createNewDataSet('Q_NGS_VARIANT_CALLING_DATA')
