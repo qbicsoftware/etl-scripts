@@ -291,16 +291,16 @@ def process(transaction):
 
 
     for exp in experiments:
-        expID = exp.getExperimentIdentifier()
-
+        #expID = exp.getExperimentIdentifier()
+        expCode = exp.getExperimentCode()
         if exp.getExperimentType() == 'Q_EXPERIMENTAL_DESIGN':
-            foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expID)
+            foundSamples = listSamplesForExperiment(search_service, 'Q_EXPERIMENTAL_DESIGN', expCode)
 
             print expID, ' holds ', len(foundSamples), ' patients'
             subjectCounter += len(foundSamples)
 
         if exp.getExperimentType() == 'Q_NGS_MEASUREMENT':
-            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expID)
+            foundSamples = listSamplesForExperiment(search_service, 'Q_NGS_MEASUREMENT', expCode)
 
             print expID, ' holds ', len(foundSamples), ' NGS runs'
             sampleCounter += len(foundSamples)
