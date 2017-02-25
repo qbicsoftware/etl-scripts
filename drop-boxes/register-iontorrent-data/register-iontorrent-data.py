@@ -370,8 +370,11 @@ def process(transaction):
         copyCommand = ['cp', annVCFPaths[i], xtrXLSPaths[i], exportDir]
         p = subprocess.call(copyCommand)
 
-        files2export = glob.glob(os.path.join(exportDir, '*'))
-        printInfosToStdOut(files2export)
+        #files2export = glob.glob(os.path.join(exportDir, '*'))
+        #printInfosToStdOut(files2export)
+
+        transaction.moveFile(os.path.join(exportDir, os.path.basename(annVCFPaths[i])))
+        transaction.moveFile(os.path.join(exportDir, os.path.basename(xtrXLSPaths[i])))
 
         subjectCounter += 1
         sampleCounter += 1
@@ -390,7 +393,7 @@ def process(transaction):
 
 
 
-    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
