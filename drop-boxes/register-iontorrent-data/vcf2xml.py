@@ -162,47 +162,47 @@ def filterGeneVariantsFromPanel(vcfData, panelData):
 
     return(filteredGeneVariants)
 
-def writeGenePanelControlledVocabularies(geneVariantPanel):
-    pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
+# def writeGenePanelControlledVocabularies(geneVariantPanel):
+#     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
+#
+#     docRoot = cx.CentraXXDataExchange()
+#
+#     docRoot.Source = 'QBiC'
+#
+#     # fill in the controlled CV for gene variant profiles
+#     catData = cx.CatalogueDataType()
+#
+#     # for each gene variant create a UsageEntryCatalogueItem
+#     for gene, variants in geneVariantPanel.iteritems():
+#
+#         for v in variants:
+#             tmpCatDataItem = cx.UsageEntryType()
+#             tmpCatDataItem.Code = v
+#             tmpCatDataItem.Category = False
+#             tmpMultiLingua_en = cx.MultilingualEntryType()
+#             tmpMultiLingua_en.Lang = 'en'
+#             tmpMultiLingua_en.Value = v
+#             tmpCatDataItem.append(tmpMultiLingua_en)
+#
+#             tmpMultiLingua_de = cx.MultilingualEntryType()
+#             tmpMultiLingua_de.Lang = 'de'
+#             tmpMultiLingua_de.Value = v
+#             tmpCatDataItem.append(tmpMultiLingua_de)
+#
+#             catData.append(tmpCatDataItem)
+#
+#     docRoot.CatalogueData = catData
+#
+#     docRootDOM = docRoot.toDOM()
+#     docRootDOM.documentElement.setAttributeNS(
+#         xsi.uri(), 'xsi:schemaLocation', 'http://www.kairos-med.de ../CentraXXExchange.xsd')
+#     docRootDOM.documentElement.setAttributeNS(
+#         xmlns.uri(), 'xmlns:xsi', xsi.uri())
+#
+#     return(docRootDOM.toprettyxml(encoding='utf-8'))
 
-    docRoot = cx.CentraXXDataExchange()
 
-    docRoot.Source = 'QBiC'
-
-    # fill in the controlled CV for gene variant profiles
-    catData = cx.CatalogueDataType()
-
-    # for each gene variant create a UsageEntryCatalogueItem
-    for gene, variants in geneVariantPanel.iteritems():
-
-        for v in variants:
-            tmpCatDataItem = cx.UsageEntryType()
-            tmpCatDataItem.Code = v
-            tmpCatDataItem.Category = False
-            tmpMultiLingua_en = cx.MultilingualEntryType()
-            tmpMultiLingua_en.Lang = 'en'
-            tmpMultiLingua_en.Value = v
-            tmpCatDataItem.append(tmpMultiLingua_en)
-
-            tmpMultiLingua_de = cx.MultilingualEntryType()
-            tmpMultiLingua_de.Lang = 'de'
-            tmpMultiLingua_de.Value = v
-            tmpCatDataItem.append(tmpMultiLingua_de)
-
-            catData.append(tmpCatDataItem)
-
-    docRoot.CatalogueData = catData
-
-    docRootDOM = docRoot.toDOM()
-    docRootDOM.documentElement.setAttributeNS(
-        xsi.uri(), 'xsi:schemaLocation', 'http://www.kairos-med.de ../CentraXXExchange.xsd')
-    docRootDOM.documentElement.setAttributeNS(
-        xmlns.uri(), 'xmlns:xsi', xsi.uri())
-
-    return(docRootDOM.toprettyxml(encoding='utf-8'))
-
-
-def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970-01-01T11:59:59'):
+def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970-01-01T11:59:59', panelName = 'Unknown gene panel'):
     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 
     docRoot = cx.CentraXXDataExchange()
@@ -257,11 +257,11 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
     newMasterSample.XPosition = 0
     newMasterSample.YPosition = 0
 
-    # TODO: GET THE REAL SAMPLING DATE HERE, NOT CURRENT TIMESTAMP!
+    # todo was fixed... we have now the timestamp of the PGM vcf in here
     samplingDate = cx.DateType()
     # pytz.timezone('Europe/Berlin')
     #currDateTime = datetime.datetime.now()
-    print(creationTimeStamp)
+    #print(creationTimeStamp)
     dateTimeObject = parser.parse(creationTimeStamp)
     #timeFormat = '%Y-%m-%dT%H:%M:%S%z'
     samplingDate.Date = dateTimeObject.isoformat()
@@ -274,12 +274,12 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
     # Here, we write the actual variant data
     variantDataSet = cx.FlexibleDataSetInstanceType()
     #variantDataSet.Source = 'QBIC'
-    variantDataSet.FlexibleDataSetTypeRef = 'QGeneVariantProfile'
-    variantDataSet.InstanceName = 'Neue Variantenliste'
+    variantDataSet.FlexibleDataSetTypeRef = 'QBiCGeneProfile-v1'
+    variantDataSet.InstanceName = panelName + ' for patient ' + patientID + ' (sample ' + sampleID + ')'
     variantDataSet.Date = cx.DateType()
     variantDataSet.Date.Date = dateTimeObject.isoformat()
     variantDataSet.Date.Precision = cx.DatePrecision.EXACT
-    variantDataSet.Code = 'QGeneVariantProfile-'
+    variantDataSet.Code = 'QBiCGeneProfile-' + sampleID
 
     # loop over gene variants in vcfPanel and write the corresponding XML elements
     enumValues = []
@@ -287,8 +287,9 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
     for gene, muts in vcfPanel.iteritems():
         for mut in muts:
             flexValue = cx.FlexibleEnumerationDataType()
-            flexValue.FlexibleValueTypeRef = gene
-            flexValue.Value = [mut]
+            flexValue.FlexibleValueTypeRef = 'QBiC-' + gene
+            # TODO: need to check here if referenced by code or value
+            flexValue.Value = ['QBiC-' + gene + '-' + mut]
             enumValues.append(flexValue)
 
 

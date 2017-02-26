@@ -101,9 +101,28 @@ def writeGenePanelControlledVocabularies(geneVariantPanel):
     # for each gene variant create a UsageEntryCatalogueItem
     for gene, variants in geneVariantPanel.iteritems():
 
+        # for each gene, add the general status of 'variation' or 'no variation'
+        tmpCatDataItem = cx.UsageEntryType()
+        tmpCatDataItem.Code = 'QBiC-' + gene + '-VARIANTPRESENT'
+        tmpCatDataItem.Category = False
+        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'Variants present')
+        tmpCatDataItem.append(tmpMultiLingua_en)
+        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'Variante(n) gefunden')
+        tmpCatDataItem.append(tmpMultiLingua_de)
+        catData.append(tmpCatDataItem)
+
+        tmpCatDataItem = cx.UsageEntryType()
+        tmpCatDataItem.Code = 'QBiC-' + gene + '-VARIANTABSENT'
+        tmpCatDataItem.Category = False
+        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'No variants present')
+        tmpCatDataItem.append(tmpMultiLingua_en)
+        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'Keine Variante(n) gefunden')
+        tmpCatDataItem.append(tmpMultiLingua_de)
+        catData.append(tmpCatDataItem)
+
         for v in variants:
             tmpCatDataItem = cx.UsageEntryType()
-            tmpCatDataItem.Code = v
+            tmpCatDataItem.Code = 'QBiC-' + gene + '-' + v
             tmpCatDataItem.Category = False
             tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = v)
             tmpCatDataItem.append(tmpMultiLingua_en)
@@ -137,7 +156,7 @@ def writeMeasurementProfileDefs(geneVariantPanel):
     # for each gene variant create a UsageEntryCatalogueItem
     for gene, variants in geneVariantPanel.iteritems():
         flexEnumValue = cx.FlexibleEnumerationType()
-        flexEnumValue.Code = gene
+        flexEnumValue.Code = 'QBiC-' + gene
         tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = gene)
         tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = gene)
 
@@ -148,8 +167,11 @@ def writeMeasurementProfileDefs(geneVariantPanel):
 
         tmpVarList = []
 
+        tmpVarList.append('QBiC-' + gene + '-VARIANTPRESENT')
+        tmpVarList.append('QBiC-' + gene + '-VARIANTABSENT')
+
         for v in variants:
-            tmpVarList.append(v)
+            tmpVarList.append('QBiC-' + gene + '-' + v)
 
         flexEnumValue.UsageEntryTypeRef = tmpVarList
         flexValues.append(flexEnumValue)
@@ -158,9 +180,9 @@ def writeMeasurementProfileDefs(geneVariantPanel):
     catData.append(flexValues)
 
     geneProfile = cx.FlexibleDataSetType()
-    geneProfile.Code = 'QGeneVariantProfile'
-    tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'Gene Variant Panel (QBiC)')
-    tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'Gene Variant Panel (QBiC)')
+    geneProfile.Code = 'QBiCGeneProfile-v1'
+    tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'QBiC Gene Variant Panel v1')
+    tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'QBiC Gene Variant Panel v1')
 
     geneProfile.NameMultilingualEntries = [tmpMultiLingua_en, tmpMultiLingua_de]
     geneProfile.FlexibleValueComplexRefs = []
@@ -198,18 +220,18 @@ def writeMeasurementProfileDefs(geneVariantPanel):
 
 geneVariantPanel = loadVariantsWhitelistFile('finalCxxPanel4000.tsv')
 
-#output = writeGenePanelControlledVocabularies(geneVariantPanel)
+output = writeGenePanelControlledVocabularies(geneVariantPanel)
 output2 = writeMeasurementProfileDefs(geneVariantPanel)
 
 #print(output)
 
-xmloutfile = open('QGeneVariantProfile_definition.xml', 'w')
+xmloutfile = open('QBiCGeneProfile-profile.xml', 'w')
 xmloutfile.write(output2)
 xmloutfile.close()
 
-# xmloutfile = open('controlledCVs.xml', 'w')
-# xmloutfile.write(output)
-# xmloutfile.close()
+xmloutfile = open('QBiCGeneProfile-catalog.xml', 'w')
+xmloutfile.write(output)
+xmloutfile.close()
 
 
 
