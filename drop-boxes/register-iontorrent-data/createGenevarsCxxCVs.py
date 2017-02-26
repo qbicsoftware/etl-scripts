@@ -7,7 +7,7 @@ import pyxb.utils.domutils
 import xml.dom.minidom
 from pyxb.namespace import XMLSchema_instance as xsi
 from pyxb.namespace import XMLNamespaces as xmlns
-import vcf
+#import vcf
 
 
 def loadGeneVariantPanelFile(filename):
@@ -28,44 +28,62 @@ def loadGeneVariantPanelFile(filename):
     # print(geneVariantPanel)
     return(tmpVariantPanel)
 
+# is tailored to the finalCxxPanel4000.tsv file
+def loadVariantsWhitelistFile(filename):
+    tmpVariantPanel = {}
 
-def loadGeneVariantsFromVCF(filename):
-    vcf_reader = vcf.Reader(open(filename, 'r'))
+    with open(filename, 'rb') as panelfile:
+        panelreader = csv.reader(panelfile, delimiter=' ')
+        for variant in panelreader:
+            genename = variant[0].strip()
+            varname = variant[2].strip().split('.')[1]
 
-    aaMapping = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N',
-                 'Asp': 'D', 'Cys': 'C', 'Glu': 'E',
-                 'Gln': 'Q', 'Gly': 'G', 'His': 'H',
-                 'Ile': 'I', 'Leu': 'L', 'Lys': 'K',
-                 'Met': 'M', 'Phe': 'F', 'Pro': 'P',
-                 'Ser': 'S', 'Thr': 'T', 'Trp': 'W',
-                 'Tyr': 'Y', 'Val': 'V', '*': '*'}
+            if not tmpVariantPanel.has_key(genename):
+                tmpVariantPanel[genename] = []
 
-    #geneVarMap = {}
-    tmpLoadedGeneVars = []
+            tmpVariantPanel[genename].append(varname)
 
-    for record in vcf_reader:
-        annstr = record.INFO['ANN'][0]
-        annsplit = annstr.split('|')
+    # print(geneVariantPanel)
+    return(tmpVariantPanel)
 
-        genename = annsplit[3].strip()
-        mutation = annsplit[10][2:].strip()
-        firstAA = mutation[0:3]
-        mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
-        secAA = mutation_short[len(mutation_short) - 3:len(mutation_short)]
-        mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
-        #print(genename, mutation, mutation_short)
-        # print genename, mutation_short
 
-        # if not geneVarMap.has_key(genename):
-        #     geneVarMap[genename] = []
+# def loadGeneVariantsFromVCF(filename):
+#     vcf_reader = vcf.Reader(open(filename, 'r'))
+#
+#     aaMapping = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N',
+#                  'Asp': 'D', 'Cys': 'C', 'Glu': 'E',
+#                  'Gln': 'Q', 'Gly': 'G', 'His': 'H',
+#                  'Ile': 'I', 'Leu': 'L', 'Lys': 'K',
+#                  'Met': 'M', 'Phe': 'F', 'Pro': 'P',
+#                  'Ser': 'S', 'Thr': 'T', 'Trp': 'W',
+#                  'Tyr': 'Y', 'Val': 'V', '*': '*'}
+#
+#     #geneVarMap = {}
+#     tmpLoadedGeneVars = []
+#
+#     for record in vcf_reader:
+#         annstr = record.INFO['ANN'][0]
+#         annsplit = annstr.split('|')
+#
+#         genename = annsplit[3].strip()
+#         mutation = annsplit[10][2:].strip()
+#         firstAA = mutation[0:3]
+#         mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
+#         secAA = mutation_short[len(mutation_short) - 3:len(mutation_short)]
+#         mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
+#         #print(genename, mutation, mutation_short)
+#         # print genename, mutation_short
+#
+#         # if not geneVarMap.has_key(genename):
+#         #     geneVarMap[genename] = []
+#
+#         tmpLoadedGeneVars.append((genename, mutation_short))
+#
+#         # print(geneVarMap)
+#
+#     return(tmpLoadedGeneVars)
 
-        tmpLoadedGeneVars.append((genename, mutation_short))
-
-        # print(geneVarMap)
-
-    return(tmpLoadedGeneVars)
-
-geneVariantPanel = loadGeneVariantPanelFile('cosmic_mutations_reduced_300.csv')
+#geneVariantPanel = loadGeneVariantPanelFile('cosmic_mutations_reduced_300.csv')
 
 #test = loadGeneVariantsFromVCF('missense.vcf')
 
@@ -178,20 +196,20 @@ def writeMeasurementProfileDefs(geneVariantPanel):
 
 
 
-geneVariantPanel = loadGeneVariantPanelFile('cosmic_mutations_reduced_300.csv')
+geneVariantPanel = loadVariantsWhitelistFile('finalCxxPanel4000.tsv')
 
 #output = writeGenePanelControlledVocabularies(geneVariantPanel)
 output2 = writeMeasurementProfileDefs(geneVariantPanel)
 
-#print(output2)
+#print(output)
 
 xmloutfile = open('QGeneVariantProfile_definition.xml', 'w')
 xmloutfile.write(output2)
 xmloutfile.close()
 
-#xmloutfile = open('controlledCVs.xml', 'w')
-#xmloutfile.write(output)
-#xmloutfile.close()
+# xmloutfile = open('controlledCVs.xml', 'w')
+# xmloutfile.write(output)
+# xmloutfile.close()
 
 
 

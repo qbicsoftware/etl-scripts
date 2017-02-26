@@ -3,6 +3,7 @@ import os
 import sys
 import csv
 import datetime
+from dateutil import parser
 import pytz
 import cxxpy as cx
 import pyxb.utils.domutils
@@ -14,31 +15,31 @@ from pyxb import exceptions_
 
 from collections import defaultdict
 
-import vcf
+#import vcf
 import re
 
-
-def loadGeneVariantPanelFile(filename):
+# is tailored to the finalCxxPanel4000.tsv file
+def loadVariantsWhitelistFile(filename):
     tmpVariantPanel = {}
 
     with open(filename, 'rb') as panelfile:
-        panelreader = csv.reader(panelfile)
+        panelreader = csv.reader(panelfile, delimiter=' ')
         for variant in panelreader:
-            if (len(variant) == 2):
-                genename = variant[0].strip()
-                varname = variant[1].strip()
+            genename = variant[0].strip()
+            varname = variant[2].strip().split('.')[1]
 
-                if not tmpVariantPanel.has_key(genename):
-                    tmpVariantPanel[genename] = []
+            if not tmpVariantPanel.has_key(genename):
+                tmpVariantPanel[genename] = []
 
-                tmpVariantPanel[genename].append(varname)
+            tmpVariantPanel[genename].append(varname)
 
     # print(geneVariantPanel)
     return(tmpVariantPanel)
 
 
-def loadGeneVariantsFromVCF(filename):
-    vcf_reader = vcf.Reader(open(filename, 'r'))
+def loadGeneVariantsFromFile(filename):
+    #vcf_reader = vcf.Reader(open(filename, 'r'))
+    varFile = open(filename, 'r')
 
     aaMapping = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N',
                  'Asp': 'D', 'Cys': 'C', 'Glu': 'E',
@@ -54,45 +55,95 @@ def loadGeneVariantsFromVCF(filename):
 
     regex_splitAA = re.compile("([a-zA-Z\*\?]+)([0-9]+)([a-zA-Z\*\?]+)")
 
-    for record in vcf_reader:
+    for line in varFile:
+        linesplit = line.split('\t')
 
-        if (record.var_type == 'snp'):
-            annstr = record.INFO['ANN'][0]
+        # extract annotated genename
+        genename = linesplit[0].strip()
+        mutation = linesplit[1].strip()
 
-            # print(annstr)
-            annsplit = annstr.split('|')
+        #print(genename, " ", mutation, record.FILTER)
+        #firstAA = mutation[0:3]
+        #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
+        # print(mutation_short)
+        mutation_str = mutation[2:].strip()
+        mutation_split = re.match(regex_splitAA, mutation_str).groups()
 
-            if not any("p." in s for s in annsplit) or 'synonymous_variant' in annsplit:
-                continue
+        # check if we have three substring, otherwise the regex split was
+        # not successful
+        if (len(mutation_split) < 3):
+            print(
+                "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
+            continue
 
-            # extract annotated genename
-            genename = annsplit[3].strip()
+        firstAA = mutation_split[0]
+        secAA = mutation_split[2]
+        mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
+        mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
 
-            mutation = filter(lambda x: 'p.' in x, annsplit)
-            #print(genename, " ", mutation, record.FILTER)
-            #firstAA = mutation[0:3]
-            #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
-            # print(mutation_short)
-            mutation_str = mutation[0][2:].strip()
-            mutation_split = re.match(regex_splitAA, mutation_str).groups()
+        tmpLoadedGeneVars[genename].append(mutation_short)
 
-            # check if we have three substring, otherwise the regex split was
-            # not successful
-            if (len(mutation_split) < 3):
-                print(
-                    "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
-                continue
-
-            firstAA = mutation_split[0]
-            secAA = mutation_split[2]
-            mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
-            mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
-
-            tmpLoadedGeneVars[genename].append(mutation_short)
-
-            #print(mutation_str + ": " + mutation_short)
+        #print(mutation_str + ": " + mutation_short)
 
     return(tmpLoadedGeneVars)
+
+
+# def loadGeneVariantsFromVCF(filename):
+#     vcf_reader = vcf.Reader(open(filename, 'r'))
+#
+#     aaMapping = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N',
+#                  'Asp': 'D', 'Cys': 'C', 'Glu': 'E',
+#                  'Gln': 'Q', 'Gly': 'G', 'His': 'H',
+#                  'Ile': 'I', 'Leu': 'L', 'Lys': 'K',
+#                  'Met': 'M', 'Phe': 'F', 'Pro': 'P',
+#                  'Ser': 'S', 'Thr': 'T', 'Trp': 'W',
+#                  'Tyr': 'Y', 'Val': 'V', '*': '*', '?': '?'}
+#
+#     #geneVarMap = {}
+#     #tmpLoadedGeneVars = []
+#     tmpLoadedGeneVars = defaultdict(list)
+#
+#     regex_splitAA = re.compile("([a-zA-Z\*\?]+)([0-9]+)([a-zA-Z\*\?]+)")
+#
+#     for record in vcf_reader:
+#
+#         if (record.var_type == 'snp'):
+#             annstr = record.INFO['ANN'][0]
+#
+#             # print(annstr)
+#             annsplit = annstr.split('|')
+#
+#             if not any("p." in s for s in annsplit) or 'synonymous_variant' in annsplit:
+#                 continue
+#
+#             # extract annotated genename
+#             genename = annsplit[3].strip()
+#
+#             mutation = filter(lambda x: 'p.' in x, annsplit)
+#             #print(genename, " ", mutation, record.FILTER)
+#             #firstAA = mutation[0:3]
+#             #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
+#             # print(mutation_short)
+#             mutation_str = mutation[0][2:].strip()
+#             mutation_split = re.match(regex_splitAA, mutation_str).groups()
+#
+#             # check if we have three substring, otherwise the regex split was
+#             # not successful
+#             if (len(mutation_split) < 3):
+#                 print(
+#                     "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
+#                 continue
+#
+#             firstAA = mutation_split[0]
+#             secAA = mutation_split[2]
+#             mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
+#             mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
+#
+#             tmpLoadedGeneVars[genename].append(mutation_short)
+#
+#             #print(mutation_str + ": " + mutation_short)
+#
+#     return(tmpLoadedGeneVars)
 
 
 #test = loadGeneVariantsFromVCF('missense.vcf')
@@ -148,10 +199,10 @@ def writeGenePanelControlledVocabularies(geneVariantPanel):
     docRootDOM.documentElement.setAttributeNS(
         xmlns.uri(), 'xmlns:xsi', xsi.uri())
 
-    return(docRootDOM.toprettyxml())
+    return(docRootDOM.toprettyxml(encoding='utf-8'))
 
 
-def createPatientExport(vcfPanel, patientID, sampleID):
+def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970-01-01T11:59:59'):
     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 
     docRoot = cx.CentraXXDataExchange()
@@ -209,9 +260,11 @@ def createPatientExport(vcfPanel, patientID, sampleID):
     # TODO: GET THE REAL SAMPLING DATE HERE, NOT CURRENT TIMESTAMP!
     samplingDate = cx.DateType()
     # pytz.timezone('Europe/Berlin')
-    currDateTime = datetime.datetime.now()
-    timeFormat = '%Y-%m-%dT%H:%M:%S%z'
-    samplingDate.Date = currDateTime.isoformat()
+    #currDateTime = datetime.datetime.now()
+    print(creationTimeStamp)
+    dateTimeObject = parser.parse(creationTimeStamp)
+    #timeFormat = '%Y-%m-%dT%H:%M:%S%z'
+    samplingDate.Date = dateTimeObject.isoformat()
     samplingDate.Precision = cx.DatePrecision.EXACT
     newMasterSample.SamplingDate = samplingDate
 
@@ -224,7 +277,7 @@ def createPatientExport(vcfPanel, patientID, sampleID):
     variantDataSet.FlexibleDataSetTypeRef = 'QGeneVariantProfile'
     variantDataSet.InstanceName = 'Neue Variantenliste'
     variantDataSet.Date = cx.DateType()
-    variantDataSet.Date.Date = currDateTime.isoformat()
+    variantDataSet.Date.Date = dateTimeObject.isoformat()
     variantDataSet.Date.Precision = cx.DatePrecision.EXACT
     variantDataSet.Code = 'QGeneVariantProfile-'
 

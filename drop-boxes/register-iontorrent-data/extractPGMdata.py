@@ -94,6 +94,33 @@ def extractVCFdata(vcfFilename):
 
     return vcfDict
 
+def extractVCFGenes(vcfFilename):
+    vcfFile = open(vcfFilename, 'r')
+    #vcfreader = csv.DictReader(vcfFile, delimiter='\t', quotechar='#')
+    vcflines = vcfFile.readlines()
+
+    geneDict = defaultdict(int)
+    for row in vcflines:
+        if row.startswith('#'):
+            continue
+
+        rowsplit = row.strip().split('\t')
+        chrom = rowsplit[0]
+        position = rowsplit[1]
+        refBase = rowsplit[3]
+        altBase = rowsplit[4]
+        info = rowsplit[7]
+
+        record = DummyVCFRecord(chrom, position, refBase, altBase, info)
+
+        firstAnn = record.INFO['ANN']
+
+        if len(firstAnn) > 0:
+            annDict = mangleSnpEffAnnotationString(firstAnn[0])
+            geneDict[annDict['gene_name']] += 1
+
+    return geneDict
+
 #Annotation      : T|missense_variant|MODERATE|CCT8L2|ENSG00000198445|transcript|ENST00000359963|protein_coding|1/1|c.1406G>A|p.Gly469Glu|1666/2034|1406/1674|469/557|  |
 #SubField number : 1|       2        |    3   |  4   |       5       |    6     |      7        |      8       | 9 |    10   |    11     |   12    |   13    |   14  |15| 16
 def mangleSnpEffAnnotationString(annstring):
@@ -173,3 +200,5 @@ def extractPGMdata(vcfFilename, xlsFilename):
 
 
 #print extractPGMdata(sys.argv[1], sys.argv[2])
+
+print extractVCFGenes(sys.argv[1])
