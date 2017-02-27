@@ -440,6 +440,8 @@ def process(transaction):
         dropboxBaseDir = '/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data'
         cxxConverterScriptPath = os.path.join(dropboxBaseDir, 'createCxxPatientExport.py')
         cxxGeneWhitelist = os.path.join(dropboxBaseDir, 'finalCxxPanel4000.tsv')
+
+        printInfosToStdOut('convert variant data to centraXX XML... ' + cxxExportFileName)
         pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, vcfCreationDate, vcfPanelName, cxxExportDir]
         p = subprocess.call(pythonCxxCommand)
 
