@@ -27,10 +27,11 @@ def fetchPatientByMPI(mpiCode):
     restParams = {'psn': mpiCode, 'idType': 'mpi'}
 
     queryUrl = authData['serveraddr'] + '/centraxx/rest/export/decisiveId/patient'
-    response = requests.get(queryUrl, params=restParams, auth=restAuth)
+    response = requests.get(queryUrl, params=restParams, auth=restAuth, verify=False)
 
+    print response.json()
 loadConfigFile()
 
 #print authData
 #checkRESTinterface()
-#fetchPatientByMPI()
+fetchPatientByMPI()
