@@ -368,7 +368,6 @@ def process(transaction):
 
         print newPatientID, panelName
 
-        #extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
         newPatient.setPropertyValue('Q_NCBI_ORGANISM', '9606')
         newPatient.setExperiment(freshIonPGMDesign)
@@ -403,6 +402,17 @@ def process(transaction):
         #printInfosToStdOut(files2export)
 
         transaction.moveFile(datasetTmpDir, newVCFdataset)
+
+        # here comes the centraXX export
+        significantVariants = extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+        cxxExportDir = os.path.join(fakeTmpBaseDir, 'cxx')
+        cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
+        cxxExportFile = open(os.path.join(cxxExportDir, cxxExportFileName), 'w')
+
+        for variant in significantVariants:
+            cxxExportFile.write(variant[0] + '\t' + variant[1] + '\n')
+
+        cxxExportFile.close()
 
         subjectCounter += 1
         sampleCounter += 1
