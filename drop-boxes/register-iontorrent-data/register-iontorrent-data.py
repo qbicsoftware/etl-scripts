@@ -169,6 +169,8 @@ def grepTimeStampFromVCF(fileName):
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
+    print context
+
     # Get the incoming path of the transaction
     incomingPath = transaction.getIncoming().getAbsolutePath()
 
