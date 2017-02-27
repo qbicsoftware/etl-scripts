@@ -375,7 +375,7 @@ def process(transaction):
         #if sampleExists(search_service, newPatientID):
         #    raise IonTorrentDropboxError('')
 
-
+        vcfPanelName = grepPanelNameFromVCF(annVCFPaths[i])
         #print newPatientID, panelName
 
         newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
@@ -385,12 +385,12 @@ def process(transaction):
         newNGSsampleID = create_barcode('QPATH', sampleCounter, 'A')
         newNGSrun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID, 'Q_NGS_SINGLE_SAMPLE_RUN')
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
-        newNGSrun.setPropertyValue('Q_SECONDARY_NAME', panelName)
+        newNGSrun.setPropertyValue('Q_SECONDARY_NAME', vcfPanelName)
         newNGSrun.setExperiment(freshIonPGMExperiment)
 
         newVarCallRun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID + '-VCF', 'Q_NGS_VARIANT_CALLING')
         newVarCallRun.setParentSampleIdentifiers([newNGSrun.getSampleIdentifier()])
-        newVarCallRun.setPropertyValue('Q_SECONDARY_NAME', panelName)
+        newVarCallRun.setPropertyValue('Q_SECONDARY_NAME', vcfPanelName)
         newVarCallRun.setExperiment(freshVarCallExperiment)
 
         newVCFdataset = transaction.createNewDataSet('Q_NGS_VARIANT_CALLING_DATA')
@@ -426,7 +426,7 @@ def process(transaction):
         cxxExportFile.close()
 
         vcfCreationDate = grepTimeStampFromVCF(annVCFPaths[i])
-        vcfPanelName = grepPanelNameFromVCF(annVCFPaths[i])
+
 
         pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', 'createCxxPatientExport.py', cxxExportFilePath, newPatientID, newNGSsampleID, vcfCreationDate, cxxExportDir]
         p = subprocess.call(pythonCxxCommand)
