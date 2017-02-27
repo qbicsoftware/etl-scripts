@@ -155,6 +155,17 @@ def grepPanelNameFromVCF(fileName):
 
     return panelName
 
+def grepTimeStampFromVCF(fileName):
+    vcffile = open(fileName, 'r')
+
+    timeString = ''
+    for line in vcffile:
+        if line.startswith('##fileUTCtime='):
+            timeString = line.strip().split('=')[1].strip('\"')
+            break
+
+    return timeString
+
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -364,9 +375,8 @@ def process(transaction):
         #if sampleExists(search_service, newPatientID):
         #    raise IonTorrentDropboxError('')
 
-        panelName = grepPanelNameFromVCF(annVCFPaths[i])
 
-        print newPatientID, panelName
+        #print newPatientID, panelName
 
         newPatient = transaction.createNewSample('/' + spaceCode + '/' + newPatientID, 'Q_BIOLOGICAL_ENTITY')
         newPatient.setPropertyValue('Q_NCBI_ORGANISM', '9606')
@@ -407,12 +417,20 @@ def process(transaction):
         significantVariants = extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         cxxExportDir = os.path.join(fakeTmpBaseDir, 'cxx')
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
-        cxxExportFile = open(os.path.join(cxxExportDir, cxxExportFileName), 'w')
+        cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
+        cxxExportFile = open(cxxExportFilePath, 'w')
 
         for variant in significantVariants:
-            cxxExportFile.write(variant[0] + '\t' + variant[1] + '\n')
+            cxxExportFile.write(variant[0] + '\t' + variant[2] + '\n')
 
         cxxExportFile.close()
+
+        vcfCreationDate = grepTimeStampFromVCF(annVCFPaths[i])
+        vcfPanelName = grepPanelNameFromVCF(annVCFPaths[i])
+
+        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', 'createCxxPatientExport.py', cxxExportFilePath, newPatientID, newNGSsampleID, vcfCreationDate, cxxExportDir]
+        p = subprocess.call(pythonCxxCommand)
+
 
         subjectCounter += 1
         sampleCounter += 1
@@ -431,7 +449,7 @@ def process(transaction):
 
 
 
-    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
