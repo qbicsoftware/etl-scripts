@@ -200,5 +200,3 @@ def extractPGMdata(vcfFilename, xlsFilename):
 
 
 #print extractPGMdata(sys.argv[1], sys.argv[2])
-
-print extractVCFGenes(sys.argv[1])
