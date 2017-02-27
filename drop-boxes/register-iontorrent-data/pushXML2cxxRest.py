@@ -2,6 +2,7 @@ import os
 import sys
 
 import requests
+from requests.auth import HTTPBasicAuth
 import configparser
 
 authData = {}
@@ -17,15 +18,19 @@ def loadConfigFile():
     authData['password'] = config['CXXSETUP']['password']
     authData['serveraddr'] = config['CXXSETUP']['serveraddr']
 
-
-
-
 def checkRESTinterface():
-    resp = requests.get(authData['serveraddr'] + '/centraxx/rest/info', verify=False)
-    print resp
+    response = requests.get(authData['serveraddr'] + '/centraxx/rest/info', verify=False)
+    print response
 
+def fetchPatientByMPI(mpiCode):
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    restParams = {'psn': mpiCode, 'idType': 'mpi'}
+
+    queryUrl = authData['serveraddr'] + '/centraxx/rest/export/decisiveId/patient'
+    response = requests.get(queryUrl, params=restParams, auth=restAuth)
 
 loadConfigFile()
 
-print authData
-checkRESTinterface()
+#print authData
+#checkRESTinterface()
+#fetchPatientByMPI()
