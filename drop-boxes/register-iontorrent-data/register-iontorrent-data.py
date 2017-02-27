@@ -428,8 +428,10 @@ def process(transaction):
 
         vcfCreationDate = grepTimeStampFromVCF(annVCFPaths[i])
 
-        cxxConverterScriptPath = '/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data/createCxxPatientExport.py'
-        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, newPatientID, newNGSsampleID, vcfCreationDate, cxxExportDir]
+        dropboxBaseDir = '/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data'
+        cxxConverterScriptPath = os.path.join(dropboxBaseDir, 'createCxxPatientExport.py')
+        cxxGeneWhitelist = os.path.join(dropboxBaseDir, 'finalCxxPanel4000.tsv')
+        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, vcfCreationDate, vcfPanelName, cxxExportDir]
         p = subprocess.call(pythonCxxCommand)
 
 
