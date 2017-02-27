@@ -70,22 +70,26 @@ def loadGeneVariantsFromFile(filename):
         #firstAA = mutation[0:3]
         #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
         # print(mutation_short)
-        mutation_str = mutation[2:].strip()
-        mutation_split = re.match(regex_splitAA, mutation_str).groups()
 
-        # check if we have three substring, otherwise the regex split was
-        # not successful
-        if (len(mutation_split) < 3):
-            print(
-                "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
-            continue
+        if mutation == 'VARIANTPRESENT' or mutation == 'VARIANTABSENT':
+            tmpLoadedGeneVars[genename].append(mutation)
+        else:
+            mutation_str = mutation[2:].strip()
+            mutation_split = re.match(regex_splitAA, mutation_str).groups()
 
-        firstAA = mutation_split[0]
-        secAA = mutation_split[2]
-        mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
-        mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
+            # check if we have three substring, otherwise the regex split was
+            # not successful
+            if (len(mutation_split) < 3):
+                print(
+                    "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
+                continue
 
-        tmpLoadedGeneVars[genename].append(mutation_short)
+            firstAA = mutation_split[0]
+            secAA = mutation_split[2]
+            mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
+            mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
+
+            tmpLoadedGeneVars[genename].append(mutation_short)
 
         #print(mutation_str + ": " + mutation_short)
 
