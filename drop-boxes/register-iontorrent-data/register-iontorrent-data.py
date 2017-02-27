@@ -418,6 +418,10 @@ def process(transaction):
         significantVariants = extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         analyzedGenes = extractVCFGenes(annVCFPaths[i])
 
+        
+        print significantVariants
+        print analyzedGenes
+
         cxxExportDir = os.path.join(fakeTmpBaseDir, 'cxx')
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
         cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
