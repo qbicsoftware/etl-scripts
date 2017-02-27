@@ -175,7 +175,7 @@ def matchVariantsToQBiCPanel(vcfData, panelData):
     filteredGeneVariants = {}
 
     for gene, vcfVariants in vcfData.iteritems():
-        if 'NOVARIANT' in vcfVariants:
+        if 'VARIANTABSENT' in vcfVariants:
             filteredGeneVariants[gene] = ['VARIANTABSENT']
         elif panelData.has_key(gene):
             overlap = set(vcfData[gene]).intersection(panelData[gene])
