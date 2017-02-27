@@ -430,8 +430,8 @@ def process(transaction):
                 del analyzedGenes[variant[0]]
 
         # all remaining genes were analyzed but no variant was detected for them
-        for gene, varcount in analyzedGenes.iteritems():
-            cxxExportFile.write(variant[0] + '\tNOVARIANT\n')
+        for gene in analyzedGenes.keys():
+            cxxExportFile.write(gene + '\VARIANTABSENT\n')
 
         cxxExportFile.close()
 

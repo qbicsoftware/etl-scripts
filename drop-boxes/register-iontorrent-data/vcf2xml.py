@@ -71,7 +71,7 @@ def loadGeneVariantsFromFile(filename):
         #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
         # print(mutation_short)
 
-        if mutation == 'VARIANTPRESENT' or mutation == 'VARIANTABSENT':
+        if mutation == 'VARIANTABSENT':
             tmpLoadedGeneVars[genename].append(mutation)
         else:
             mutation_str = mutation[2:].strip()
