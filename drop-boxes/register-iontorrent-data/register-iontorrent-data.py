@@ -418,10 +418,6 @@ def process(transaction):
         significantVariants = extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         analyzedGenes = extractVCFGenes(annVCFPaths[i])
 
-        
-        print significantVariants
-        print analyzedGenes
-
         cxxExportDir = os.path.join(fakeTmpBaseDir, 'cxx')
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
         cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
@@ -429,7 +425,9 @@ def process(transaction):
 
         for variant in significantVariants:
             cxxExportFile.write(variant[0] + '\t' + variant[2] + '\n')
-            del analyzedGenes[variant[0]]
+
+            if analyzedGenes.has_key(variant[0]):
+                del analyzedGenes[variant[0]]
 
         # all remaining genes were analyzed but no variant was detected for them
         for gene, varcount in analyzedGenes.iteritems():
