@@ -1,6 +1,10 @@
 from __future__ import print_function
 import os
 import sys
+
+sys.path.append('/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data')
+
+
 import csv
 import datetime
 from dateutil import parser

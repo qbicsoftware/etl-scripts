@@ -1,4 +1,7 @@
 import os,sys
+
+sys.path.append('/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data')
+
 import vcf2xml
 
 

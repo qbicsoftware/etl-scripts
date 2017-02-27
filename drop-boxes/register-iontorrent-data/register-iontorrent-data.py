@@ -169,7 +169,6 @@ def grepTimeStampFromVCF(fileName):
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
-    print context
 
     # Get the incoming path of the transaction
     incomingPath = transaction.getIncoming().getAbsolutePath()
@@ -429,8 +428,8 @@ def process(transaction):
 
         vcfCreationDate = grepTimeStampFromVCF(annVCFPaths[i])
 
-
-        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', 'createCxxPatientExport.py', cxxExportFilePath, newPatientID, newNGSsampleID, vcfCreationDate, cxxExportDir]
+        cxxConverterScriptPath = '/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data/createCxxPatientExport.py'
+        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, newPatientID, newNGSsampleID, vcfCreationDate, cxxExportDir]
         p = subprocess.call(pythonCxxCommand)
 
 
