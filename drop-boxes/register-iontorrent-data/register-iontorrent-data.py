@@ -431,7 +431,7 @@ def process(transaction):
 
         # all remaining genes were analyzed but no variant was detected for them
         for gene in analyzedGenes.keys():
-            cxxExportFile.write(gene + '\VARIANTABSENT\n')
+            cxxExportFile.write(gene + '\tVARIANTABSENT\n')
 
         cxxExportFile.close()
 
