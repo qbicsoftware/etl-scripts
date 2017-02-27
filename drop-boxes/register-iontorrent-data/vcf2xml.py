@@ -166,6 +166,26 @@ def filterGeneVariantsFromPanel(vcfData, panelData):
 
     return(filteredGeneVariants)
 
+def matchVariantsToQBiCPanel(vcfData, panelData):
+    #filteredGeneVariants = defaultdict(list)
+    filteredGeneVariants = {}
+
+    for gene, vcfVariants in vcfData.iteritems():
+        if 'NOVARIANT' in vcfVariants:
+            filteredGeneVariants[gene] = ['VARIANTABSENT']
+        elif panelData.has_key(gene):
+            overlap = set(vcfData[gene]).intersection(panelData[gene])
+
+            if len(overlap) > 0:
+                #print(gene, overlap)
+                filteredGeneVariants[gene] = list(overlap)
+                filteredGeneVariants[gene].append('VARIANTPRESENT')
+            else:
+                # variant found in vcf but not part of our variant mask
+                filteredGeneVariants[gene] = ['VARIANTPRESENT']
+
+    return(filteredGeneVariants)
+
 # def writeGenePanelControlledVocabularies(geneVariantPanel):
 #     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 #

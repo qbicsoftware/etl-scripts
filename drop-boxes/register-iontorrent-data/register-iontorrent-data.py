@@ -416,6 +416,8 @@ def process(transaction):
 
         # here comes the centraXX export
         significantVariants = extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
+        analyzedGenes = extractVCFGenes(annVCFPaths[i])
+
         cxxExportDir = os.path.join(fakeTmpBaseDir, 'cxx')
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
         cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
@@ -423,6 +425,11 @@ def process(transaction):
 
         for variant in significantVariants:
             cxxExportFile.write(variant[0] + '\t' + variant[2] + '\n')
+            del analyzedGenes[variant[0]]
+
+        # all remaining genes were analyzed but no variant was detected for them
+        for gene, varcount in analyzedGenes.iteritems():
+            cxxExportFile.write(variant[0] + '\tNOVARIANT\n')
 
         cxxExportFile.close()
 
