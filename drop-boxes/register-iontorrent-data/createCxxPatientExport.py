@@ -9,7 +9,7 @@ import vcf2xml
 variantsWhitelist = vcf2xml.loadVariantsWhitelistFile(sys.argv[2])
 vcfData = vcf2xml.loadGeneVariantsFromFile(sys.argv[1])
 
-filteredGeneList = vcf2xml.filterGeneVariantsFromPanel(vcfData, variantsWhitelist)
+filteredGeneList = vcf2xml.matchVariantsToQBiCPanel(vcfData, variantsWhitelist)
 
 # use qbic patient id (arg2), sample id (arg3), and target folder (arg4) here as parameters
 patientID = sys.argv[3]
