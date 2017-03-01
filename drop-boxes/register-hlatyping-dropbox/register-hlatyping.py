@@ -102,9 +102,9 @@ def process(transaction):
         newHLATypingSample = transaction.createNewSample('/' + space + '/' + hlaCode, "Q_NGS_HLATYPING")
         newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         newHLATypingSample.setExperiment(newHLATypingExperiment)
+        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", mhcClass)
     else:
         newHLATypingSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
-        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", mhcClass)
 
     newHLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
 
