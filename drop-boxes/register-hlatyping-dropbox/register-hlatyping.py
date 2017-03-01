@@ -77,8 +77,23 @@ def process(transaction):
     newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
     newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
-    # does HLA sample already exist?
-    hlaCode = 'HLA' + parentCode
+    for root, subFolders, files in os.walk(incomingPath):
+        if subFolders:
+            subFolder = subFolders[0]
+        for f in files:
+            if f.endswith('.alleles'):
+                resultFile = open(os.path.join(root, f), 'r')
+
+    resultContent = resultFile.read()
+
+    mhcClass = "MHC_CLASS_II"
+    mhcSuffix = "2"
+    # check for MHC class
+    if 'A*' in resultContent:
+        mhcClass = "MHC_CLASS_I"
+        mhcSuffix = "1"
+    # does HLA sample of this class already exist?
+    hlaCode = 'HLA' + mhcSuffix + parentCode
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, hlaCode))
@@ -89,22 +104,9 @@ def process(transaction):
         newHLATypingSample.setExperiment(newHLATypingExperiment)
     else:
         newHLATypingSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", mhcClass)
 
-    for root, subFolders, files in os.walk(incomingPath):
-        if subFolders:
-            subFolder = subFolders[0]
-        for f in files:
-            if f.endswith('.alleles'):
-                resultFile = open(os.path.join(root, f), 'r')
-
-    resultContent = resultFile.read()
     newHLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
-
-    # check for MHC class
-    if 'A*' in resultContent:
-        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", "MHC_CLASS_I")
-    else:
-        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", "MHC_CLASS_II")
 
     # create new dataset 
     dataSet = transaction.createNewDataSet("Q_NGS_HLATYPING_DATA")
