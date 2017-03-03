@@ -36,7 +36,12 @@ def loadVariantsWhitelistFile(filename):
         panelreader = csv.reader(panelfile, delimiter=' ')
         for variant in panelreader:
             genename = variant[0].strip()
-            varname = variant[2].strip().split('.')[1]
+            tmpVarField = variant[2].strip()
+
+            varname = 'NOVARIANT'
+
+            if tmpVarField != 'NOVARIANT':
+                varname = tmpVarField.split('.')[1]
 
             if not tmpVariantPanel.has_key(genename):
                 tmpVariantPanel[genename] = []
@@ -88,48 +93,57 @@ def loadVariantsWhitelistFile(filename):
 #test = loadGeneVariantsFromVCF('missense.vcf')
 
 
+def createCustomCatalogEntry(code, value_en, value_de):
+    customCatalogEntry = cx.CustomCatalogEntryType()
+    customCatalogEntry.Code = code
+    tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = value_en)
+    tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = value_de)
+    customCatalogEntry.NameMultilingualEntries = [tmpMultiLingua_de, tmpMultiLingua_en]
+
+    return customCatalogEntry
+
+
+
 def writeGenePanelControlledVocabularies(geneVariantPanel):
     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 
     docRoot = cx.CentraXXDataExchange()
 
     docRoot.Source = 'QBiC'
-
+    qbicPrefix = 'QBIC-GENECV-'
     # fill in the controlled CV for gene variant profiles
     catData = cx.CatalogueDataType()
 
-    # for each gene variant create a UsageEntryCatalogueItem
+    # for each gene, we create an CustomCatalog/CV to specify the allowed variants
     for gene, variants in geneVariantPanel.iteritems():
 
         # for each gene, add the general status of 'variation' or 'no variation'
-        tmpCatDataItem = cx.UsageEntryType()
-        tmpCatDataItem.Code = 'QBiC-' + gene + '-VARIANTPRESENT'
-        tmpCatDataItem.Category = False
-        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'Variants present')
-        tmpCatDataItem.append(tmpMultiLingua_en)
-        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'Variante(n) gefunden')
-        tmpCatDataItem.append(tmpMultiLingua_de)
-        catData.append(tmpCatDataItem)
+        customCatalogObject = cx.CustomCatalogType()
+        customCatalogObject.Code = qbicPrefix + gene
+        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = gene)
+        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = gene)
+        customCatalogObject.NameMultilingualEntries = [tmpMultiLingua_en, tmpMultiLingua_de]
+        customCatalogObject.CatalogUsage = 'GENERAL'
+        customCatalogObject.Version = 1
+        customCatalogObject.EntityStatus = 'ACTIVE'
 
-        tmpCatDataItem = cx.UsageEntryType()
-        tmpCatDataItem.Code = 'QBiC-' + gene + '-VARIANTABSENT'
-        tmpCatDataItem.Category = False
-        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'No variants present')
-        tmpCatDataItem.append(tmpMultiLingua_en)
-        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'Keine Variante(n) gefunden')
-        tmpCatDataItem.append(tmpMultiLingua_de)
-        catData.append(tmpCatDataItem)
+        customCatalogObject.CustomCatalogEntry = []
+
+        customCatalogEntryObject = createCustomCatalogEntry('VARIANTPRESENT', 'Variant(s) present', 'Variante(n) gefunden')
+        customCatalogObject.CustomCatalogEntry.append(customCatalogEntryObject)
+        customCatalogEntryObject = createCustomCatalogEntry('VARIANTABSENT', 'No variants present', 'Keine Varianten gefunden')
+        customCatalogObject.CustomCatalogEntry.append(customCatalogEntryObject)
+
 
         for v in variants:
-            tmpCatDataItem = cx.UsageEntryType()
-            tmpCatDataItem.Code = 'QBiC-' + gene + '-' + v
-            tmpCatDataItem.Category = False
-            tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = v)
-            tmpCatDataItem.append(tmpMultiLingua_en)
-            tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = v)
-            tmpCatDataItem.append(tmpMultiLingua_de)
+            if v == 'NOVARIANT':
+                continue
 
-            catData.append(tmpCatDataItem)
+            customCatalogEntryObject = createCustomCatalogEntry(v, v, v)
+            customCatalogObject.CustomCatalogEntry.append(customCatalogEntryObject)
+
+
+        catData.append(customCatalogObject)
 
     docRoot.CatalogueData = catData
 
@@ -142,64 +156,37 @@ def writeGenePanelControlledVocabularies(geneVariantPanel):
     return(docRootDOM.toprettyxml(encoding='utf-8'))
 
 
-def writeMeasurementProfileDefs(geneVariantPanel):
+def writeMeasurementParameterDefs(geneVariantPanel):
     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 
     docRoot = cx.CentraXXDataExchange()
 
     docRoot.Source = 'QBiC'
-
+    qbicPrefix = 'QBIC-GENEPARAM-'
     # fill in the controlled CV for gene variant profiles
     catData = cx.CatalogueDataType()
+
     flexValues = cx.FlexibleValuesType()
-    flexValues.FlexibleEnumerationValue = []
+    flexValues.FlexibleCatalogValue = []
     # for each gene variant create a UsageEntryCatalogueItem
     for gene, variants in geneVariantPanel.iteritems():
-        flexEnumValue = cx.FlexibleEnumerationType()
-        flexEnumValue.Code = 'QBiC-' + gene
-        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = gene)
-        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = gene)
+        flexCatalogValue = cx.FlexibleCatalogType()
+        flexCatalogValue.Code = qbicPrefix + gene
+        tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = gene + ' variants')
+        tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = gene + '-Varianten')
 
-        flexEnumValue.NameMultilingualEntries = [tmpMultiLingua_en, tmpMultiLingua_de]
+        flexCatalogValue.NameMultilingualEntries = [tmpMultiLingua_en, tmpMultiLingua_de]
 
 
-        flexEnumValue.ChoiseType = 'SELECTMANY'
+        flexCatalogValue.ChoiseType = 'SELECTMANY'
 
-        tmpVarList = []
-
-        tmpVarList.append('QBiC-' + gene + '-VARIANTPRESENT')
-        tmpVarList.append('QBiC-' + gene + '-VARIANTABSENT')
-
-        for v in variants:
-            tmpVarList.append('QBiC-' + gene + '-' + v)
-
-        flexEnumValue.UsageEntryTypeRef = tmpVarList
-        flexValues.append(flexEnumValue)
+        flexCatalogValue.UserDefinedCatalogRef = cx.UserDefinedCatalogRefType(Code = 'QBIC-GENECV-' + gene, Version = '1')
+        flexValues.append(flexCatalogValue)
             #catData.append(tmpCatDataItem)
 
     catData.append(flexValues)
 
-    geneProfile = cx.FlexibleDataSetType()
-    geneProfile.Code = 'QBiCGeneProfile-v1'
-    tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'QBiC Gene Variant Panel v1')
-    tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'QBiC Gene Variant Panel v1')
 
-    geneProfile.NameMultilingualEntries = [tmpMultiLingua_en, tmpMultiLingua_de]
-    geneProfile.FlexibleValueComplexRefs = []
-
-    #FlexibleValueComplexRefs
-    for gene, variants in geneVariantPanel.iteritems():
-        flexValRef = cx.FlexibleValueRefType(gene, False)
-
-        geneProfile.FlexibleValueComplexRefs.append(flexValRef)
-            #catData.append(tmpCatDataItem)
-
-    geneProfile.FlexibleDataSetType = 'MEASUREMENT'
-
-    try:
-        catData.append(geneProfile)
-    except pyxb.ValidationError as e:
-        print(e.details())
 
     docRoot.CatalogueData = catData
 
@@ -216,23 +203,117 @@ def writeMeasurementProfileDefs(geneVariantPanel):
     return(docRootDOM.toprettyxml(encoding='utf-8'))
 
 
+def writeMeasurementProfileDef(geneVariantPanel):
+    pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
+
+    docRoot = cx.CentraXXDataExchange()
+
+    docRoot.Source = 'QBiC'
+    qbicPrefix = 'QBIC-GENEPARAM-'
+    # fill in the controlled CV for gene variant profiles
+    catData = cx.CatalogueDataType()
+
+
+    geneProfile = cx.FlexibleDataSetType()
+    geneProfile.Code = 'QBIC-GENEPANEL-V1'
+    tmpMultiLingua_en = cx.MultilingualEntryType(Lang = 'en', Value = 'QBiC Gene Variant Panel v1')
+    tmpMultiLingua_de = cx.MultilingualEntryType(Lang = 'de', Value = 'QBiC Gene Variant Panel v1')
+
+    geneProfile.NameMultilingualEntries = [tmpMultiLingua_en, tmpMultiLingua_de]
+    geneProfile.FlexibleValueComplexRefs = []
+
+    #FlexibleValueComplexRefs
+    for gene, variants in geneVariantPanel.iteritems():
+        flexValRef = cx.FlexibleValueRefType(qbicPrefix + gene, False)
+
+        geneProfile.FlexibleValueComplexRefs.append(flexValRef)
+            #catData.append(tmpCatDataItem)
+
+    geneProfile.FlexibleDataSetType = 'MEASUREMENT'
+    geneProfile.Systemwide = True
+    geneProfile.Category = 'LABOR'
+
+    crfTemplateObject = cx.CrfTemplateType()
+    crfTemplateObject.Name = 'QBiC Genpanel v1'
+    crfTemplateSection = cx.CrfTemplateSectionType()
+    crfTemplateSection.Name = 'Gene und zugehoerige Varianten'
+    crfTemplateSection.CrfTemplateField = []
+
+
+    rowNumber = 0
+    for gene, variants in geneVariantPanel.iteritems():
+        crfTemplateField = cx.CrfTemplateFieldType()
+        crfTemplateField.LaborValue = qbicPrefix + gene
+        crfTemplateField.LowerRow = str(rowNumber)
+        crfTemplateField.UpperRow = str(rowNumber)
+        crfTemplateField.LowerColumn = '0'
+        crfTemplateField.UpperColumn = '0'
+        crfTemplateField.Mandatory = False
+        crfTemplateField.VisibleCaption = True
+        crfTemplateField.FieldType = 'LABORVALUE'
+
+        crfTemplateField.CustomCatalogEntryDefaultValueRef = ['VARIANTPRESENT', 'VARIANTABSENT']
+        for v in variants:
+            if v == 'NOVARIANT':
+                continue
+
+            crfTemplateField.CustomCatalogEntryDefaultValueRef.append(v)
+
+        crfTemplateSection.CrfTemplateField.append(crfTemplateField)
+
+        rowNumber += 1
+
+    crfTemplateObject.CrfTemplateSection = [crfTemplateSection]
+
+    crfTemplateObject.FlexibleDataSetRef = 'QBIC-GENEPANEL-V1'
+    crfTemplateObject.TemplateType = 'LABORMETHOD'
+    crfTemplateObject.Version = '0'
+    crfTemplateObject.EntityStatus = 'ACTIVE'
+    crfTemplateObject.Global = False
+    crfTemplateObject.MultipleUse = False
+    crfTemplateObject.Active = False
+
+
+    try:
+        catData.append(geneProfile)
+    except pyxb.ValidationError as e:
+        print(e.details())
+
+    catData.append(crfTemplateObject)
+
+    docRoot.CatalogueData = catData
+
+    try:
+        docRootDOM = docRoot.toDOM()
+    except pyxb.ValidationError as e:
+        print(e.details())
+
+    docRootDOM.documentElement.setAttributeNS(
+        xsi.uri(), 'xsi:schemaLocation', 'http://www.kairos-med.de ../CentraXXExchange.xsd')
+    docRootDOM.documentElement.setAttributeNS(
+        xmlns.uri(), 'xmlns:xsi', xsi.uri())
+
+    return(docRootDOM.toprettyxml(encoding='utf-8'))
 
 
 geneVariantPanel = loadVariantsWhitelistFile('finalCxxPanel4000.tsv')
-
+#print (len(geneVariantPanel))
 output = writeGenePanelControlledVocabularies(geneVariantPanel)
-output2 = writeMeasurementProfileDefs(geneVariantPanel)
+output2 = writeMeasurementParameterDefs(geneVariantPanel)
+output3 = writeMeasurementProfileDef(geneVariantPanel)
 
 #print(output)
 
-xmloutfile = open('QBiCGeneProfile-profile.xml', 'w')
+xmloutfile = open('QBiCGeneProfile-params-v2.xml', 'w')
 xmloutfile.write(output2)
 xmloutfile.close()
 
-xmloutfile = open('QBiCGeneProfile-catalog.xml', 'w')
+xmloutfile = open('QBiCGeneProfile-catalog-v2.xml', 'w')
 xmloutfile.write(output)
 xmloutfile.close()
-
+xmloutfile = open('QBiCGeneProfile-profile-v2.xml', 'w')
+xmloutfile.write(output3)
+xmloutfile.close()
 
 
 
