@@ -14,14 +14,15 @@ filteredGeneList = vcf2xml.matchVariantsToQBiCPanel(vcfData, variantsWhitelist)
 # use qbic patient id (arg2), sample id (arg3), and target folder (arg4) here as parameters
 patientID = sys.argv[3]
 sampleID = sys.argv[4]
-creationTimeStamp = sys.argv[5]
-panelName = sys.argv[6]
+patientMPI = sys.argv[5]
+creationTimeStamp = sys.argv[6]
+panelName = sys.argv[7]
 
-xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampleID, creationTimeStamp, panelName)
+xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampleID, patientMPI, creationTimeStamp, panelName)
 
 #cvXMLoutput = vcfxml.create
 
-targetDir = sys.argv[7]
+targetDir = sys.argv[8]
 targetFilename = patientID + '-' + sampleID + '-Cxx-export.xml'
 xmloutfile = open(os.path.join(targetDir, targetFilename), 'w')
 xmloutfile.write(xmlOutputString)

@@ -21,6 +21,7 @@ from collections import defaultdict
 
 #import vcf
 import re
+import uuid
 
 # is tailored to the finalCxxPanel4000.tsv file
 def loadVariantsWhitelistFile(filename):
@@ -30,7 +31,12 @@ def loadVariantsWhitelistFile(filename):
         panelreader = csv.reader(panelfile, delimiter=' ')
         for variant in panelreader:
             genename = variant[0].strip()
-            varname = variant[2].strip().split('.')[1]
+            tmpVarField = variant[2].strip()
+
+            varname = 'NOVARIANT'
+
+            if tmpVarField != 'NOVARIANT':
+                varname = tmpVarField.split('.')[1]
 
             if not tmpVariantPanel.has_key(genename):
                 tmpVariantPanel[genename] = []
@@ -156,19 +162,19 @@ def loadGeneVariantsFromFile(filename):
 
 #test = loadGeneVariantsFromVCF('missense.vcf')
 
-def filterGeneVariantsFromPanel(vcfData, panelData):
-    #filteredGeneVariants = defaultdict(list)
-    filteredGeneVariants = {}
-
-    for gene, variants in panelData.iteritems():
-        if gene in vcfData:
-            overlap = set(vcfData[gene]).intersection(variants)
-
-            if len(overlap) > 0:
-                #print(gene, overlap)
-                filteredGeneVariants[gene] = list(overlap)
-
-    return(filteredGeneVariants)
+# def filterGeneVariantsFromPanel(vcfData, panelData):
+#     #filteredGeneVariants = defaultdict(list)
+#     filteredGeneVariants = {}
+#
+#     for gene, variants in panelData.iteritems():
+#         if gene in vcfData:
+#             overlap = set(vcfData[gene]).intersection(variants)
+#
+#             if len(overlap) > 0:
+#                 #print(gene, overlap)
+#                 filteredGeneVariants[gene] = list(overlap)
+#
+#     return(filteredGeneVariants)
 
 def matchVariantsToQBiCPanel(vcfData, panelData):
     #filteredGeneVariants = defaultdict(list)
@@ -230,7 +236,7 @@ def matchVariantsToQBiCPanel(vcfData, panelData):
 #     return(docRootDOM.toprettyxml(encoding='utf-8'))
 
 
-def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970-01-01T11:59:59', panelName = 'Unknown gene panel'):
+def createPatientExport(vcfPanel, qPatientID, qSampleID, patientMPI, creationTimeStamp = '1970-01-01T11:59:59', panelName = 'Unknown gene panel'):
     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 
     docRoot = cx.CentraXXDataExchange()
@@ -247,10 +253,13 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
     #docRoot.CatalogueData = catData
 
     patientData = cx.PatientDataSetType()
-    patientData.Source = 'CENTRAXX'
+    patientData.Source = 'XMLIMPORT'
 
     patientIDcontainer = cx.IDContainerType()
-    patientFlexID = cx.FlexibleIDType('QBICPATIENTID', patientID)
+    patientFlexID = cx.FlexibleIDType('MPI', patientMPI)
+    patientIDcontainer.append(patientFlexID)
+
+    patientFlexID = cx.FlexibleIDType('QBIC_PAT_ID', qPatientID)
     patientIDcontainer.append(patientFlexID)
 
     patientData.IDContainer = patientIDcontainer
@@ -265,19 +274,23 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
     newMasterSample.Source = 'XMLIMPORT'
 
     sampleIDcontainer = cx.SampleIDContainerType()
-    sampleFlexID = cx.FlexibleIDType('QBICSAMPLEID', sampleID)
+
+    sampleFlexID = cx.FlexibleIDType('SAMPLEID', qSampleID)
+    sampleIDcontainer.append(sampleFlexID)
+
+    sampleFlexID = cx.FlexibleIDType('QBIC_SAMPLE_ID', qSampleID)
     sampleIDcontainer.append(sampleFlexID)
 
     newMasterSample.SampleIDContainer = sampleIDcontainer
 
-    newMasterSample.SampleTypeCatalogueTypeRef = 'TT'
+    newMasterSample.SampleTypeCatalogueTypeRef = 'UNKN'
     newMasterSample.OrganisationUnitTypeRef = 'QBIC'
     newMasterSample.SampleReceptacleTypeRef = 'KRYO'
     newMasterSample.HasChildren = False
 
-    newMasterSample.AmountRest = cx.VolumeType(0.0, cx.AmountUnitEnumType.PC)
+    newMasterSample.AmountRest = cx.VolumeType(1.0, cx.AmountUnitEnumType.PC)
     newMasterSample.InitialAmount = cx.VolumeType(
-        0.0, cx.AmountUnitEnumType.PC)
+        1.0, cx.AmountUnitEnumType.PC)
     newMasterSample.SampleKind = cx.SampleKindEnumType.TISSUE
     newMasterSample.SampleLocationRef = 'QBIC_STORAGE'
     newMasterSample.UseSPREC = False
@@ -295,43 +308,18 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
     samplingDate.Date = dateTimeObject.isoformat()
     samplingDate.Precision = cx.DatePrecision.EXACT
     newMasterSample.SamplingDate = samplingDate
+    newMasterSample.RepositionDate = samplingDate
+    newMasterSample.FirstRepositionDate = samplingDate
+
+    newMasterSample.SopDeviation = False
+
+    # here we generate a unique id for cross-linking flexible datasets
+    sampleCrossLink = qSampleID + '-' + str(uuid.uuid4())
+    newMasterSample.FlexibleDataSetRef = [sampleCrossLink]
 
     # Sample aus welchem Tissue/Organ?
-    newMasterSample.OrganSampleRef = 'Organ'
+    #newMasterSample.OrganSampleRef = 'Organ'
 
-    # Here, we write the actual variant data
-    variantDataSet = cx.FlexibleDataSetInstanceType()
-    #variantDataSet.Source = 'QBIC'
-    variantDataSet.FlexibleDataSetTypeRef = 'QBiCGeneProfile-v1'
-    variantDataSet.InstanceName = panelName + ' for patient ' + patientID + ' (sample ' + sampleID + ')'
-    variantDataSet.Date = cx.DateType()
-    variantDataSet.Date.Date = dateTimeObject.isoformat()
-    variantDataSet.Date.Precision = cx.DatePrecision.EXACT
-    variantDataSet.Code = 'QBiCGeneProfile-' + sampleID
-
-    # loop over gene variants in vcfPanel and write the corresponding XML elements
-    enumValues = []
-
-    for gene, muts in vcfPanel.iteritems():
-        for mut in muts:
-            flexValue = cx.FlexibleEnumerationDataType()
-            flexValue.FlexibleValueTypeRef = 'QBiC-' + gene
-            # TODO: need to check here if referenced by code or value
-            flexValue.Value = ['QBiC-' + gene + '-' + mut]
-            enumValues.append(flexValue)
-
-
-
-    variantDataSet.EnumerationValue = enumValues
-    # try:
-    #     variantDataSet.append(flexValues)
-    # except pyxb.ValidationError as e:
-    #     print("APPEND\n" + e.details())
-
-    try:
-        newMasterSample.append(variantDataSet)
-    except pyxb.ValidationError as e:
-        print(e.details())
 
     patientData.OrganisationUnitRefs.append('QBIC')
 
@@ -347,6 +335,46 @@ def createPatientExport(vcfPanel, patientID, sampleID, creationTimeStamp = '1970
 
     try:
         effData.append(patientData)
+    except pyxb.ValidationError as e:
+        print(e.details())
+
+
+    # Here, we write the actual variant data
+    variantDataSet = cx.FlexibleDataSetInstanceType()
+    #variantDataSet.Source = 'QBIC'
+    variantDataSet.FlexibleDataSetTypeRef = 'QBIC-GENEPANEL-V1'
+    variantDataSet.InstanceName = panelName
+
+
+    variantDataSet.Date = samplingDate
+    #variantDataSet.Date.Date = dateTimeObject.isoformat()
+    #variantDataSet.Date.Precision = cx.DatePrecision.EXACT
+    variantDataSet.Code = 'QBIC-GENEPANEL-V1-INSTANCE-' + qSampleID
+    variantDataSet.FlexibleDataSetInstanceRef = sampleCrossLink
+    # loop over gene variants in vcfPanel and write the corresponding XML elements
+    enumValues = []
+
+    for gene, muts in vcfPanel.iteritems():
+        flexValue = cx.FlexibleEnumerationDataType()
+        flexValue.FlexibleValueTypeRef = 'QBIC-GENEPARAM-' + gene
+        # TODO: need to check here if referenced by code or value
+        flexValue.UserDefinedCatalogEntryRef = []
+
+        for mut in muts:
+            flexValue.UserDefinedCatalogEntryRef.append(mut)
+
+        enumValues.append(flexValue)
+
+
+
+    variantDataSet.EnumerationValue = enumValues
+    # try:
+    #     variantDataSet.append(flexValues)
+    # except pyxb.ValidationError as e:
+    #     print("APPEND\n" + e.details())
+
+    try:
+        effData.append(variantDataSet)
     except pyxb.ValidationError as e:
         print(e.details())
 
