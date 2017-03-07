@@ -20,7 +20,7 @@ def loadConfigFile():
 
 def checkRESTinterface():
     response = requests.get(authData['serveraddr'] + '/centraxx/rest/info', verify=False)
-    print response
+    return response
 
 def fetchPatientByMPI(mpiCode):
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
@@ -29,12 +29,17 @@ def fetchPatientByMPI(mpiCode):
     queryUrl = authData['serveraddr'] + '/centraxx/rest/export/decisiveId/patient'
     response = requests.get(queryUrl, params=restParams, auth=restAuth, verify=False)
 
-    print response.status_code
-    print response.content
-    print response.text
+    return response
+    #print response.status_code
+    #print response.content
+    #print response.text
 
 loadConfigFile()
 
 #print authData
 #checkRESTinterface()
-fetchPatientByMPI()
+resp = fetchPatientByMPI('')
+
+outfile = open('result.xml', 'w')
+outfile.write(resp.text)
+outfile.close()
