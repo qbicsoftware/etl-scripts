@@ -31,19 +31,34 @@ def fetchPatientByMPI(mpiCode):
 
     return response
 
-
 def pushXML2CxxREST(filepath):
+    filename = os.path.basename(filepath.strip())
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
-    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/'
-    xmlContent = open(filepath, 'rb').readlines()
+    files = {'file': open(filepath, 'rb')}
+
+    response = requests.post(importUrl, files=files, auth=restAuth, headers=headers, verify=False)
+
+    return response
+
+def showCxxImportQueue():
+    queueUrl = authData['serveraddr'] + '/centraxx/rest/import/queue'
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
 
 
-    print requests.post(importUrl, data=xmlContent, headers=headers).text
+    response =requests.get(queueUrl, auth=restAuth, headers=headers, verify=False)
+
 
 loadConfigFile()
 
 
-pushXML2CxxREST(sys.argv[1])
+
+
+
+#resp = pushXML2CxxREST(sys.argv[1])
+resp showCxxImportQueue()
+print resp.status_code
 
 #print authData
 #checkRESTinterface()
