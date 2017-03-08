@@ -12,7 +12,7 @@ def loadConfigFile():
 
     homedir = os.path.expanduser("~")
     config.read(os.path.join(homedir, '.cxxrest/config.ini'))
-    print config.sections()
+    #print config.sections()
 
     authData['authuser'] = config['CXXSETUP']['authuser']
     authData['password'] = config['CXXSETUP']['password']
@@ -86,17 +86,17 @@ def showCxxImportQueue():
 loadConfigFile()
 
 resp = pushXML2CxxREST(sys.argv[1])
-print resp.status_code
+print 'push: ', resp.status_code
 resp = showCxxImportQueue()
-print resp.status_code, resp.content
+print 'show: ', resp.status_code, resp.content
 
 resp = triggerCxxImport(sys.argv[1])
-print resp.status_code, resp.content
+print 'start: ', resp.status_code, resp.content
 resp = getSuccessfulImport(sys.argv[1])
-print resp.status_code, resp.content
+print 'getSuccess: ', resp.status_code, resp.content
 
 resp = getErroneousImport(sys.argv[1])
-print resp.status_code, resp.content
+print 'getError: ', resp.status_code, resp.content
 
 #print authData
 #checkRESTinterface()
