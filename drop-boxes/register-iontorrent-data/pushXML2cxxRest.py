@@ -38,9 +38,19 @@ def pushXML2CxxREST(filepath):
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
-    files = {'file': io.open(filepath, 'rb', encoding='utf8')}
+    files = {'file': io.open(filepath, 'r', encoding='utf8')}
 
     response = requests.post(importUrl, files=files, auth=restAuth, headers=headers, verify=False)
+
+    return response
+
+def fetchImportedXML(filepath):
+    filename = os.path.basename(filepath.strip())
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    headers = {'Content-Type': 'application/xml'}
+
+    response = requests.get(importUrl, auth=restAuth, headers=headers, verify=False)
 
     return response
 
@@ -93,16 +103,16 @@ loadConfigFile()
 
 resp = pushXML2CxxREST(sys.argv[1])
 print 'push: ', resp.status_code
-resp = showCxxImportQueue()
+resp = fetchImportedXML(sys.argv[1])
 print 'show: ', resp.status_code, resp.content
 
-resp = triggerCxxImport(sys.argv[1])
-print 'start: ', resp.status_code, resp.content
-resp = getSuccessfulImport(sys.argv[1])
-print 'getSuccess: ', resp.status_code, resp.content
-
-resp = getErroneousImport(sys.argv[1])
-print 'getError: ', resp.status_code, resp.content
+# resp = triggerCxxImport(sys.argv[1])
+# print 'start: ', resp.status_code, resp.content
+# resp = getSuccessfulImport(sys.argv[1])
+# print 'getSuccess: ', resp.status_code, resp.content
+#
+# resp = getErroneousImport(sys.argv[1])
+# print 'getError: ', resp.status_code, resp.content
 
 #print authData
 #checkRESTinterface()
