@@ -4,6 +4,8 @@ import sys
 import requests
 from requests.auth import HTTPBasicAuth
 import configparser
+import io
+
 
 authData = {}
 
@@ -36,7 +38,7 @@ def pushXML2CxxREST(filepath):
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
-    files = {'file': open(filepath, 'rb')}
+    files = {'file': io.open(filepath, 'rb', encoding='utf8')}
 
     response = requests.post(importUrl, files=files, auth=restAuth, headers=headers, verify=False)
 
@@ -46,8 +48,9 @@ def triggerCxxImport(filepath):
     filename = os.path.basename(filepath.strip())
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename + '/start'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    headers = {'Content-Type': 'application/xml'}
 
-    response = requests.post(importUrl, auth=restAuth, verify=False)
+    response = requests.post(importUrl, auth=restAuth, headers=headers, verify=False)
 
     return response
 
@@ -55,8 +58,9 @@ def getSuccessfulImport(filepath):
     filename = os.path.basename(filepath.strip())
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/successful/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    headers = {'Content-Type': 'application/xml'}
 
-    response = requests.post(importUrl, auth=restAuth, verify=False)
+    response = requests.post(importUrl, auth=restAuth, headers=headers, verify=False)
 
     return response
 
@@ -64,16 +68,18 @@ def getErroneousImport(filepath):
     filename = os.path.basename(filepath.strip())
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/error/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    headers = {'Content-Type': 'application/xml'}
 
-    response = requests.post(importUrl, auth=restAuth, verify=False)
+    response = requests.post(importUrl, auth=restAuth, headers=headers, verify=False)
 
     return response
 
 def showCxxImportQueue():
     queueUrl = authData['serveraddr'] + '/centraxx/rest/import/queue'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    headers = {'Content-Type': 'application/xml'}
 
-    response = requests.get(queueUrl, auth=restAuth, verify=False)
+    response = requests.get(queueUrl, auth=restAuth, headers=headers, verify=False)
 
     return response
 
