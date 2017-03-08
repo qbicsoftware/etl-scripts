@@ -47,7 +47,7 @@ def triggerCxxImport(filepath):
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename + '/start'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
 
-    response = requests.post(importUrl, files=files, auth=restAuth, verify=False)
+    response = requests.post(importUrl, auth=restAuth, verify=False)
 
     return response
 
@@ -56,7 +56,7 @@ def getSuccessfulImport(filepath):
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/successful/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
 
-    response = requests.post(importUrl, files=files, auth=restAuth, verify=False)
+    response = requests.post(importUrl, auth=restAuth, verify=False)
 
     return response
 
@@ -65,7 +65,7 @@ def getErroneousImport(filepath):
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/error/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
 
-    response = requests.post(importUrl, files=files, auth=restAuth, verify=False)
+    response = requests.post(importUrl, auth=restAuth, verify=False)
 
     return response
 
