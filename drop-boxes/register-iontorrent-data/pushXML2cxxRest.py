@@ -59,29 +59,28 @@ def triggerCxxImport(filepath):
     filename = os.path.basename(filepath.strip())
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename + '/start'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
-    headers = {'Content-Type': 'application/xml'}
+    #headers = {'Content-Type': 'application/xml'}
 
-    response = requests.post(importUrl, auth=restAuth, headers=headers, verify=False)
+    response = requests.post(importUrl, auth=restAuth, verify=False)
 
     return response
 
 def getSuccessfulImport(filepath):
     filename = os.path.basename(filepath.strip())
-    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/successful/' + filename
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/successful/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
-    headers = {'Content-Type': 'application/xml'}
 
-    response = requests.get(importUrl, auth=restAuth, headers=headers, verify=False)
+    response = requests.get(importUrl, auth=restAuth, verify=False)
 
     return response
 
 def getErroneousImport(filepath):
     filename = os.path.basename(filepath.strip())
-    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/error/' + filename
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/error/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
 
-    response = requests.get(importUrl, auth=restAuth, headers=headers, verify=False)
+    response = requests.get(importUrl, auth=restAuth, verify=False)
 
     return response
 
@@ -90,7 +89,7 @@ def showCxxImportQueue():
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
 
-    response = requests.get(queueUrl, auth=restAuth, headers=headers, verify=False)
+    response = requests.get(queueUrl, auth=restAuth, verify=False)
 
     return response
 
@@ -110,9 +109,8 @@ resp = triggerCxxImport(sys.argv[1])
 print 'start: ', resp.status_code, resp.content
 resp = showCxxImportQueue()
 print 'list: ', resp.status_code, resp.content
-
-# resp = getSuccessfulImport(sys.argv[1])
-# print 'getSuccess: ', resp.status_code, resp.content
+resp = getSuccessfulImport(sys.argv[1])
+print 'getSuccess: ', resp.status_code, resp.content
 #
 # resp = getErroneousImport(sys.argv[1])
 # print 'getError: ', resp.status_code, resp.content
