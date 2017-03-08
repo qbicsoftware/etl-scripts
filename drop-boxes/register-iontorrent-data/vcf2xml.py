@@ -241,7 +241,7 @@ def createPatientExport(vcfPanel, qPatientID, qSampleID, patientMPI, creationTim
 
     docRoot = cx.CentraXXDataExchange()
 
-    docRoot.Source = 'QBiC'
+    docRoot.Source = 'XMLIMPORT'
 
     effData = cx.EffectDataType()
 

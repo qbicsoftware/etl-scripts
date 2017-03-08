@@ -42,23 +42,61 @@ def pushXML2CxxREST(filepath):
 
     return response
 
+def triggerCxxImport(filepath):
+    filename = os.path.basename(filepath.strip())
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename + '/start'
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+
+    response = requests.post(importUrl, files=files, auth=restAuth, verify=False)
+
+    return response
+
+def getSuccessfulImport(filepath):
+    filename = os.path.basename(filepath.strip())
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/successful/' + filename
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+
+    response = requests.post(importUrl, files=files, auth=restAuth, verify=False)
+
+    return response
+
+def getErroneousImport(filepath):
+    filename = os.path.basename(filepath.strip())
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/error/' + filename
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+
+    response = requests.post(importUrl, files=files, auth=restAuth, verify=False)
+
+    return response
+
 def showCxxImportQueue():
     queueUrl = authData['serveraddr'] + '/centraxx/rest/import/queue'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
 
+    response = requests.get(queueUrl, auth=restAuth, verify=False)
 
-    response =requests.get(queueUrl, auth=restAuth, headers=headers, verify=False)
+    return response
 
 
+
+
+
+
+# load the username, password, server address etc.
 loadConfigFile()
 
-
-
-
-
-#resp = pushXML2CxxREST(sys.argv[1])
-resp showCxxImportQueue()
+resp = pushXML2CxxREST(sys.argv[1])
 print resp.status_code
+resp = showCxxImportQueue()
+print resp.status_code, resp.content
+
+resp = triggerCxxImport(sys.argv[1])
+print resp.status_code, resp.content
+resp = getSuccessfulImport(sys.argv[1])
+print resp.status_code, resp.content
+
+resp = getErroneousImport(sys.argv[1])
+print resp.status_code, resp.content
 
 #print authData
 #checkRESTinterface()
