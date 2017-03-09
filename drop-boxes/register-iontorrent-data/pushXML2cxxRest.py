@@ -57,7 +57,16 @@ def fetchImportedXML(filepath):
 
 def triggerCxxImport(filepath):
     filename = os.path.basename(filepath.strip())
-    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename + '/start'
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/' + filename + '/start/'
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
+    #headers = {'Content-Type': 'application/xml'}
+
+    response = requests.post(importUrl, auth=restAuth, verify=False)
+
+    return response
+
+def triggerAllCxxImports():
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/start/'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     #headers = {'Content-Type': 'application/xml'}
 
@@ -78,7 +87,6 @@ def getErroneousImport(filepath):
     filename = os.path.basename(filepath.strip())
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/error/' + filename
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
-    headers = {'Content-Type': 'application/xml'}
 
     response = requests.get(importUrl, auth=restAuth, verify=False)
 
@@ -87,7 +95,6 @@ def getErroneousImport(filepath):
 def showCxxImportQueue():
     queueUrl = authData['serveraddr'] + '/centraxx/rest/import/queue'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
-    headers = {'Content-Type': 'application/xml'}
 
     response = requests.get(queueUrl, auth=restAuth, verify=False)
 
