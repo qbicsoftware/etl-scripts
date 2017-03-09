@@ -447,6 +447,10 @@ def process(transaction):
         pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, fakeMPI, vcfCreationDate, vcfPanelName, cxxExportDir]
         p = subprocess.call(pythonCxxCommand)
 
+        cxxRestScriptPath = os.path.join(dropboxBaseDir, 'pushXML2cxxRest.py')
+        printInfosToStdOut('send variant data to centraXX REST interface... ' + cxxExportFileName)
+        pythonCxxRestCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxRestScriptPath, cxxExportFilePath]
+        p = subprocess.call(pythonCxxRestCommand)
 
         subjectCounter += 1
         sampleCounter += 1
