@@ -108,19 +108,32 @@ def showCxxImportQueue():
 
 # load the username, password, server address etc.
 loadConfigFile()
+filepath = sys.argv[1]
+filename = os.path.basename(filepath)
 
-resp = pushXML2CxxREST(sys.argv[1])
-print 'push: ', resp.status_code, resp.content
-# resp = fetchImportedXML(sys.argv[1])
-# print 'fetch: ', resp.status_code, resp.content
-resp = showCxxImportQueue()
-print 'list before: ', resp.status_code, resp.content
-resp = triggerCxxImport(sys.argv[1])
-print 'start all: ', resp.status_code, resp.content
-resp = showCxxImportQueue()
-print 'list after: ', resp.status_code, resp.content
-resp = getSuccessfulImport(sys.argv[1])
-print 'getSuccess: ', resp.status_code, resp.content
+resp = pushXML2CxxREST(filepath)
+
+# first, push XML file to REST as new resource
+if resp.status_code != 201:
+    raise ApiError('[CxxRest]: pushXML2CxxREST failed with ' + str(resp.status_code))
+else:
+    print '[CxxRest]:', filename, 'successfully pushed to Cxx REST service (' + str(resp.status_code) + ')'
+
+resp = triggerAllCxxImports()
+
+if resp.status_code != 202:
+    raise ApiError('[CxxRest]: triggerAllCxxImports failed with ' + str(resp.status_code))
+else:
+    print '[CxxRest]: import was triggered successfully (' + str(resp.status_code) + ')'
+
+resp = getSuccessfulImport(filepath)
+
+if resp.status_code != 200:
+    raise ApiError('[CxxRest]: getSuccessfulImport failed with ' + str(resp.status_code))
+else:
+    print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
+
+
 #
 # resp = getErroneousImport(sys.argv[1])
 # print 'getError: ', resp.status_code, resp.content
