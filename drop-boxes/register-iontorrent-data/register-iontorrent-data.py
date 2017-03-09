@@ -442,7 +442,7 @@ def process(transaction):
         cxxGeneWhitelist = os.path.join(dropboxBaseDir, 'finalCxxPanel4000.tsv')
 
         fakeMPI = ''
-        cxxExportXMLFilename = os.path.join(cxxExportDir, patientID + '-' + sampleID + '-Cxx-export.xml')
+        cxxExportXMLFilename = os.path.join(cxxExportDir, newPatientID + '-' + newNGSsampleID + '-Cxx-export.xml')
 
         printInfosToStdOut('convert variant data to centraXX XML... ' + cxxExportFileName)
         pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, fakeMPI, vcfCreationDate, vcfPanelName, cxxExportXMLFilename]
