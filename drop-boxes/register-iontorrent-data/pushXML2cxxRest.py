@@ -140,10 +140,14 @@ if resp.status_code != 200:
 else:
     print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
 
+resp = deleteSuccessfulImport(filepath)
+
 if resp.status_code != 200:
     raise ApiError('[CxxRest]: deleteSuccessfulImport failed with ' + str(resp.status_code))
 else:
     print '[CxxRest]:', filename, 'was deleted from successful imports (' + str(resp.status_code) + ')'
+
+resp = getSuccessfulImport(filepath)
 
 if resp.status_code != 200:
     raise ApiError('[CxxRest]: getSuccessfulImport failed with ' + str(resp.status_code))
