@@ -101,7 +101,14 @@ def showCxxImportQueue():
 
     return response
 
+def deleteSuccessfulImport(filepath):
+    filename = os.path.basename(filepath.strip())
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/successful/' + filename
+    restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
 
+    response = requests.delete(importUrl, auth=restAuth, verify=False)
+
+    return response
 
 
 
@@ -132,6 +139,18 @@ if resp.status_code != 200:
     raise ApiError('[CxxRest]: getSuccessfulImport failed with ' + str(resp.status_code))
 else:
     print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
+
+if resp.status_code != 200:
+    raise ApiError('[CxxRest]: deleteSuccessfulImport failed with ' + str(resp.status_code))
+else:
+    print '[CxxRest]:', filename, 'was deleted from successful imports (' + str(resp.status_code) + ')'
+
+if resp.status_code != 200:
+    raise ApiError('[CxxRest]: getSuccessfulImport failed with ' + str(resp.status_code))
+else:
+    print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
+
+
 
 
 #
