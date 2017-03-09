@@ -441,8 +441,10 @@ def process(transaction):
         cxxConverterScriptPath = os.path.join(dropboxBaseDir, 'createCxxPatientExport.py')
         cxxGeneWhitelist = os.path.join(dropboxBaseDir, 'finalCxxPanel4000.tsv')
 
+        fakeMPI = ''
+
         printInfosToStdOut('convert variant data to centraXX XML... ' + cxxExportFileName)
-        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, vcfCreationDate, vcfPanelName, cxxExportDir]
+        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, fakeMPI, vcfCreationDate, vcfPanelName, cxxExportDir]
         p = subprocess.call(pythonCxxCommand)
 
 
