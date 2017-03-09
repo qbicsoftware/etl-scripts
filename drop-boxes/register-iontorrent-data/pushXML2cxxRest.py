@@ -68,9 +68,9 @@ def triggerCxxImport(filepath):
 def triggerAllCxxImports():
     importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/start'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
-    #headers = {'Content-Type': 'application/xml'}
+    headers = {'Content-Type': 'application/xml'}
 
-    response = requests.post(importUrl, auth=restAuth, verify=False)
+    response = requests.post(importUrl, headers=headers, auth=restAuth, verify=False)
 
     return response
 
@@ -114,7 +114,7 @@ print 'push: ', resp.status_code, resp.content
 # print 'fetch: ', resp.status_code, resp.content
 resp = showCxxImportQueue()
 print 'list before: ', resp.status_code, resp.content
-resp = triggerAllCxxImports())
+resp = triggerAllCxxImports()
 print 'start all: ', resp.status_code, resp.content
 resp = showCxxImportQueue()
 print 'list after: ', resp.status_code, resp.content
