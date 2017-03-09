@@ -66,7 +66,7 @@ def triggerCxxImport(filepath):
     return response
 
 def triggerAllCxxImports():
-    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/start/'
+    importUrl = authData['serveraddr'] + '/centraxx/rest/import/queue/start'
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     #headers = {'Content-Type': 'application/xml'}
 
@@ -110,12 +110,14 @@ loadConfigFile()
 
 resp = pushXML2CxxREST(sys.argv[1])
 print 'push: ', resp.status_code, resp.content
-resp = fetchImportedXML(sys.argv[1])
-print 'fetch: ', resp.status_code, resp.content
-resp = triggerCxxImport(sys.argv[1])
-print 'start: ', resp.status_code, resp.content
+# resp = fetchImportedXML(sys.argv[1])
+# print 'fetch: ', resp.status_code, resp.content
 resp = showCxxImportQueue()
-print 'list: ', resp.status_code, resp.content
+print 'list before: ', resp.status_code, resp.content
+resp = triggerAllCxxImports())
+print 'start all: ', resp.status_code, resp.content
+resp = showCxxImportQueue()
+print 'list after: ', resp.status_code, resp.content
 resp = getSuccessfulImport(sys.argv[1])
 print 'getSuccess: ', resp.status_code, resp.content
 #
