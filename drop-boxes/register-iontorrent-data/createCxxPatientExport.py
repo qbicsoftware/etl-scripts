@@ -22,8 +22,9 @@ xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampl
 
 #cvXMLoutput = vcfxml.create
 
-targetDir = sys.argv[8]
-targetFilename = patientID + '-' + sampleID + '-Cxx-export.xml'
-xmloutfile = open(os.path.join(targetDir, targetFilename), 'w')
+#targetDir = sys.argv[8]
+#targetFilename = patientID + '-' + sampleID + '-Cxx-export.xml'
+targetFilename = sys.argv[8]
+xmloutfile = open(targetFilename, 'w')
 xmloutfile.write(xmlOutputString)
 xmloutfile.close()
