@@ -148,6 +148,13 @@ if resp.status_code != 200:
 else:
     print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
 
+resp = showCxxImportQueue()
+
+if resp.status_code != 200:
+    raise CxxRestApiError('[CxxRest]: showCxxImportQueue failed with ' + str(resp.status_code))
+else:
+    print '[CxxRest]: showing contents of the import queue was successful (' + str(resp.status_code) + ')'
+
 resp = deleteSuccessfulImport(filepath)
 
 if resp.status_code != 200:
@@ -155,12 +162,12 @@ if resp.status_code != 200:
 else:
     print '[CxxRest]:', filename, 'was deleted from successful imports (' + str(resp.status_code) + ')'
 
-resp = getSuccessfulImport(filepath)
+#resp = getSuccessfulImport(filepath)
 
-if resp.status_code != 200:
-    raise CxxRestApiError('[CxxRest]: getSuccessfulImport failed with ' + str(resp.status_code))
-else:
-    print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
+# if resp.status_code != 200:
+#     raise CxxRestApiError('[CxxRest]: getSuccessfulImport failed with ' + str(resp.status_code))
+# else:
+#     print '[CxxRest]:', filename, 'was marked as successfully imported (' + str(resp.status_code) + ')'
 
 
 
