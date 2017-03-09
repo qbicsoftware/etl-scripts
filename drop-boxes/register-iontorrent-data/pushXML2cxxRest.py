@@ -132,7 +132,7 @@ resp = pushXML2CxxREST(filepath)
 if resp.status_code != 201:
     raise CxxRestApiError('[CxxRest]: pushXML2CxxREST failed with ' + str(resp.status_code))
 else:
-    print '[CxxRest]:', filename, 'successfully pushed to Cxx REST service (' + str(resp.status_code) + ')'
+    print '[CxxRest]:', filename, 'successfully pushed to Cxx REST import queue (' + str(resp.status_code) + ')'
 
 resp = triggerAllCxxImports()
 
@@ -153,7 +153,7 @@ resp = showCxxImportQueue()
 if resp.status_code != 200:
     raise CxxRestApiError('[CxxRest]: showCxxImportQueue failed with ' + str(resp.status_code))
 else:
-    print '[CxxRest]: showing contents of the import queue was successful (' + str(resp.status_code) + ')'
+    print '[CxxRest]: showing contents of the import queue was successful (' + str(resp.status_code) + ')', resp.content
 
 resp = deleteSuccessfulImport(filepath)
 
