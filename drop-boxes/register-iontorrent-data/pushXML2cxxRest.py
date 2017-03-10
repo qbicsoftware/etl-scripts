@@ -47,8 +47,8 @@ def pushXML2CxxREST(filepath):
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
     #files = {'file': io.open(filepath, 'r', encoding='utf8')}
-    xmlContent = codecs.open(filepath, encoding='utf-8')
-
+    #xmlContent = codecs.open(filepath, encoding='utf-8')
+    xmlContent = open(filepath, 'rb')
     response = requests.post(importUrl, data=xmlContent, auth=restAuth, headers=headers, verify=False)
 
     return response
