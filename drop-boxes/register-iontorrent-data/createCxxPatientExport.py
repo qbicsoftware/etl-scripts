@@ -1,4 +1,5 @@
 import os,sys
+import io
 
 sys.path.append('/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data')
 
@@ -25,6 +26,6 @@ xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampl
 #targetDir = sys.argv[8]
 #targetFilename = patientID + '-' + sampleID + '-Cxx-export.xml'
 targetFilename = sys.argv[8]
-xmloutfile = open(targetFilename, 'w')
+xmloutfile = io.open(targetFilename, 'w', encoding='utf8')
 xmloutfile.write(xmlOutputString)
 xmloutfile.close()
