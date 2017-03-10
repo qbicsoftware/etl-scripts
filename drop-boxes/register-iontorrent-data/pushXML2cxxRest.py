@@ -4,7 +4,7 @@ import sys
 import requests
 from requests.auth import HTTPBasicAuth
 import configparser
-import io
+import codecs
 
 authData = {}
 
@@ -47,7 +47,7 @@ def pushXML2CxxREST(filepath):
     restAuth = HTTPBasicAuth(authData['authuser'], authData['password'])
     headers = {'Content-Type': 'application/xml'}
     #files = {'file': io.open(filepath, 'r', encoding='utf8')}
-    xmlContent = open(filepath, 'rb')
+    xmlContent = codecs.open(filepath, encoding='utf-8')
 
     response = requests.post(importUrl, data=xmlContent, auth=restAuth, headers=headers, verify=False)
 

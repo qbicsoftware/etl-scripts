@@ -1,5 +1,5 @@
 import os,sys
-import io
+import codecs
 
 sys.path.append('/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data')
 
@@ -28,6 +28,6 @@ xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampl
 targetFilename = sys.argv[8]
 
 # TODO: check if we need utf8 encoding here
-xmloutfile = open(targetFilename, 'w')
-xmloutfile.write(xmlOutputString)
+xmloutfile = codecs.open(targetFilename, encoding = 'utf-8', mode = 'w')
+xmloutfile.write(unicode(xmlOutputString))
 xmloutfile.close()
