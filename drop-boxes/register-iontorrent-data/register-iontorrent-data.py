@@ -450,7 +450,7 @@ def process(transaction):
 
         cxxRestScriptPath = os.path.join(dropboxBaseDir, 'pushXML2cxxRest.py')
         printInfosToStdOut('send variant data to centraXX REST interface... ' + cxxExportFileName)
-        pythonCxxRestCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxRestScriptPath, cxxExportFilePath]
+        pythonCxxRestCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxRestScriptPath, cxxExportXMLFilename]
         p = subprocess.call(pythonCxxRestCommand)
 
         subjectCounter += 1
