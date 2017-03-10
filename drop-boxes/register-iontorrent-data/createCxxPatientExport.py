@@ -26,6 +26,8 @@ xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampl
 #targetDir = sys.argv[8]
 #targetFilename = patientID + '-' + sampleID + '-Cxx-export.xml'
 targetFilename = sys.argv[8]
-xmloutfile = io.open(targetFilename, 'w', encoding='utf8')
-xmloutfile.write(unicode(xmlOutputString))
+
+# TODO: check if we need utf8 encoding here
+xmloutfile = open(targetFilename, 'w')
+xmloutfile.write(xmlOutputString)
 xmloutfile.close()
