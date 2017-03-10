@@ -28,7 +28,6 @@ xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampl
 targetFilename = sys.argv[8]
 
 # TODO: check if we need utf8 encoding here
-xmlOutputStringUnicode = unicode(xmlOutputString, 'utf8')
-print xmlOutputStringUnicode
+#xmlOutputStringUnicode = unicode(xmlOutputString, 'utf8')
 with codecs.open(targetFilename, 'w', encoding='utf-8') as f:
-    f.write(xmlOutputStringUnicode)
+    f.write(xmlOutputString)
