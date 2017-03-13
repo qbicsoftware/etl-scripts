@@ -20,7 +20,7 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-
+import json
 
 from extractPGMdata import *
 
@@ -177,6 +177,13 @@ def extractPGMID(fileName):
         extractedString = extractedString.replace('-', '')
 
     return extractedString
+
+def parsePGMIdentifierMapping(filepath):
+
+    with open(filepath, 'rb') as jsonfile:
+        jsondict = json.load(jsonfile)
+
+    return jsondict
 
 
 def process(transaction):
@@ -387,6 +394,7 @@ def process(transaction):
         #freshIonPGMExperiment = queryResults2[0]
 
     patientIDprefix = 'QPATH-PAT-'
+    parentsList = []
 
     # this is "the main loop" here: create openBIS samples for each VCF/XLS, extract the relevant variants for centraXX, ...
     for i in range(0,len(xtrXLSPaths)):
@@ -407,6 +415,8 @@ def process(transaction):
         newNGSrun.setParentSampleIdentifiers([newPatient.getSampleIdentifier()])
         newNGSrun.setPropertyValue('Q_SECONDARY_NAME', vcfPanelName)
         newNGSrun.setExperiment(freshIonPGMExperiment)
+
+        parentsList.append(newNGSrun.getSampleIdentifier())
 
         newVarCallRun = transaction.createNewSample('/' + spaceCode + '/' + newNGSsampleID + '-VCF', 'Q_NGS_VARIANT_CALLING')
         newVarCallRun.setParentSampleIdentifiers([newNGSrun.getSampleIdentifier()])
@@ -486,11 +496,22 @@ def process(transaction):
         #transaction.moveFile(incomingPath, dataSet)
 
 
+    # finally move the tarball to storage
+    newCompletePGMRun = transaction.createNewSample('/' + spaceCode + '/' + newExperimentCode + '-TAR', 'Q_NGS_IONTORRENT_RUN')
+    newCompletePGMRun.setParentSampleIdentifiers([newNGSrun.getSampleIdentifier()])
+    newCompletePGMRun.setPropertyValue('Q_SECONDARY_NAME', name)
+    newCompletePGMRun.setExperiment(freshIonPGMExperiment)
+
+    newCompletePGMdataset = transaction.createNewDataSet('Q_NGS_IONTORRENT_DATA')
+    newCompletePGMdataset.setPropertyValue('Q_SECONDARY_NAME', name)
+    newCompletePGMdataset.setPropertyValue('Q_PGM_TOTAL_SAMPLES', len(xtrXLSPaths))
+    newCompletePGMdataset.setPropertyValue('Q_TARBALL_SHA256SUM', tarFileSha256Sum)
+    newCompletePGMdataset.setMeasuredData(False)
+    newCompletePGMdataset.setSample(newCompletePGMRun)
 
 
 
-
-    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
