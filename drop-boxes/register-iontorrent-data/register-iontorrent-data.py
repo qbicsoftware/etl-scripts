@@ -394,6 +394,12 @@ def process(transaction):
         #freshIonPGMDesign = queryResults1[0]
         #freshIonPGMExperiment = queryResults2[0]
 
+
+    dropboxBaseDir = '/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data'
+
+    idMappingDict = parsePGMIdentifierMapping(os.path.join(dropboxBaseDir, 'pgmImportMetadata.json'))
+    print idMappingDict
+    
     patientIDprefix = 'QPATH-PAT-'
     parentsList = []
 
@@ -467,7 +473,7 @@ def process(transaction):
 
         vcfCreationDate = grepTimeStampFromVCF(annVCFPaths[i])
 
-        dropboxBaseDir = '/home-link/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-iontorrent-data'
+
         cxxConverterScriptPath = os.path.join(dropboxBaseDir, 'createCxxPatientExport.py')
         cxxGeneWhitelist = os.path.join(dropboxBaseDir, 'finalCxxPanel4000.tsv')
 
@@ -505,7 +511,7 @@ def process(transaction):
 
     newCompletePGMdataset = transaction.createNewDataSet('Q_NGS_IONTORRENT_DATA')
     newCompletePGMdataset.setPropertyValue('Q_SECONDARY_NAME', name)
-    newCompletePGMdataset.setPropertyValue('Q_PGM_TOTAL_SAMPLES', len(xtrXLSPaths))
+    newCompletePGMdataset.setPropertyValue('Q_PGM_TOTAL_SAMPLES', str(len(xtrXLSPaths)))
     newCompletePGMdataset.setPropertyValue('Q_TARBALL_SHA256SUM', tarFileSha256Sum)
     newCompletePGMdataset.setMeasuredData(False)
     newCompletePGMdataset.setSample(newCompletePGMRun)
