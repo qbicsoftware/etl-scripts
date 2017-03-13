@@ -180,8 +180,8 @@ def extractPGMID(fileName):
 
 def parsePGMIdentifierMapping(filepath):
 
-    with open(filepath, 'rb') as jsonfile:
-        jsondict = json.load(jsonfile)
+    jsonfile = open(filepath, 'rb')
+    jsondict = json.load(jsonfile)
 
     return jsondict
 
