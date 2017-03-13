@@ -168,7 +168,7 @@ def grepTimeStampFromVCF(fileName):
 
 def extractPGMID(fileName):
     pgmPattern = re.compile('PGM[_-]*\d*')
-    result = pgmPattern.search(runName[0].strip())
+    result = pgmPattern.search(fileName.strip())
 
     extractedString = ''
     if result:
