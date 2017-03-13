@@ -6,6 +6,7 @@ print statements go to: ~/openbis/servers/datastore_server/log/datastore_server_
 import sys
 
 sys.path.append('/home-link/qeana10/bin')
+sys.path.append('/home-link/qeana10/bin/simplejson-3.8.0')
 
 import checksum
 import re
@@ -20,7 +21,7 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-import json
+import simplejson as json
 
 from extractPGMdata import *
 
