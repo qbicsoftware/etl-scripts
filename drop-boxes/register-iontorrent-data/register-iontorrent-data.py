@@ -166,6 +166,19 @@ def grepTimeStampFromVCF(fileName):
 
     return timeString
 
+def extractPGMID(fileName):
+    pgmPattern = re.compile('PGM[_-]*\d*')
+    result = pgmPattern.search(runName[0].strip())
+
+    extractedString = ''
+    if result:
+        extractedString = result.group(0)
+        extractedString = extractedString.replace('_', '')
+        extractedString = extractedString.replace('-', '')
+
+    return extractedString
+
+
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -331,7 +344,13 @@ def process(transaction):
             sampleCounter += len(foundSamples)
 
 
-    newExperimentCode = 'PGM84'
+    #newExperimentCode = 'PGM84'
+    newExperimentCode = extractPGMID(name)
+    printInfosToStdOut('PGM code:' + newExperimentCode)
+
+    if newExperimentCode == '':
+        raise IonTorrentDropboxError('Could not extract PGM run ID from incoming data folder. Abort...')
+
     newExperimentFullIdentifier1 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-DESIGN'
     newExperimentFullIdentifier2 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-RUN'
     newExperimentFullIdentifier3 = '/' + spaceCode + '/' + projectCode + '/' + newExperimentCode + '-VARCALL'
