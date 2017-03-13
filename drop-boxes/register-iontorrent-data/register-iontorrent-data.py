@@ -398,7 +398,6 @@ def process(transaction):
 
     incomingDir = '/mnt/DSS1/openbis_dss/QBiC-register-iontorrent'
     idMappingDict = parsePGMIdentifierMapping(os.path.join(incomingDir, 'pgmImportMetadata.json'))
-    print idMappingDict
 
     patientIDprefix = 'QPATH-PAT-'
     parentsList = []
@@ -516,6 +515,7 @@ def process(transaction):
     newCompletePGMdataset.setMeasuredData(False)
     newCompletePGMdataset.setSample(newCompletePGMRun)
 
+    transaction.moveFile(tarFileFullPath, newCompletePGMdataset)
 
 
     #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
