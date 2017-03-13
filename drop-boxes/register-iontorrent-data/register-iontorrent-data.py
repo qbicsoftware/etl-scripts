@@ -396,7 +396,7 @@ def process(transaction):
 
 
 
-    incomingDir = os.path.dirname(incomingPath)
+    incomingDir = '/mnt/DSS1/openbis_dss/QBiC-register-iontorrent'
     idMappingDict = parsePGMIdentifierMapping(os.path.join(incomingDir, 'pgmImportMetadata.json'))
     print idMappingDict
 
