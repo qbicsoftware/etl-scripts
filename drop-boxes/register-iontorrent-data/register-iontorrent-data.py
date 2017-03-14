@@ -300,6 +300,7 @@ def process(transaction):
 
     # only tar it if file is not existing yet (TODO: leave check only for testing/development)
     if not os.path.exists(tarFileFullPath):
+        printInfosToStdOut('create tar archive of PGM measurement...')
         tarCommand = ['tar', '-cf', tarFileFullPath, '-C', prestagingDir, name]
         p = subprocess.call(tarCommand)
 
@@ -326,7 +327,7 @@ def process(transaction):
         # if the files are already there, don't redo it... it's a costly operation
         if not os.path.exists(annfile):
             snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
-            printInfosToStdOut('Starting ' + snpEffCommand)
+            printInfosToStdOut('Starting snpEff of ' + vcffile)
             annfile_out = open(annfile, 'w')
             p = subprocess.call(snpEffCommand, stdout=annfile_out)
             annfile_out.close()
