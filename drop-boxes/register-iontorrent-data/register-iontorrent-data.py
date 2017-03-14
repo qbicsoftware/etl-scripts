@@ -494,7 +494,9 @@ def process(transaction):
 
         extractedSampleIDs = extractSampleID(xtrXLSPaths[i])
 
-        print extractedSampleIDs
+        print extractedSampleIDs, idMappingDict[extractedSampleIDs[0]]
+        
+
 
         fakeMPI = ''
 
