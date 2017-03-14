@@ -261,9 +261,12 @@ def process(transaction):
 
     unzipCommand = ['unzip', '-o', varCallVcfFile[-1], '-d', unzipDir]
     p = subprocess.call(unzipCommand)
-    #xtrVcfGzPaths = glob.glob(unzipDir + '/*.vcf.gz')
-    gunzipCommand = ['gunzip', os.path.join(unzipDir, '*.vcf.gz')]
-    p = subprocess.call(gunzipCommand)
+    xtrVcfGzPaths = glob.glob(unzipDir + '/*.vcf.gz')
+
+    for gzipfile in xtrVcfGzPaths:
+        printInfosToStdOut('gunzipping ' + gzipfile)
+        gunzipCommand = ['gunzip', gzipfile]
+        p = subprocess.call(gunzipCommand)
 
     # xls_zip_file = zipfile.ZipFile(varCallXlsFile[-1], 'r')
     # for zFile in xls_zip_file.namelist():
