@@ -494,11 +494,13 @@ def process(transaction):
 
         extractedSampleIDs = extractSampleID(xtrXLSPaths[i])
 
-        print extractedSampleIDs, idMappingDict[extractedSampleIDs[0]]
-        
+        if not idMappingDict.has_key(extractedSampleIDs[0]):
+            printInfosToStdOut('Could not find the sample ID for ' + xtrXLSPaths[i])
+            continue
 
 
-        fakeMPI = ''
+        fakeMPI = idMappingDict[extractedSampleIDs[0]]['pgmID']
+        print fakeMPI
 
 
         cxxExportXMLFilename = os.path.join(cxxExportDir, newPatientID + '-' + newNGSsampleID + '-Cxx-export.xml')
