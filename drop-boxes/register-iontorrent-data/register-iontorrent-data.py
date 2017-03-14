@@ -306,22 +306,26 @@ def process(transaction):
 
     # compute the sha256sum of the tar and check against openBIS
     printInfosToStdOut('computing sha256sum...')
-    tarFileSha256Sum = computeSha256Sum(tarFileFullPath)
+    # tarFileSha256Sum = computeSha256Sum(tarFileFullPath)
     # TODO: computation works fine but to speed things up we disable it
-    #tarFileSha256Sum = '24dc899d5023675a34b4777fa4209c037d90e9c79f7d0d9a523b3f6cfd59252f'
+    tarFileSha256Sum = '24dc899d5023675a34b4777fa4209c037d90e9c79f7d0d9a523b3f6cfd59252f'
 
     printInfosToStdOut('tar file sha256sum: ' + tarFileSha256Sum)
 
     # TODO: check if there is a Q_NGS_IONTORRENT_DATA object with this checksum
     # if yes, stop it right here
 
+    annBaseDir = os.path.join(unzipDir, 'snpEff')
+
+    if not os.path.exists(annBaseDir):
+        os.makedirs(annBaseDir)
 
     for vcffile in xtrVCFPaths:
         printInfosToStdOut('Processing ' + vcffile)
         justFileName = os.path.basename(vcffile)
         printInfosToStdOut('filename only: ' + justFileName)
         basename, suffix = os.path.splitext(justFileName)
-        annBaseDir = os.path.join(unzipDir, 'snpEff')
+
         annfile = os.path.join(annBaseDir, basename + '_ann' + suffix)
 
         # if the files are already there, don't redo it... it's a costly operation
