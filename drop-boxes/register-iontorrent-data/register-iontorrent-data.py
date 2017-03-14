@@ -22,6 +22,7 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 import simplejson as json
+import csv
 
 from extractPGMdata import *
 
@@ -185,6 +186,20 @@ def parsePGMIdentifierMapping(filepath):
     jsondict = json.load(jsonfile)
 
     return jsondict
+
+def extractSampleID(xlsFilepath):
+    xlsFile = open(xlsFilepath, 'rb')
+    csvreader = csv.DictReader(xlsFile, delimiter='\t')
+
+    sampleID = None
+    barcode = None
+
+    for row in csvreader:
+        sampleID = row['Sample Name']
+        barcode = row['Barcode']
+
+
+    return (sampleID, barcode)
 
 
 def process(transaction):
@@ -476,7 +491,14 @@ def process(transaction):
         cxxConverterScriptPath = os.path.join(dropboxBaseDir, 'createCxxPatientExport.py')
         cxxGeneWhitelist = os.path.join(dropboxBaseDir, 'finalCxxPanel4000.tsv')
 
+
+        extractedSampleIDs = extractSampleID(xtrXLSPaths[i])
+
+        print extractedSampleIDs
+
         fakeMPI = ''
+
+
         cxxExportXMLFilename = os.path.join(cxxExportDir, newPatientID + '-' + newNGSsampleID + '-Cxx-export.xml')
 
         printInfosToStdOut('convert variant data to centraXX XML... ' + cxxExportFileName)
