@@ -540,7 +540,7 @@ def process(transaction):
     transaction.moveFile(tarFileFullPath, newCompletePGMdataset)
 
 
-    #raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
