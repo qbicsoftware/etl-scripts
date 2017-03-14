@@ -462,12 +462,11 @@ def process(transaction):
         newVCFdataset.setSample(newVarCallRun)
 
         # create temporary export folder to simulate file copy
-        exportDir = os.path.join(fakeTmpBaseDir, 'export')
+        exportDir = os.path.join(unzipDir, 'export')
         datasetTmpDir = os.path.join(exportDir, newNGSsampleID + '-VCF')
 
         if not os.path.exists(datasetTmpDir):
             os.makedirs(datasetTmpDir)
-
 
         copyCommand = ['cp', annVCFPaths[i], xtrXLSPaths[i], datasetTmpDir]
         p = subprocess.call(copyCommand)
@@ -481,7 +480,7 @@ def process(transaction):
         significantVariants = extractPGMdata(annVCFPaths[i], xtrXLSPaths[i])
         analyzedGenes = extractVCFGenes(annVCFPaths[i])
 
-        cxxExportDir = os.path.join(fakeTmpBaseDir, 'cxx')
+        cxxExportDir = os.path.join(unzipDir, 'cxx')
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
         cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
         cxxExportFile = open(cxxExportFilePath, 'w')
