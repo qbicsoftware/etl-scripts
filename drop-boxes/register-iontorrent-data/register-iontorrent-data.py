@@ -481,6 +481,11 @@ def process(transaction):
         analyzedGenes = extractVCFGenes(annVCFPaths[i])
 
         cxxExportDir = os.path.join(unzipDir, 'cxx')
+
+        if not os.path.exists(cxxExportDir):
+            os.makedir(cxxExportDir)
+
+
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
         cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
         cxxExportFile = open(cxxExportFilePath, 'w')
