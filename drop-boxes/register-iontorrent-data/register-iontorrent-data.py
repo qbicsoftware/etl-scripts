@@ -483,7 +483,7 @@ def process(transaction):
         cxxExportDir = os.path.join(unzipDir, 'cxx')
 
         if not os.path.exists(cxxExportDir):
-            os.makedir(cxxExportDir)
+            os.makedirs(cxxExportDir)
 
 
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
