@@ -278,7 +278,7 @@ def process(transaction):
     xtrVCFPaths = glob.glob(unzipDir + '/*.vcf')
     #annVCFPaths = [f for f in xtrVCFPaths if '_ann.vcf' in f]
     xtrXLSPaths = glob.glob(unzipDir + '/*.xls')
-    bamFilePaths = glob.glob(incomingPath + '/*.bam')
+    bamFilePaths = glob.glob(incomingPath + '/IonXpress*.bam')
 
     if (len(xtrXLSPaths) != len(bamFilePaths)) or (len(xtrVCFPaths) != len(bamFilePaths)):
         raise IonTorrentDropboxError('Number of BAM files and VCF/XLS were diverging! Aborting...')
@@ -500,7 +500,7 @@ def process(transaction):
 
 
         fakeMPI = idMappingDict[extractedSampleIDs[0]]['pgmID']
-        print fakeMPI
+        print 'found sampleID!', fakeMPI
 
 
         cxxExportXMLFilename = os.path.join(cxxExportDir, newPatientID + '-' + newNGSsampleID + '-Cxx-export.xml')
