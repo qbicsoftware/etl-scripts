@@ -16,16 +16,17 @@ filteredGeneList = vcf2xml.matchVariantsToQBiCPanel(vcfData, variantsWhitelist)
 patientID = sys.argv[3]
 sampleID = sys.argv[4]
 patientMPI = sys.argv[5]
-creationTimeStamp = sys.argv[6]
-panelName = sys.argv[7]
+pgmSampleID = sys.argv[6]
+creationTimeStamp = sys.argv[7]
+panelName = sys.argv[8]
 
-xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampleID, patientMPI, creationTimeStamp, panelName)
+xmlOutputString = vcf2xml.createPatientExport(filteredGeneList, patientID, sampleID, patientMPI, pgmSampleID, creationTimeStamp, panelName)
 
 #cvXMLoutput = vcfxml.create
 
 #targetDir = sys.argv[8]
 #targetFilename = patientID + '-' + sampleID + '-Cxx-export.xml'
-targetFilename = sys.argv[8]
+targetFilename = sys.argv[9]
 
 # TODO: check if we need utf8 encoding here
 #xmlOutputStringUnicode = unicode(xmlOutputString, 'utf8')

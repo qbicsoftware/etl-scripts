@@ -236,7 +236,7 @@ def matchVariantsToQBiCPanel(vcfData, panelData):
 #     return(docRootDOM.toprettyxml(encoding='utf-8'))
 
 
-def createPatientExport(vcfPanel, qPatientID, qSampleID, patientMPI, creationTimeStamp = '1970-01-01T11:59:59', panelName = 'Unknown gene panel'):
+def createPatientExport(vcfPanel, qPatientID, qSampleID, patientMPI, pgmSampleID, creationTimeStamp = '1970-01-01T11:59:59', panelName = 'Unknown gene panel'):
     pyxb.utils.domutils.BindingDOMSupport.DeclareNamespace(cx.Namespace, 'cxx')
 
     docRoot = cx.CentraXXDataExchange()
@@ -275,7 +275,7 @@ def createPatientExport(vcfPanel, qPatientID, qSampleID, patientMPI, creationTim
 
     sampleIDcontainer = cx.SampleIDContainerType()
 
-    sampleFlexID = cx.FlexibleIDType('SAMPLEID', qSampleID)
+    sampleFlexID = cx.FlexibleIDType('SAMPLEID', pgmSampleID)
     sampleIDcontainer.append(sampleFlexID)
 
     sampleFlexID = cx.FlexibleIDType('QBIC_SAMPLE_ID', qSampleID)

@@ -512,14 +512,15 @@ def process(transaction):
             continue
 
 
-        fakeMPI = idMappingDict[extractedSampleIDs[0]]['pgmID']
-        print 'found sampleID!', fakeMPI
-
+        patientMPI = idMappingDict[extractedSampleIDs[0]]['patID']
+        pgmRun = idMappingDict[extractedSampleIDs[0]]['pgmID']
+        pgmBarcode = extractedSampleIDs[1]
+        pgmSampleID = pgmRun + '_' + pgmBarcode
 
         cxxExportXMLFilename = os.path.join(cxxExportDir, newPatientID + '-' + newNGSsampleID + '-Cxx-export.xml')
 
         printInfosToStdOut('convert variant data to centraXX XML... ' + cxxExportFileName)
-        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, fakeMPI, vcfCreationDate, vcfPanelName, cxxExportXMLFilename]
+        pythonCxxCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxConverterScriptPath, cxxExportFilePath, cxxGeneWhitelist, newPatientID, newNGSsampleID, patientMPI, pgmSampleID, vcfCreationDate, vcfPanelName, cxxExportXMLFilename]
         p = subprocess.call(pythonCxxCommand)
 
         cxxRestScriptPath = os.path.join(dropboxBaseDir, 'pushXML2cxxRest.py')
