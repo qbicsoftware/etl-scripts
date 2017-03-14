@@ -280,6 +280,11 @@ def process(transaction):
     xtrXLSPaths = glob.glob(unzipDir + '/*.xls')
     bamFilePaths = glob.glob(incomingPath + '/IonXpress*.bam')
 
+    print xtrVCFPaths
+    print xtrXLSPaths
+    print bamFilePaths
+
+
     if (len(xtrXLSPaths) != len(bamFilePaths)) or (len(xtrVCFPaths) != len(bamFilePaths)):
         raise IonTorrentDropboxError('Number of BAM files and VCF/XLS were diverging! Aborting...')
     else:
