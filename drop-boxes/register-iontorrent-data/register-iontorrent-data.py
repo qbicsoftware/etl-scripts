@@ -531,7 +531,7 @@ def process(transaction):
         printInfosToStdOut('send variant data to centraXX REST interface... ' + cxxExportXMLFilename)
         pythonCxxRestCommand = ['/home-link/qeana10/miniconda2/bin/python', cxxRestScriptPath, cxxExportXMLFilename]
         #TODO: re-enable here later!
-        p = subprocess.call(pythonCxxRestCommand)
+        # p = subprocess.call(pythonCxxRestCommand)
 
         subjectCounter += 1
         sampleCounter += 1
@@ -562,7 +562,7 @@ def process(transaction):
     transaction.moveFile(tarFileFullPath, newCompletePGMdataset)
 
 
-    raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
+    # raise IonTorrentDropboxError('sorry, raising an error to force a rollback')
 
 
     # identifier = pattern.findall(name)[0]
