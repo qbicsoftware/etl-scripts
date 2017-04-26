@@ -5,8 +5,8 @@ def process(tr, parameters, tableBuilder):
       Description: *
   """
 
-  if "user" in parameters:
-    tr.setUserId(parameters.get("user"))
+  #if "user" in parameters:
+  #tr.setUserId(parameters.get("user"))
 
   projCode = parameters.get("code")
   projSpace = parameters.get("space")
