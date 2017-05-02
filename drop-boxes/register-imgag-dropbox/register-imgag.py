@@ -267,6 +267,16 @@ def find_and_register_ngs(transaction, jsonContent):
         knownCodes.append(samp.getCode())
         #if qbicBarcodeID in samp.getParentSampleIdentifiers() or qbicBarcode == samp.getCode():
         sampleType = samp.getSampleType()
+        print("sample Type " + sampleType)
+        print("qbicBarcode " + qbicBarcode)
+        print("code " + samp.getCode())
+        print("parents " + samp.getParentSampleIdentifiers())
+        print("Q_SAMPLE_TYPE " + samp.getPropertyValue("Q_SAMPLE_TYPE"))
+        print("EXP type " + typesDict[expType])
+        print("secondary name " + samp.getPropertyValue("Q_SECONDARY_NAME"))
+        print("ID Genetics " + idGenetics.split('_')[0])
+        print("External DB " + samp.getPropertyValue("Q_EXTERNALDB_ID"))
+
         if ((qbicBarcode == samp.getCode()) and (sampleType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in samp.getParentSampleIdentifiers()) and (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") in idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0]))):
             sampleIdent = samp.getSampleIdentifier()
             testSampleCode = samp.getCode()
