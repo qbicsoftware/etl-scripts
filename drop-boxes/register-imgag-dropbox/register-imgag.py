@@ -270,14 +270,15 @@ def find_and_register_ngs(transaction, jsonContent):
         print("sample Type " + sampleType)
         print("qbicBarcode " + qbicBarcode)
         print("code " + samp.getCode())
-        print("parents " + samp.getParentSampleIdentifiers())
-        print("Q_SAMPLE_TYPE " + samp.getPropertyValue("Q_SAMPLE_TYPE"))
+        print("parents " + str(samp.getParentSampleIdentifiers()))
         print("EXP type " + typesDict[expType])
-        print("secondary name " + samp.getPropertyValue("Q_SECONDARY_NAME"))
         print("ID Genetics " + idGenetics.split('_')[0])
-        print("External DB " + samp.getPropertyValue("Q_EXTERNALDB_ID"))
 
-        if ((qbicBarcode == samp.getCode()) and (sampleType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in samp.getParentSampleIdentifiers()) and (samp.getPropertyValue("Q_SAMPLE_TYPE") == typesDict[expType]) and ((samp.getPropertyValue("Q_SECONDARY_NAME") in idGenetics.split('_')[0]) or (samp.getPropertyValue("Q_EXTERNALDB_ID") == idGenetics.split('_')[0]))):
+        q_sample_type = samp.getPropertyValue("Q_SAMPLE_TYPE")
+        q_secondary_name = samp.getPropertyValue("Q_SECONDARY_NAME")
+        q_external_id = samp.getPropertyValue("Q_EXTERNALDB_ID")
+
+        if ((qbicBarcode == samp.getCode()) and (sampleType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in samp.getParentSampleIdentifiers()) and ((q_sample_type != None) and (q_sample_type == typesDict[expType])) and (((q_secondary_name != None) and (q_secondary_name in idGenetics.split('_')[0])) or ((q_external_id != None) and (q_external_id == idGenetics.split('_')[0]))):
             sampleIdent = samp.getSampleIdentifier()
             testSampleCode = samp.getCode()
             oldTestSamples[idGenetics] = sampleIdent
