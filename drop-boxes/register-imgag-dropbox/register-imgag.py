@@ -278,7 +278,7 @@ def find_and_register_ngs(transaction, jsonContent):
         q_secondary_name = samp.getPropertyValue("Q_SECONDARY_NAME")
         q_external_id = samp.getPropertyValue("Q_EXTERNALDB_ID")
 
-        if ((qbicBarcode == samp.getCode()) and (sampleType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in samp.getParentSampleIdentifiers()) and ((q_sample_type != None) and (q_sample_type == typesDict[expType])) and (((q_secondary_name != None) and (q_secondary_name in idGenetics.split('_')[0])) or ((q_external_id != None) and (q_external_id == idGenetics.split('_')[0]))):
+        if ((qbicBarcode == samp.getCode()) and (sampleType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in samp.getParentSampleIdentifiers()) and ((q_sample_type != None) and (q_sample_type == typesDict[expType])) and (((q_secondary_name != None) and (q_secondary_name in idGenetics.split('_')[0])) or ((q_external_id != None) and (q_external_id == idGenetics.split('_')[0])))):
             sampleIdent = samp.getSampleIdentifier()
             testSampleCode = samp.getCode()
             oldTestSamples[idGenetics] = sampleIdent
