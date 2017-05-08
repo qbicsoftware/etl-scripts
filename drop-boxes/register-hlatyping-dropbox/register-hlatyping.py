@@ -86,7 +86,7 @@ def process(transaction):
                     resultPath = os.path.join(root, f)
                     resultFile = open(resultPath, 'r')
     else:
-        resultPath = os.path.join(root, f)
+        resultPath = incomingPath
         resultFile = open(resultPath, 'r')
     resultContent = resultFile.read()
 
