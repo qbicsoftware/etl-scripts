@@ -82,7 +82,8 @@ def process(transaction):
             subFolder = subFolders[0]
         for f in files:
             if f.endswith('.alleles'):
-                resultFile = open(os.path.join(root, f), 'r')
+                resultPath = os.path.join(root, f)
+                resultFile = open(resultPath, 'r')
 
     resultContent = resultFile.read()
 
@@ -113,4 +114,4 @@ def process(transaction):
     dataSet.setMeasuredData(False)
     dataSet.setSample(newHLATypingSample)
 
-    transaction.moveFile(incomingPath, dataSet)
+    transaction.moveFile(resultPath, dataSet)
