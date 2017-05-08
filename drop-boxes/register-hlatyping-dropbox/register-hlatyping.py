@@ -77,14 +77,17 @@ def process(transaction):
     newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
     newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
-    for root, subFolders, files in os.walk(incomingPath):
-        if subFolders:
-            subFolder = subFolders[0]
-        for f in files:
-            if f.endswith('.alleles'):
-                resultPath = os.path.join(root, f)
-                resultFile = open(resultPath, 'r')
-
+    if os.path.isdir(incomingPath):
+        for root, subFolders, files in os.walk(incomingPath):
+            if subFolders:
+                subFolder = subFolders[0]
+            for f in files:
+                if f.endswith('.alleles'):
+                    resultPath = os.path.join(root, f)
+                    resultFile = open(resultPath, 'r')
+    else:
+        resultPath = os.path.join(root, f)
+        resultFile = open(resultPath, 'r')
     resultContent = resultFile.read()
 
     mhcClass = "MHC_CLASS_II"
