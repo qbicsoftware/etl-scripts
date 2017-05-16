@@ -275,7 +275,7 @@ def find_and_register_ngs(transaction, jsonContent):
         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
 
         # we are looking for either the test sample with this barcode
-        isTestSampleWithBarcode = (barcode == code) and (sType != None) and (sType == "Q_TEST_SAMPLE")
+        isTestSampleWithBarcode = (qbicBarcodeID == code) and (sType != None) and (sType == "Q_TEST_SAMPLE")
         # OR a test sample with parent with this barcode
         correctParent = qbicBarcodeID in parentIDs
         # AND the right analyte (e.g. DNA)
