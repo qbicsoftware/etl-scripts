@@ -274,8 +274,15 @@ def find_and_register_ngs(transaction, jsonContent):
         curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
 
-        # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
-        if ((barcode == code) and ((sType != None) and (sType == "Q_TEST_SAMPLE"))) or ((qbicBarcodeID in parentIDs) and ((analyte != None) and (analyte == typesDict[expType])) and (((curSecName != None) and (genShortID in curSecName)) or ((extID != None) and (genShortID in extID))):
+        # we are looking for either the test sample with this barcode
+        isTestSampleWithBarcode = (barcode == code) and (sType != None) and (sType == "Q_TEST_SAMPLE")
+        # OR a test sample with parent with this barcode
+        correctParent = qbicBarcodeID in parentIDs
+        # AND the right analyte (e.g. DNA)
+        correctAnalyte = (analyte != None) and (analyte == typesDict[expType])
+        # AND and the short genetics ID in secondary name OR external ID
+        hasGeneticsID = (curSecName != None and genShortID in curSecName) or (extID != None and genShortID in extID)
+        if isTestSampleWithBarcode or (correctParent and correctAnalyte and hasGeneticsID):
             sampleIdent = samp.getSampleIdentifier()
             testSampleCode = samp.getCode()
             oldTestSamples[idGenetics] = sampleIdent
