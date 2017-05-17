@@ -276,7 +276,7 @@ def find_and_register_ngs(transaction, jsonContent):
         genShortID = idGenetics.split('_')[0]
 
         # we are looking for either the test sample with this barcode
-        isTestSampleWithBarcode = (qbicBarcodeID == code) and (sType != None) and (sType == "Q_TEST_SAMPLE")
+        isTestSampleWithBarcode = (barcode == code) and (sType != None) and (sType == "Q_TEST_SAMPLE")
         # OR a test sample with parent with this barcode
         correctParent = qbicBarcodeID in parentIDs
         # AND the right analyte (e.g. DNA)
