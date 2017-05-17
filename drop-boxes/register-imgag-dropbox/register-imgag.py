@@ -269,6 +269,7 @@ def find_and_register_ngs(transaction, jsonContent):
         sampleType = samp.getSampleType()
 
         code = samp.getCode()
+        sType = samp.getSampleType()
         parentIDs = samp.getParentSampleIdentifiers()
         analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
         curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
