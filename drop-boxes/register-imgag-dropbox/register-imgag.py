@@ -273,6 +273,7 @@ def find_and_register_ngs(transaction, jsonContent):
         analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
         curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
+        genShortID = idGenetics.split('_')[0]
 
         # we are looking for either the test sample with this barcode
         isTestSampleWithBarcode = (qbicBarcodeID == code) and (sType != None) and (sType == "Q_TEST_SAMPLE")
