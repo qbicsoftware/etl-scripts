@@ -10,8 +10,8 @@ def process(tr, parameters, tableBuilder):
   for line in lines:
 	f.write(line+"\n")
   f.close()
-  marker_path = os.path.join(dropbox, "MARKER_is_finished_"+file_name)
+  marker_path = os.path.join(dropbox, ".MARKER_is_finished_"+file_name)
   print f_path
   print marker_path
-  #marker = open(marker_path, 'a')
-  #marker.close()
+  marker = open(marker_path, 'a')
+  marker.close()
