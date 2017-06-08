@@ -56,13 +56,13 @@ def process(transaction):
 
     search_service = transaction.getSearchService()
 
-    vcf = re.compile("VC[1-9][0-9]*Q\w{4}[0-9]{3}[A-Z]\w[A-Z]*")
+    vcf = re.compile("VCQ\w{4}[0-9]{3}[A-Z]\w[A-Z]*")
     vcfCodes = vcf.findall(name)
 
     if len(vcfCodes) > 0:
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, vcfCodes[0]))
-        foundSamples = search_service.s*earchForSamples(sc)
+        foundSamples = search_service.searchForSamples(sc)
         vcSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
     else:
         # vcf sample needs to be created        
