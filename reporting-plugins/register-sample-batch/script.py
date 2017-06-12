@@ -34,7 +34,7 @@ def process(tr, params, tableBuilder):
         properties = parameters.get("metadata")
         for prop in properties.keySet():
           try:
-            val = props.get(prop)
+            val = properties.get(prop)
             val = str(val)
           except:
             val = unicode(val,"utf-8")
