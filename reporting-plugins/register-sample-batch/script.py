@@ -33,4 +33,10 @@ def process(tr, params, tableBuilder):
       if parameters.get("metadata"):
         properties = parameters.get("metadata")
         for prop in properties.keySet():
-          sample.setPropertyValue(prop, properties.get(prop))
+          try:
+            val = props.get(prop)
+            val = str(val)
+          except:
+            val = unicode(val,"utf-8")
+            val = val.encode("utf-8")
+          sample.setPropertyValue(prop, val)
