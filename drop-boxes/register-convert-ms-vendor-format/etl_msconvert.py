@@ -416,7 +416,7 @@ def handleImmunoFiles(transaction):
             subFolder = subFolders[0]
         for f in files:
             stem, ext = os.path.splitext(f)
-            if ext.lower()=='.tsv'):
+            if ext.lower()=='.tsv':
                 metadataFile = open(os.path.join(root, f), 'U')
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
                 data_files.append(os.path.join(root, f))
