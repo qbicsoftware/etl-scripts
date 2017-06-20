@@ -516,7 +516,7 @@ def handleImmunoFiles(transaction):
         ms_samp = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
 
         tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
-        raw_path = os.path.join(incomingPath, os.path.join(name, name))
+        raw_path = os.path.join(incomingPath, name)
         print raw_path
         stem, ext = os.path.splitext(name)
         try:
