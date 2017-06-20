@@ -43,7 +43,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
-ms_pattern = re.compile('MS[1-9]*Q[A-Z0-9]{4}[0-9]{3}[A-Z][A-Z0-9]')
+ms_pattern = re.compile('MS[0-9]*Q[A-Z0-9]{4}[0-9]{3}[A-Z][A-Z0-9]')
+ms_prefix_pattern = re.compile('MS[0-9]*')
 
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
@@ -411,6 +412,7 @@ def handleImmunoFiles(transaction):
         raise ValueError("Invalid barcode: %s" % code)        
 
     data_files = []
+    metadataFile = None
     for root, subFolders, files in os.walk(incomingPath):
         if subFolders:
             subFolder = subFolders[0]
@@ -477,7 +479,6 @@ def handleImmunoFiles(transaction):
             newMSSample.setPropertyValue('Q_PROPERTIES', properties)
         
             run += 1
-#TODO test paths!
             tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
             raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
             stem, ext = os.path.splitext(fileName)
@@ -503,7 +504,7 @@ def handleImmunoFiles(transaction):
                 shutil.rmtree(tmpdir)
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
             GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
-    # no metadata file: just a series of RAW files to convert and attach to samples
+    # no metadata file: just one RAW file to convert and attach to samples
     else:
         search_service = transaction.getSearchService()
         for f in data_files:
