@@ -507,41 +507,39 @@ def handleImmunoFiles(transaction):
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         search_service = transaction.getSearchService()
-        for f in data_files:
-            # TODO allow complex barcodes in dropboxhandler
-            base_code = barcode_pattern.findall(f)[0]
-            prefix = ms_prefix_pattern.findall(f)[0]
-            ms_code = prefix+base_code
-            sc = SearchCriteria()
-            sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
-            foundSamples = search_service.searchForSamples(sc)
-            ms_samp = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+        # TODO allow complex barcodes in dropboxhandler
+        prefix = ms_prefix_pattern.findall(name)[0]
+        ms_code = prefix+code
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
+        foundSamples = search_service.searchForSamples(sc)
+        ms_samp = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
 
-            tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
-            raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
-            stem, ext = os.path.splitext(fileName)
-            try:
-                convert = partial(convert_raw,
-                        remote_base=REMOTE_BASE,
-                        host=MSCONVERT_HOST,
-                        timeout=CONVERSION_TIMEOUT,
-                        user=MSCONVERT_USER)
-                if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-                else:
-                    raise ValueError("Invalid incoming file %s" % incomingPath)
+        tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+        raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
+        stem, ext = os.path.splitext(fileName)
+        try:
+            convert = partial(convert_raw,
+                    remote_base=REMOTE_BASE,
+                    host=MSCONVERT_HOST,
+                    timeout=CONVERSION_TIMEOUT,
+                    user=MSCONVERT_USER)
+            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+            else:
+                raise ValueError("Invalid incoming file %s" % incomingPath)
 
-                mzml_path = os.path.join(tmpdir, stem + '.mzML')
-                convert(raw_path, mzml_path)
+            mzml_path = os.path.join(tmpdir, stem + '.mzML')
+            convert(raw_path, mzml_path)
 
-                mzml_name = os.path.basename(mzml_path)
-                mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+            mzml_name = os.path.basename(mzml_path)
+            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
 
-                os.rename(mzml_path, mzml_dest)
-            finally:
-                shutil.rmtree(tmpdir)
-            createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code)
-            GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+            os.rename(mzml_path, mzml_dest)
+        finally:
+            shutil.rmtree(tmpdir)
+        createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code)
+        GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
 
 
 def handle_BSA_Run(transaction):
