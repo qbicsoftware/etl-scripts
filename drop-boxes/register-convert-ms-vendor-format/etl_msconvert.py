@@ -43,6 +43,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
+ms_pattern = re.compile('MS[1-9]*Q[A-Z0-9]{4}[0-9]{3}[A-Z][A-Z0-9]')
 
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
@@ -409,94 +410,135 @@ def handleImmunoFiles(transaction):
     else:
         raise ValueError("Invalid barcode: %s" % code)        
 
+    data_files = []
     for root, subFolders, files in os.walk(incomingPath):
         if subFolders:
             subFolder = subFolders[0]
         for f in files:
-            if f.endswith('.tsv'):
+            stem, ext = os.path.splitext(f)
+            if ext.lower()=='.tsv'):
                 metadataFile = open(os.path.join(root, f), 'U')
-    line = metadataFile.readline()
-
-    #info needed in the for loop
-    search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
-    foundSamples = search_service.searchForSamples(sc)
-    space = foundSamples[0].getSpace()
-    existingExperimentIDs = []
-    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
-
-    run = 1
-    for line in metadataFile:
-        splitted = line.split('\t')
-        fileName = splitted[0]
-        instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
-        date_input = splitted[2]
-        share = splitted[3]
-        comment = splitted[4]
-        method = splitted[5]
-        repl = splitted[6]
-        wf_type = splitted[7]
-
-        date = datetime.datetime.strptime(date_input, "%y%m%d").strftime('%Y-%m-%d')
-        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
-        sa = transaction.getSampleForUpdate(parentSampleIdentifier)
-
-         # register new experiment and sample
-        
-        numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
-
-        for eexp in existingExperiments:
-            existingExperimentIDs.append(eexp.getExperimentIdentifier())
-
-        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
-        while newExpID in existingExperimentIDs:
-            numberOfExperiments += 1 
-            newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-        existingExperimentIDs.append(newExpID)
-
-        newMSExperiment = transaction.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
-        newMSExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
-        newMSExperiment.setPropertyValue('Q_MS_DEVICE', instr)
-        newMSExperiment.setPropertyValue('Q_MEASUREMENT_FINISH_DATE', date)
-        newMSExperiment.setPropertyValue('Q_EXTRACT_SHARE', share)
-        newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
-        newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method.replace('@','').replace('+', '').replace('_100ms', ''))
-
-        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
-        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newMSSample.setExperiment(newMSExperiment)
-        properties = xmltemplate % (repl, wf_type)
-        newMSSample.setPropertyValue('Q_PROPERTIES', properties)
-        
-        run += 1
-
-        tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
-        raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
-        stem, ext = os.path.splitext(fileName)
-        try:
-            convert = partial(convert_raw,
-                      remote_base=REMOTE_BASE,
-                      host=MSCONVERT_HOST,
-                      timeout=CONVERSION_TIMEOUT,
-                      user=MSCONVERT_USER)
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-            else:
-                raise ValueError("Invalid incoming file %s" % incomingPath)
+                data_files.append(os.path.join(root, f))
+    # Metadata file: this was registered by hand, metadata needs to be read
+    if metadataFile:
+        line = metadataFile.readline()
 
-            mzml_path = os.path.join(tmpdir, stem + '.mzML')
-            convert(raw_path, mzml_path)
+        #info needed in the for loop
+        search_service = transaction.getSearchService()
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
+        foundSamples = search_service.searchForSamples(sc)
+        space = foundSamples[0].getSpace()
+        existingExperimentIDs = []
+        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
 
-            mzml_name = os.path.basename(mzml_path)
-            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+        run = 1
+        for line in metadataFile:
+            splitted = line.split('\t')
+            fileName = splitted[0]
+            instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
+            date_input = splitted[2]
+            share = splitted[3]
+            comment = splitted[4]
+            method = splitted[5]
+            repl = splitted[6]
+            wf_type = splitted[7]
 
-            os.rename(mzml_path, mzml_dest)
-        finally:
-            shutil.rmtree(tmpdir)
-        createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
-        GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
+            date = datetime.datetime.strptime(date_input, "%y%m%d").strftime('%Y-%m-%d')
+            parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
+            sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+
+            # register new experiment and sample
+            numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
+
+            for eexp in existingExperiments:
+                existingExperimentIDs.append(eexp.getExperimentIdentifier())
+
+            newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+            while newExpID in existingExperimentIDs:
+                numberOfExperiments += 1 
+                newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+            existingExperimentIDs.append(newExpID)
+
+            newMSExperiment = transaction.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
+            newMSExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+            newMSExperiment.setPropertyValue('Q_MS_DEVICE', instr)
+            newMSExperiment.setPropertyValue('Q_MEASUREMENT_FINISH_DATE', date)
+            newMSExperiment.setPropertyValue('Q_EXTRACT_SHARE', share)
+            newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
+            newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method.replace('@','').replace('+', '').replace('_100ms', ''))
+
+            newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
+            newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+            newMSSample.setExperiment(newMSExperiment)
+            properties = xmltemplate % (repl, wf_type)
+            newMSSample.setPropertyValue('Q_PROPERTIES', properties)
+        
+            run += 1
+#TODO test paths!
+            tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+            raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
+            stem, ext = os.path.splitext(fileName)
+            try:
+                convert = partial(convert_raw,
+                        remote_base=REMOTE_BASE,
+                        host=MSCONVERT_HOST,
+                        timeout=CONVERSION_TIMEOUT,
+                        user=MSCONVERT_USER)
+                if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+                else:
+                    raise ValueError("Invalid incoming file %s" % incomingPath)
+
+                mzml_path = os.path.join(tmpdir, stem + '.mzML')
+                convert(raw_path, mzml_path)
+
+                mzml_name = os.path.basename(mzml_path)
+                mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+
+                os.rename(mzml_path, mzml_dest)
+            finally:
+                shutil.rmtree(tmpdir)
+            createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
+            GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
+    # no metadata file: just a series of RAW files to convert and attach to samples
+    else:
+        search_service = transaction.getSearchService()
+        for f in data_files:
+            ms_code = ms_pattern.findall(f)[0]
+            sc = SearchCriteria()
+            sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
+            foundSamples = search_service.searchForSamples(sc)
+            ms_samp = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+
+            tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+            raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
+            stem, ext = os.path.splitext(fileName)
+            try:
+                convert = partial(convert_raw,
+                        remote_base=REMOTE_BASE,
+                        host=MSCONVERT_HOST,
+                        timeout=CONVERSION_TIMEOUT,
+                        user=MSCONVERT_USER)
+                if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+                else:
+                    raise ValueError("Invalid incoming file %s" % incomingPath)
+
+                mzml_path = os.path.join(tmpdir, stem + '.mzML')
+                convert(raw_path, mzml_path)
+
+                mzml_name = os.path.basename(mzml_path)
+                mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+
+                os.rename(mzml_path, mzml_dest)
+            finally:
+                shutil.rmtree(tmpdir)
+            createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code)
+            GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+
 
 def handle_BSA_Run(transaction):
     # Get the name of the incoming file
