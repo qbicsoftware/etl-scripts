@@ -508,7 +508,10 @@ def handleImmunoFiles(transaction):
     else:
         search_service = transaction.getSearchService()
         for f in data_files:
-            ms_code = ms_pattern.findall(f)[0]
+            # TODO allow complex barcodes in dropboxhandler
+            base_code = barcode_pattern.findall(f)[0]
+            prefix = ms_prefix_pattern.findall(f)[0]
+            ms_code = prefix+base_code
             sc = SearchCriteria()
             sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
             foundSamples = search_service.searchForSamples(sc)
