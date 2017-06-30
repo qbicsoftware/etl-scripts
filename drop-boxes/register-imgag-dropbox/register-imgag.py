@@ -154,6 +154,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                     print('FOUND IT')
                                     print(sampleIdent)
                                     print(testParentID)
+                                    print(testParentIdentifiers)
     else:
         geneticID = varcode
         genShortID = geneticID.split('_')[0]
@@ -203,8 +204,11 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
     #	identString += genID.split('_')[-1]
 
     identString2 = ''
+    print(testParentIdentifiers)
     for tpi in testParentIdentifiers:
         identString2 += '_'+tpi.split('/')[-1]
+
+    print('identstring ' + identString2)
 
     #newVCSample = transaction.createNewSample('/' + space + '/' + 'VC'+ project + qbicBarcodes[0][5:] + qbicBarcodes[1][5:] + identString, "Q_NGS_VARIANT_CALLING")
     newVCSample = transaction.createNewSample('/' + space + '/' + 'VC'+ identString2, "Q_NGS_VARIANT_CALLING")
