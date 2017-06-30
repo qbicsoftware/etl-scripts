@@ -121,7 +121,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
                         # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
 
-                        if code == 'QMSHS535AF' or code == 'QMSHS497AX':
+                        if code == 'QMSHS034BK' or code == 'QMSHS304CQ':
                             print code
                             print(genShortID)
                             print(geneticID)
@@ -137,9 +137,9 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                 sampleType = s.getSampleType()
                                 curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                                 extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
-                                print(sampleType)
-                                print(curSecName)
-                                print(extDB)
+                                #print(sampleType)
+                                #print(curSecName)
+                                #print(extDB)
                                 if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                     sampleIdent = s.getSampleIdentifier()
                                     parentIdentifiers.append(sampleIdent)
