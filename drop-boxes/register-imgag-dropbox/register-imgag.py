@@ -189,7 +189,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         print (extID != None) and (geneticID in extID)
 
                     # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
-                    if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((genShortID in curSecName) or (genShortID in extID))):
+                    if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and (((curSecName != None) and (genShortID in curSecName)) or ((extID != None) and (genShortID in extID)))):
                         testParentID = samp.getSampleIdentifier()
                         for s in foundSamples:
                             new_code = s.getCode()
