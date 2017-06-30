@@ -151,6 +151,9 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                     sampleIdent = s.getSampleIdentifier()
                                     parentIdentifiers.append(sampleIdent)
                                     testParentIdentifiers.append(testParentID) # if we found the right one, we append it for later, as every related test sample is needed for registration
+                                    print('FOUND IT')
+                                    print(sampleIdent)
+                                    print(testParentID)
     else:
         geneticID = varcode
         genShortID = geneticID.split('_')[0]
