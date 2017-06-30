@@ -165,6 +165,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
             parentIdentifiers.append(newNGSSamples[geneticID])
             testParentIdentifiers.append(oldTestSamples[geneticID])
         else:
+            print('I am scanning for samples now')
             for samp in foundSamples:
                 #some short variables to clean up the long if case
                 code = samp.getCode()
