@@ -145,8 +145,8 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                     print(extDB)
                                     print(geneticID)
                                     print(testParentID in s.getParentSampleIdentifiers())
-                                    print(geneticID in curSecName)
-                                    print(geneticID in extDB)
+                                    print (curSecName != None) and (geneticID in curSecName)
+                                    print (extDB != None) and (geneticID in extDB)
                                 if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                     sampleIdent = s.getSampleIdentifier()
                                     parentIdentifiers.append(sampleIdent)
