@@ -120,18 +120,26 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
                         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
                         # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
-                        print code
-                        print qbicBarcodeID in parentIDs
-                        print analyte == typesDict[expType]
-                        print (curSecName != None) and (genShortID in curSecName)
-                        print (extID != None) and (genShortID in extID)
+
+                        if code == 'QMSHS535AF' or code == 'QMSHS497AX':
+                            print code
+                            print(genShortID)
+                            print(geneticID)
+                            print qbicBarcodeID in parentIDs
+                            print analyte == typesDict[expType]
+                            print (curSecName != None) and (genShortID in curSecName)
+                            print (extID != None) and (genShortID in extID)
                         if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and (((curSecName != None) and (genShortID in curSecName)) or ((extID != None) and (genShortID in extID)))):
                             testParentID = samp.getSampleIdentifier()
+                            print(testParentID)
                             # this time we are looking for the NGS Single Sample run attached to the test sample we just found
                             for s in foundSamples:
                                 sampleType = s.getSampleType()
                                 curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                                 extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
+                                print(sampleType)
+                                print(curSecName)
+                                print(extDB)
                                 if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                     sampleIdent = s.getSampleIdentifier()
                                     parentIdentifiers.append(sampleIdent)
