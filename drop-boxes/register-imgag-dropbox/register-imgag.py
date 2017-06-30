@@ -174,17 +174,42 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                 analyte = samp.getPropertyValue("Q_SAMPLE_TYPE")
                 curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
                 extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
+
+                if code == 'QMSHS034BK':
+                    print(sampleType)
+                    print(curSecName)
+                    print(extDB)
+                    print(geneticID)
+                    print(testParentID in s.getParentSampleIdentifiers())
+                    print (curSecName != None) and (geneticID in curSecName)
+                    print (extDB != None) and (geneticID in extDB)
+
                 # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
                 if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and ((genShortID in curSecName) or (genShortID in extID))):
                     testParentID = samp.getSampleIdentifier()
                     for s in foundSamples:
+                        new_code = s.getCode()
                         sampleType = s.getSampleType()
                         curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                         extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
+
+                        if new_code == 'NGS01QMSHS034BK':
+                            print(sampleType)
+                            print(curSecName)
+                            print(extDB)
+                            print(geneticID)
+                            print(testParentID in s.getParentSampleIdentifiers())
+                            print (curSecName != None) and (geneticID in curSecName)
+                            print (extDB != None) and (geneticID in extDB)
                         if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                             sampleIdent = s.getSampleIdentifier()
                             parentIdentifiers.append(sampleIdent)
                             testParentIdentifiers.append(testParentID)
+                            print('FOUND IT')
+                            print(sampleIdent)
+                            print(testParentID)
+                            print(testParentIdentifiers)
+
     numberOfExperiments += 1
     existingExperimentIDs = []
     existingExperiments = search_service.listExperiments("/" + space + "/" + project)
