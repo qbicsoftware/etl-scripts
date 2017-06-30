@@ -134,12 +134,19 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                             print(testParentID)
                             # this time we are looking for the NGS Single Sample run attached to the test sample we just found
                             for s in foundSamples:
+                                new_code = s.getCode()
                                 sampleType = s.getSampleType()
                                 curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                                 extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
-                                #print(sampleType)
-                                #print(curSecName)
-                                #print(extDB)
+
+                                if new_code == 'NGS01QMSHS034BK' or new_code == 'NGS01QMSHS304CQ':
+                                    print(sampleType)
+                                    print(curSecName)
+                                    print(extDB)
+                                    print(geneticID)
+                                    print(testParentID in s.getParentSampleIdentifiers())
+                                    print(geneticID in curSecName)
+                                    print(geneticID in extDB)
                                 if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                     sampleIdent = s.getSampleIdentifier()
                                     parentIdentifiers.append(sampleIdent)
