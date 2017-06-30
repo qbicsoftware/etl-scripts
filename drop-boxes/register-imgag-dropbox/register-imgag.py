@@ -613,7 +613,7 @@ def process(transaction):
             os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
 
             for g in gsvars:
-                if(ident == g.split('.')[0]):
+                if(ident == g.split('.')[0].replace('adme', '')):
                     os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
             metadatafilename = metadataPath.split('/')[-1]
