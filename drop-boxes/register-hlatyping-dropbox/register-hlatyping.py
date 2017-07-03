@@ -59,11 +59,11 @@ def process(transaction):
         space = foundSamples[0].getSpace()
     else:
         search_service = transaction.getSearchService()
-        #sc = SearchCriteria()
+        sc = SearchCriteria()
         pc = SearchCriteria()
         pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-        #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-        foundSamples = search_service.searchForSamples(pc)
+        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+        foundSamples = search_service.searchForSamples(sc)
         space = foundSamples[0].getSpace()
         parentSampleIdentifier = "/"+space+"/"+parentCode
 
