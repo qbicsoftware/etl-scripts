@@ -54,9 +54,19 @@ def process(transaction):
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
     foundSamples = search_service.searchForSamples(sc)
+    if len(foundSamples) > 0:
+        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
+        space = foundSamples[0].getSpace()
+    else:
+        search_service = transaction.getSearchService()
+        #sc = SearchCriteria()
+        pc = SearchCriteria()
+        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+        #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+        foundSamples = search_service.searchForSamples(pc)
+        space = foundSamples[0].getSpace()
+        parentSampleIdentifier = "/"+space+"/"+parentCode
 
-    parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
-    space = foundSamples[0].getSpace()
     sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
     # register new experiment and sample
