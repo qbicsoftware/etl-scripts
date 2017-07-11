@@ -2,7 +2,7 @@ import datetime
 
 def isDate(string):
   try: 
-    datetime.datetime.strptime(time, "%d-%m-%Y")
+    datetime.datetime.strptime(string, "%d-%m-%Y")
     return True
   except ValueError:
     return False
