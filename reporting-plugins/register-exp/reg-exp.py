@@ -1,8 +1,11 @@
 import datetime
+import sys
 
-def isDate(string):
+def isDate(value):
+  if not isinstance(value, str if sys.version_info[0] >= 3 else basestring):
+    return False
   try: 
-    datetime.datetime.strptime(string, "%d-%m-%Y")
+    datetime.datetime.strptime(value, "%d-%m-%Y")
     return True
   except ValueError:
     return False
