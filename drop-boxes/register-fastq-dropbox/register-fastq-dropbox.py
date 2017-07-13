@@ -72,7 +72,7 @@ def process(transaction):
                 sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
                 foundSamples = search_service.searchForSamples(sc)
                 space = foundSamples[0].getSpace()
-                sampleIdentifier = "/"+space+"/"+parentCode
+                sampleIdentifier = "/"+space+"/"+"NGS"+identifier
             if transaction.getSampleForUpdate(sampleIdentifier):
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
             else:
