@@ -64,6 +64,16 @@ def process(transaction):
             foundSamples = search_service.searchForSamples(sc)
             if len(foundSamples) > 0:
                 sampleIdentifier = foundSamples[0].getSampleIdentifier()
+            else:
+                search_service = transaction.getSearchService()
+                sc = SearchCriteria()
+                pc = SearchCriteria()
+                pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+                sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+                foundSamples = search_service.searchForSamples(sc)
+                space = foundSamples[0].getSpace()
+                sampleIdentifier = "/"+space+"/"+parentCode
+            if transaction.getSampleForUpdate(sampleIdentifier):
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
             else:
                 # create NGS-specific experiment/sample and
