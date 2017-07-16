@@ -111,7 +111,8 @@ def process(transaction):
         for samp in foundSamples2:
             existingSampleIDs.append(samp.getSampleIdentifier())
 
-        while newSampleID in existingSampleIDs:
+        # search in known ids, but also try to fetch the sample in case it wasn't indexed yet
+        while newSampleID in existingSampleIDs or transaction.getSampleForUpdate(newSampleID):
             vcNumber += 1
             newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
             
