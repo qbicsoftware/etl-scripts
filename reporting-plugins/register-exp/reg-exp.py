@@ -1,4 +1,15 @@
 import datetime
+import sys
+
+def isDate(value):
+  if not isinstance(value, str if sys.version_info[0] >= 3 else basestring):
+    return False
+  try: 
+    datetime.datetime.strptime(value, "%d-%m-%Y")
+    return True
+  except ValueError:
+    return False
+
 def setProperties(tr, exp, props):
   for prop in props.keySet():
     if prop == "ENZYMES":
@@ -16,7 +27,7 @@ def setProperties(tr, exp, props):
         material.setPropertyValue("Q_PROTEASE_"+str(i),e)
       exp.setPropertyValue("Q_PROTEASE_DIGESTION", matCode)
     else:
-      if prop == "Q_PREPARATION_DATE":
+      if isDate(props.get(prop)):
         time = props.get(prop)
         date = datetime.datetime.strptime(time, "%d-%m-%Y").strftime('%Y-%m-%d %H:%M:%S')
         exp.setPropertyValue(prop, date)
