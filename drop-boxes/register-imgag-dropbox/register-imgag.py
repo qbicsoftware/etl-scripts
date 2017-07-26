@@ -616,6 +616,10 @@ def process(transaction):
                 if(ident == g.split('.')[0].replace('adme', '')):
                     os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
+            # also register tsv files if they are contained in the incoming vcf folder, e.g. fkpm counts
+            for t in tsvs:
+                os.rename(os.path.join(folder, t), os.path.join(vcfFolder, t))
+
             metadatafilename = metadataPath.split('/')[-1]
             copyfile(metadataPath, os.path.join(vcfFolder,metadatafilename))
             #transaction.moveFile(folder, vcfDataSet)
