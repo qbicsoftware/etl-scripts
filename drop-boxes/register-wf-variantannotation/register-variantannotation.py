@@ -46,10 +46,10 @@ def process(transaction):
     sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
     parents = samplehit.getParentSampleIdentifiers()
-    parentcodes = []
-    for parent in parents:
-        parentcodes.append(parent.split("/")[-1])
-    parentInfos = "_".join(parentcodes)
+    #parentcodes = []
+    #for parent in parents:
+    #    parentcodes.append(parent.split("/")[-1])
+    #parentInfos = "_".join(parentcodes)
 
     experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
 
@@ -75,8 +75,16 @@ def process(transaction):
             sample.setPropertyValue("Q_ADDITIONAL_INFO", "ANNOVAR Annotation")
 
 
-    resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
-    logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+    #resultsname = incomingPath+"/"+parentInfos+"_workflow_results"
+    #logname = incomingPath+"/"+parentInfos+"_workflow_logs"
+    #os.rename(incomingPath+"/logs", logname)
+    #os.rename(incomingPath+"/result", resultsname)
+
+    #transaction.moveFile(resultsname, dataSetRes)
+    #transaction.moveFile(logname, dataSetLogs)
+
+    resultsname = incomingPath+"/"+experiment_id+"_variant_annotation_results"
+    logname = incomingPath+"/"+experiment_id+"_variant_annotation_logs"
     os.rename(incomingPath+"/logs", logname)
     os.rename(incomingPath+"/result", resultsname)
 
