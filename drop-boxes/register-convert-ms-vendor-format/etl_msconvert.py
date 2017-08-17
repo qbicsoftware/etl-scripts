@@ -386,7 +386,7 @@ def GZipAndMoveMZMLDataSet(transaction, filepath, sample):
     zipped = filepath+".gz"
     transaction.moveFile(zipped, mzmlDataSet)
 
-'''Script written by Chris, handles everything but conversion'''
+'''Script written by Chris, handles everything but conversion. Support for batch upload (no metadata here) by Andreas'''
 def handleImmunoFiles(transaction):
 
     xmltemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?> <qproperties> <qfactors> <qcategorical label=\"technical_replicate\" value=\"%s\"/> <qcategorical label=\"workflow_type\" value=\"%s\"/> </qfactors> </qproperties>"
@@ -507,7 +507,7 @@ def handleImmunoFiles(transaction):
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         search_service = transaction.getSearchService()
-        # TODO allow complex barcodes in dropboxhandler
+        # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
         prefix = ms_prefix_pattern.findall(name)[0]
         ms_code = prefix+code
         sc = SearchCriteria()
@@ -631,8 +631,9 @@ def process(transaction):
     bsa = len(bsa_run_pattern.findall(name)) > 0
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
-            source = open(os.path.join(incomingPath, f))
-            if "cloud-immuno" in source.readline():
+            source_file = open(os.path.join(incomingPath, f))
+            source = source_file.readline()
+            if "cloud-immuno" in source or "qeana18-immuno" in source:
                 immuno = True
                 handleImmunoFiles(transaction)
     if not immuno and bsa:
