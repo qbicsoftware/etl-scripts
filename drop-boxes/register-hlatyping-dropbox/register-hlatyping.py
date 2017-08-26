@@ -70,7 +70,7 @@ def process(transaction):
         else:
             # no sample found in this project, they are probably not indexed yet. try parsing space from file name instead
             space = name.split("_")[0]
-            parentSampleIdentifier = "/"+space+"/"parentCode
+            parentSampleIdentifier = "/"+space+"/"+parentCode
     sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
     # register new experiment and sample
