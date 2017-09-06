@@ -1,0 +1,94 @@
+import re
+import os
+import time
+import datetime
+import shutil
+import subprocess
+import ch.systemsx.cisd.etlserver.registrator.api.v2
+from java.io import File
+from org.apache.commons.io import FileUtils
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+
+# Data import and registration
+# expected:
+# *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
+ePattern = re.compile('Q\w{4}E[0-9]+')
+pPattern = re.compile('Q\w{4}')
+
+def process(transaction):
+    context = transaction.getRegistrationContext().getPersistentMap()
+
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    key = context.get("RETRY_COUNT")
+    if (key == None):
+            key = 1
+
+    # Get the name of the incoming file
+    name = transaction.getIncoming().getName()
+
+    nameSplit = name.split("-")
+    space = nameSplit[0]
+    project = pPattern.findall(nameSplit[1])[0]
+    experiment_id = ePattern.findall(nameSplit[2])[0]
+    sampleCode = nameSplit[-1]
+    if not experiment_id:
+            print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
+
+    ss = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
+    foundSamples = ss.searchForSamples(sc)
+    samplehit = foundSamples[0]
+    sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
+
+    newNumber = 1
+    newSampleID = '/' + space + '/' + 'VAC' + str(newNumber) + sampleCode
+    existingSampleIDs = []
+
+    sc = SearchCriteria()
+    pc = SearchCriteria()
+    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project))
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+    foundSamples2 = ss.searchForSamples(sc)
+
+    for samp in foundSamples2:
+        existingSampleIDs.append(samp.getSampleIdentifier())
+
+    # search in known ids, but also try to fetch the sample in case it wasn't indexed yet
+    while newSampleID in existingSampleIDs or transaction.getSampleForUpdate(newSampleID):
+        newNumber += 1
+        newSampleID = '/' + space + '/' + 'VAC' + str(newNumber) + sampleCode
+        
+    newSample = transaction.createNewSample(newSampleID, "Q_VACCINE_CONSTRUCT")
+    newSample.setParentSampleIdentifiers([samplehit.getSampleIdentifier()])
+
+    existingExperimentIDs = []
+    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    numberOfExperiments = len(existingExperiments) + 1
+
+    for eexp in existingExperiments:
+        existingExperimentIDs.append(eexp.getExperimentIdentifier())
+
+    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+    while newExpID in existingExperimentIDs:
+        numberOfExperiments += 1 
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+
+    experiment = transaction.createNewExperiment(newExpID, "Q_NGS_EPITOPE_SELECTION")
+    experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+    newSample.setExperiment(experiment)
+
+    #Register files
+    dataSetRes = transaction.createNewDataSet('Q_VACCINE_CONSTRUCT_DATA')
+    dataSetRes.setMeasuredData(False)
+
+    dataSetRes.setSample(newSample)
+
+    resultsname = incomingPath+"/"+sampleCode+"_vaccine_construct"
+    os.rename(incomingPath+"/result", resultsname)
+    transaction.moveFile(resultsname, dataSetRes)
+
