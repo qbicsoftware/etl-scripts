@@ -42,8 +42,7 @@ def find_meta_data_json(incoming_path):
             try:
                 with open(os.path.realpath(os.path.join(incoming_path, f)), 'r') as fh:
                     print "Try to open " + os.path.realpath(os.path.join(incoming_path, f))
-                    json_object = json.load(
-                        os.path.realpath(os.path.join(incoming_path, fh)))
+                    json_object = json.load(fh)
                 print "metadata JSON loaded successfully"
                 return json_object
             except Exception as exc:
