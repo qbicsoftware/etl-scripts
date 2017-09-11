@@ -30,7 +30,7 @@ def isExpected(identifier):
             return False
 
 
-def find_meta_data_json(incoming_path, name):
+def find_meta_data_json(incoming_path):
     """
     Tries to find a json file and returns the JSON object.
     :param incoming_path: The dropbox path
@@ -73,7 +73,7 @@ def process(transaction):
     name = transaction.getIncoming().getName()
 
     # Try to find a *.metadata file
-    metadata_json = find_meta_data_json(incomingPath, name)
+    metadata_json = find_meta_data_json(incomingPath)
 
     identifier = pattern.findall(name)[0]
     #identifier = name
