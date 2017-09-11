@@ -4,6 +4,7 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 """
 import sys
 sys.path.append('/home-link/qeana10/bin/')
+sys.path.append('/home-link/qeana10/bin/simplejson-3.8.0/')
 
 import checksum
 import re
