@@ -41,7 +41,9 @@ def find_meta_data_json(incoming_path):
         if f.endswith("metadata"):
             try:
                 with open(f, 'r') as fh:
-                    json_object = json.load(fh)
+                    print "Try to open " + os.path.realpath(os.path.join(incomingPath, f))
+                    json_object = json.load(
+                        os.path.realpath(os.path.join(incomingPath, f)))
                 print "metadata JSON loaded successfully"
                 return json_object
             except Exception as exc:
