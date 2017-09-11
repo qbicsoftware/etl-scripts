@@ -128,7 +128,7 @@ def process(transaction):
                     '/' + project + 'E' + str(expNum)
             ngsExperiment = transaction.createNewExperiment(expID, expType)
             if metadata_json:
-                set_metadata(ngsExperiment)
+                set_meta_data(ngsExperiment)
             else:
                 ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
             newID = 'NGS'+identifier
