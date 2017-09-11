@@ -37,7 +37,7 @@ def find_meta_data_json(incoming_path, name):
     :param name: The dir name of the incoming data
     :return: The JSON object if successful, None else
     """
-    for f in os.listdir(os.path):
+    for f in os.listdir(incoming_path):
         if f.endswith("metadata"):
             try:
                 with open(f, 'r') as fh:
