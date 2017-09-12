@@ -93,6 +93,7 @@ def process(transaction):
     new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
     os.mkdir(new_folder)
 
+    print('NEW RUN starts here')
     for f in os.listdir(incomingPath):
         if f.endswith('origlabfilename'):
             os.remove(os.path.realpath(os.path.join(incomingPath,f)))
