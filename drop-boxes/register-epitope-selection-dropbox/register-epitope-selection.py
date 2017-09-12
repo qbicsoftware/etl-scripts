@@ -85,16 +85,20 @@ def process(transaction):
     #Register files
     dataSetRes = transaction.createNewDataSet('Q_VACCINE_CONSTRUCT_DATA')
     dataSetRes.setMeasuredData(False)
-
     dataSetRes.setSample(newSample)
 
+    os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
+
     resultsname = incomingPath.replace(foundBarcode + '__' ,'').replace('.txt', '')
-    new_folder = os.path.join(incomingPath, resultsname)
+    new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
     os.mkdir(new_folder)
 
     for f in os.listdir(incomingPath):
-        new_name = f.replace(foundBarcode + '__', '')
-        os.rename(os.path.join(incomingPath, f), os.path.join(new_folder, new_name))
+        if f.endswith('origlabfilename'):
+            os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+        else:
+            new_name = f.replace(foundBarcode + '__', '')
+            os.rename(os.path.join(incomingPath, f), os.path.join(new_folder, new_name))
 
     transaction.moveFile(new_folder, dataSetRes)
 
