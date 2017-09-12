@@ -33,12 +33,8 @@ def process(transaction):
     foundBarcode = barcode.findall(name)[0]
     wfSample = sPattern.findall(name)[0]
 
-    if isExpected(identifier):
-        experiment = identifier[1:5]
-        project = identifier[:5]
-        parentCode = identifier[:10]
-    else:
-        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+    project = foundBarcode[:5]
+    parentCode = foundBarcode[:10]
 
     ss = transaction.getSearchService()
     sc = SearchCriteria()
