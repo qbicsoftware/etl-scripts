@@ -88,11 +88,13 @@ def process(transaction):
 
     dataSetRes.setSample(newSample)
 
+    resultsname = incomingPath.replace(foundBarcode + '__' ,'').replace('.txt', '')
+    new_folder = os.path.join(incomingPath, resultsname)
+    os.mkdir(new_folder)
+
     for f in os.listdir(incomingPath):
         new_name = f.replace(foundBarcode + '__', '')
-        os.rename(os.path.join(incomingPath, f), os.path.join(incomingPath, new_name))
+        os.rename(os.path.join(incomingPath, f), os.path.join(new_folder, new_name))
 
-    resultsname = incomingPath.replace(foundBarcode + '__' ,'').replace('.txt', '')
-    os.rename(incomingPath, resultsname)
-    transaction.moveFile(resultsname, dataSetRes)
+    transaction.moveFile(new_folder, dataSetRes)
 
