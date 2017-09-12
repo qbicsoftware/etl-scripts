@@ -30,21 +30,22 @@ def process(transaction):
 
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
-
-    wfSample = sPattern.findall(name)[0]
-    space = nameSplit[0]
-    project = pPattern.findall(name)[0]
-    experiment_id = ePattern.findall(name)[0]
-    sampleCode = name[-1]
     foundBarcode = barcode.findall(name)[0]
-    if not experiment_id:
-            print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
+    wfSample = sPattern.findall(name)[0]
+
+    if isExpected(identifier):
+        experiment = identifier[1:5]
+        project = identifier[:5]
+        parentCode = identifier[:10]
+    else:
+        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
 
     ss = transaction.getSearchService()
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, wfSample))
     foundSamples = ss.searchForSamples(sc)
     samplehit = foundSamples[0]
+    space = foundSamples[0].getSpace()
     sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
     newNumber = 1
