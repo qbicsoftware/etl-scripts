@@ -66,7 +66,7 @@ def process(transaction):
     newSample.setParentSampleIdentifiers([samplehit.getSampleIdentifier()])
 
     existingExperimentIDs = []
-    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    existingExperiments = ss.listExperiments("/" + space + "/" + project)
     numberOfExperiments = len(existingExperiments) + 1
 
     for eexp in existingExperiments:
