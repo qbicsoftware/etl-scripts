@@ -93,15 +93,11 @@ def process(transaction):
     new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
     os.mkdir(new_folder)
 
-    print('NEW RUN starts here')
     for f in os.listdir(incomingPath):
         if f.endswith('origlabfilename'):
             os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         elif not os.path.isdir(os.path.join(incomingPath, f)):
-            print('Processing file ' + f)
             new_name = f.replace(foundBarcode + '__', '')
-            print(os.path.realpath(os.path.join(incomingPath, f)))
-            print(os.path.join(new_folder, new_name))
             os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(new_folder, new_name))
 
     transaction.moveFile(new_folder, dataSetRes)
