@@ -15,6 +15,8 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 ePattern = re.compile('Q\w{4}E[0-9]+')
 pPattern = re.compile('Q\w{4}')
+sPattern = re.compile('Q[A-Z0-9]{4}E[0-9]{2}[A-Z0-9]{2}')
+barcode = re.compile('Q[A-Z0-9]{4}[0-9]{3}[A-Z0-9]{2}')
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -29,23 +31,24 @@ def process(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
 
-    nameSplit = name.split("-")
+    wfSample = sPattern.findall(name)[0]
     space = nameSplit[0]
-    project = pPattern.findall(nameSplit[1])[0]
-    experiment_id = ePattern.findall(nameSplit[2])[0]
-    sampleCode = nameSplit[-1]
+    project = pPattern.findall(name)[0]
+    experiment_id = ePattern.findall(name)[0]
+    sampleCode = name[-1]
+    foundBarcode = barcode.findall(name)[0]
     if not experiment_id:
             print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
 
     ss = transaction.getSearchService()
     sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, wfSample))
     foundSamples = ss.searchForSamples(sc)
     samplehit = foundSamples[0]
     sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
 
     newNumber = 1
-    newSampleID = '/' + space + '/' + 'VAC' + str(newNumber) + sampleCode
+    newSampleID = '/' + space + '/' + 'VAC' + str(newNumber) + wfSample
     existingSampleIDs = []
 
     sc = SearchCriteria()
@@ -60,7 +63,7 @@ def process(transaction):
     # search in known ids, but also try to fetch the sample in case it wasn't indexed yet
     while newSampleID in existingSampleIDs or transaction.getSampleForUpdate(newSampleID):
         newNumber += 1
-        newSampleID = '/' + space + '/' + 'VAC' + str(newNumber) + sampleCode
+        newSampleID = '/' + space + '/' + 'VAC' + str(newNumber) + wfSample
         
     newSample = transaction.createNewSample(newSampleID, "Q_VACCINE_CONSTRUCT")
     newSample.setParentSampleIdentifiers([samplehit.getSampleIdentifier()])
@@ -88,7 +91,11 @@ def process(transaction):
 
     dataSetRes.setSample(newSample)
 
-    resultsname = incomingPath+"/"+sampleCode+"_vaccine_construct"
-    os.rename(incomingPath+"/result", resultsname)
+    for f in os.listdir(incomingPath):
+        new_name = f.replace(foundBarcode + '__', '')
+        os.rename(os.path.join(incomingPath, f), os.path.join(incomingPath, new_name))
+
+    resultsname = incomingPath.replace(foundBarcode + '__' ,'')+"/"+wfSample+"_vaccine_construct"
+    os.rename(incomingPath, resultsname)
     transaction.moveFile(resultsname, dataSetRes)
 
