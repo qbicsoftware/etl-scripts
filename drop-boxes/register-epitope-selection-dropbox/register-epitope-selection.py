@@ -96,7 +96,7 @@ def process(transaction):
     for f in os.listdir(incomingPath):
         if f.endswith('origlabfilename'):
             os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-        elif os.path.isfile(f):
+        elif not if os.path.isdir(f):
             new_name = f.replace(foundBarcode + '__', '')
             print(os.path.realpath(os.path.join(incomingPath, f)))
             print(os.path.join(new_folder, new_name))
