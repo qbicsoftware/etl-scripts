@@ -98,7 +98,7 @@ def process(transaction):
             os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         else:
             new_name = f.replace(foundBarcode + '__', '')
-            os.rename(os.path.join(incomingPath, f), os.path.join(new_folder, new_name))
+            os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(new_folder, new_name))
 
     transaction.moveFile(new_folder, dataSetRes)
 
