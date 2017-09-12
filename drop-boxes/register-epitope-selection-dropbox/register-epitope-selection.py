@@ -92,7 +92,7 @@ def process(transaction):
         new_name = f.replace(foundBarcode + '__', '')
         os.rename(os.path.join(incomingPath, f), os.path.join(incomingPath, new_name))
 
-    resultsname = incomingPath.replace(foundBarcode + '__' ,'')+"/"+wfSample+"_vaccine_construct"
+    resultsname = incomingPath.replace(foundBarcode + '__' ,'').replace('.txt', '')
     os.rename(incomingPath, resultsname)
     transaction.moveFile(resultsname, dataSetRes)
 
