@@ -89,7 +89,7 @@ def process(transaction):
 
     os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
 
-    resultsname = incomingPath.replace(foundBarcode + '__' ,'').replace('.txt', '')
+    resultsname = name.replace(foundBarcode + '__' ,'').replace('.txt', '')
     new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
     os.mkdir(new_folder)
 
