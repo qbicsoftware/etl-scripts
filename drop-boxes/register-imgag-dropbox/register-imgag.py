@@ -58,6 +58,18 @@ newTestSamples = {}
 oldTestSamples = {}
 newNGSSamples = {}
 
+# used to find the space using any sample from the known project, as new samples might not be indexed yet
+def get_space_from_project(transaction, project):
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    pc = SearchCriteria()
+    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+
+    foundSamples = search_service.searchForSamples(sc)
+    space = foundSamples[0].getSpace()
+    return space
+
 def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: GS130715_03-GS130717_03 (verified in startup.log)
     qbicBarcodes = []
     geneticIDS = []
@@ -82,13 +94,14 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
     expType = jsonContent["type"]
     project = qbicBarcodes[0][:5]
     search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    pc = SearchCriteria()
-    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
 
-    foundSamples = search_service.searchForSamples(sc)
-    space = foundSamples[0].getSpace()
+    #sc = SearchCriteria()
+    #pc = SearchCriteria()
+    #pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+
+    #foundSamples = search_service.searchForSamples(sc)
+    space = get_space_from_project(transaction, project)
 
     datasetSample = None
     sampleFound = False
@@ -267,6 +280,7 @@ def createNewBarcode(project, tr):
     pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
     sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
     foundSamples = search_service.searchForSamples(sc)
+    space = foundSamples[0].getSpace()
 
     foundSamplesFilter = [s for s in foundSamples if 'ENTITY' not in s.getCode()]
 
@@ -277,10 +291,13 @@ def createNewBarcode(project, tr):
         newBarcode = getNextFreeBarcode(project, len(foundSamplesFilter) + len(newTestSamples) + offset)
 
         # check if barcode already exists in database
-        pc = SearchCriteria()
-        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newBarcode))
-        found = search_service.searchForSamples(pc)
-        if len(found) == 0:
+        #pc = SearchCriteria()
+        #pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, newBarcode))
+        #found = search_service.searchForSamples(pc)
+
+        # try to fetch the sample, safer if it's new and not indexed yet
+        sampleIdentifier = "/"+space+"/"+newBarcode
+        if not tr.getSampleForUpdate(sampleIdentifier):
             exists = False
         else:
             offset += 1
@@ -408,9 +425,11 @@ def find_and_register_ngs(transaction, jsonContent):
         for s in foundSamples:
             existingSampleIDs.append(s.getSampleIdentifier())
 
-        while newNGSID in existingSampleIDs:
+        found = False
+        while newNGSID in existingSampleIDs or found:
             freeID = str(int(freeID) + 1).zfill(len(freeID))
             newNGSID = '/' + space + '/' + 'NGS'+ freeID + testSampleCode
+            found = transaction.getSampleForUpdate(newNGSID)
 
         existingSampleIDs.append(newNGSID)
         newNGSrunSample = transaction.createNewSample(newNGSID, "Q_NGS_SINGLE_SAMPLE_RUN")
@@ -458,11 +477,13 @@ def find_and_register_ngs_without_metadata(transaction):
 
     sampleType = "Q_NGS_SINGLE_SAMPLE_RUN"
     if sa.getSampleType() != sampleType:
-        sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "NGS"+identifier))
-        foundSamples = search_service.searchForSamples(sc)
-        if len(foundSamples) > 0:
-            sampleIdentifier = foundSamples[0].getSampleIdentifier()
+        #sc = SearchCriteria()
+        #sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "NGS"+identifier))
+        #foundSamples = search_service.searchForSamples(sc)
+        #if len(foundSamples) > 0:
+        sampleIdentifier = "/"+space+"/"+"NGS"+identifier
+        if transaction.getSampleForUpdate(sampleIdentifier):
+            #sampleIdentifier = foundSamples[0].getSampleIdentifier()
             sa = transaction.getSampleForUpdate(sampleIdentifier)
         else:
             # create NGS-specific experiment/sample and
@@ -529,12 +550,14 @@ def process(transaction):
 
     project = identifier[:5]
     search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    pc = SearchCriteria()
-    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-    foundSamples = search_service.searchForSamples(sc)
-    space = foundSamples[0].getSpace()
+
+    space = get_space_from_project(transaction, project)
+    #sc = SearchCriteria()
+    #pc = SearchCriteria()
+    #pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+    #foundSamples = search_service.searchForSamples(sc)
+    #space = foundSamples[0].getSpace()
     global numberOfExperiments
     numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project))
 
