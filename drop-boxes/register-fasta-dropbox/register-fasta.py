@@ -115,9 +115,6 @@ def process(transaction):
         vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         vcSample.setExperiment(newVariantCallingExperiment)
 
-        newIncoming = os.path.realpath(incomingPath).replace('.fasta', '').replace('.fsa', '')
-        os.mkdir(newIncoming)
-
         resultsname = name.replace('.fasta', '').replace('.fsa', '')
         new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
         os.mkdir(new_folder)
