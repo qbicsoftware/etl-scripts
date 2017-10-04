@@ -115,6 +115,8 @@ def process(transaction):
         vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
         vcSample.setExperiment(newVariantCallingExperiment)
 
+        newIncoming = os.path.realpath(incomingPath).replace('.fasta', '').replace('.fsa', '')
+        os.mkdir(newIncoming)
 
         for f in os.listdir(incomingPath):
             if f.endswith('origlabfilename'):
@@ -124,12 +126,9 @@ def process(transaction):
                 sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
             elif f.endswith('sha256sum') or f.endswith('fasta') or f.endswith('fsa'):
-                pass
+                os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(newIncoming, f))
             else:
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        newIncoming = incomingPath.replace('.fasta', '').replace('.fsa', '')
-        os.rename(incomingPath, newIncoming)
 
         dataSet.setSample(vcSample)
         transaction.moveFile(newIncoming, dataSet)
