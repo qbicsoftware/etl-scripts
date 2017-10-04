@@ -128,7 +128,7 @@ def process(transaction):
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
             elif f.endswith('sha256sum') or f.endswith('fasta') or f.endswith('fsa'):
                 os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(new_folder, f))
-            else:
+            elif not os.path.isdir(os.path.join(incomingPath, f)):
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         dataSet.setSample(vcSample)
