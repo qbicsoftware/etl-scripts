@@ -118,6 +118,10 @@ def process(transaction):
         newIncoming = os.path.realpath(incomingPath).replace('.fasta', '').replace('.fsa', '')
         os.mkdir(newIncoming)
 
+        resultsname = name.replace('.fasta', '').replace('.fsa', '')
+        new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
+        os.mkdir(new_folder)
+
         for f in os.listdir(incomingPath):
             if f.endswith('origlabfilename'):
                 origName = open(os.path.join(incomingPath,f), 'r')
@@ -126,9 +130,9 @@ def process(transaction):
                 sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
             elif f.endswith('sha256sum') or f.endswith('fasta') or f.endswith('fsa'):
-                os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(newIncoming, f))
+                os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(new_folder, f))
             else:
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         dataSet.setSample(vcSample)
-        transaction.moveFile(newIncoming, dataSet)
+        transaction.moveFile(new_folder, dataSet)
