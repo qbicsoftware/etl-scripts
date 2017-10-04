@@ -128,8 +128,8 @@ def process(transaction):
             else:
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
-        newIncoming = os.path.realpath(incomingPath).replace('.fasta', '').replace('.fsa', '')
-        os.rename(os.path.realpath(incomingPath), newIncoming)
+        newIncoming = incomingPath.replace('.fasta', '').replace('.fsa', '')
+        os.rename(incomingPath, newIncoming)
 
         dataSet.setSample(vcSample)
         transaction.moveFile(newIncoming, dataSet)
