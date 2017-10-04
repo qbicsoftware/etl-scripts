@@ -113,7 +113,8 @@ def process(transaction):
             
         vcSample = transaction.createNewSample(newSampleID, "Q_FASTA")
         vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        vcSample.setExperiment(newVariantCallingExperiment) 
+        vcSample.setExperiment(newVariantCallingExperiment)
+
 
         for f in os.listdir(incomingPath):
             if f.endswith('origlabfilename'):
@@ -127,5 +128,8 @@ def process(transaction):
             else:
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
+        newIncoming = os.path.realpath(incomingPath).replace('.fasta', '').replace('.fsa', '')
+        os.rename(os.path.realpath(incomingPath), newIncoming)
+
         dataSet.setSample(vcSample)
-        transaction.moveFile(incomingPath, dataSet)
+        transaction.moveFile(newIncoming, dataSet)
