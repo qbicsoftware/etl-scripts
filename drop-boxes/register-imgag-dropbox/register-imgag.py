@@ -95,12 +95,12 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
     project = qbicBarcodes[0][:5]
     search_service = transaction.getSearchService()
 
-    #sc = SearchCriteria()
-    #pc = SearchCriteria()
-    #pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-    #sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+    sc = SearchCriteria()
+    pc = SearchCriteria()
+    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
 
-    #foundSamples = search_service.searchForSamples(sc)
+    foundSamples = search_service.searchForSamples(sc)
     space = get_space_from_project(transaction, project)
 
     datasetSample = None
