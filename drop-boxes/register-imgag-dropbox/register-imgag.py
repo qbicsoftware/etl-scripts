@@ -137,14 +137,6 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                         extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
                         # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
 
-                        if code == 'QMSHS034BK' or code == 'QMSHS304CQ':
-                            print code
-                            print(genShortID)
-                            print(geneticID)
-                            print qbicBarcodeID in parentIDs
-                            print analyte == typesDict[expType]
-                            print (curSecName != None) and (genShortID in curSecName)
-                            print (extID != None) and (genShortID in extID)
                         if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and (((curSecName != None) and (genShortID in curSecName)) or ((extID != None) and (genShortID in extID)))):
                             testParentID = samp.getSampleIdentifier()
                             print(testParentID)
@@ -155,14 +147,6 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                                 curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                                 extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
 
-                                if new_code == 'NGS01QMSHS034BK' or new_code == 'NGS01QMSHS304CQ':
-                                    print(sampleType)
-                                    print(curSecName)
-                                    print(extDB)
-                                    print(geneticID)
-                                    print(testParentID in s.getParentSampleIdentifiers())
-                                    print (curSecName != None) and (geneticID in curSecName)
-                                    print (extDB != None) and (geneticID in extDB)
                                 if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                     sampleIdent = s.getSampleIdentifier()
                                     parentIdentifiers.append(sampleIdent)
@@ -183,6 +167,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
         else:
             print('I am scanning for samples now')
             for barcode in qbicBarcodes:
+                print(barcode + "is in "+str(qbicBarcodes))
                 for samp in foundSamples:
                     #some short variables to clean up the long if case
                     code = samp.getCode()
@@ -193,14 +178,6 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                     curSecName = samp.getPropertyValue("Q_SECONDARY_NAME")
                     extID = samp.getPropertyValue("Q_EXTERNALDB_ID")
 
-                    if code == 'QMSHS034BK':
-                        print(sType)
-                        print(curSecName)
-                        print(extID)
-                        print(geneticID)
-                        print (curSecName != None) and (geneticID in curSecName)
-                        print (extID != None) and (geneticID in extID)
-
                     # we are looking for either the test sample with this barcode OR a test sample with parent with this barcode, the right analyte (e.g. DNA) and the short genetics ID in secondary name or external ID
                     if ((barcode == code) and (sType == "Q_TEST_SAMPLE")) or ((qbicBarcodeID in parentIDs) and (analyte == typesDict[expType]) and (((curSecName != None) and (genShortID in curSecName)) or ((extID != None) and (genShortID in extID)))):
                         testParentID = samp.getSampleIdentifier()
@@ -210,14 +187,6 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
                             curSecName = s.getPropertyValue("Q_SECONDARY_NAME")
                             extDB = s.getPropertyValue("Q_EXTERNALDB_ID")
 
-                            if new_code == 'NGS01QMSHS034BK':
-                                print(sampleType)
-                                print(curSecName)
-                                print(extDB)
-                                print(geneticID)
-                                print(testParentID in s.getParentSampleIdentifiers())
-                                print (curSecName != None) and (geneticID in curSecName)
-                                print (extDB != None) and (geneticID in extDB)
                             if (testParentID in s.getParentSampleIdentifiers()) and (sampleType == "Q_NGS_SINGLE_SAMPLE_RUN") and (((curSecName != None) and (geneticID in curSecName)) or ((extDB != None) and (geneticID in extDB))):
                                 sampleIdent = s.getSampleIdentifier()
                                 parentIdentifiers.append(sampleIdent)
@@ -252,8 +221,23 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
 
     print('identstring ' + identString2)
 
-    #newVCSample = transaction.createNewSample('/' + space + '/' + 'VC'+ project + qbicBarcodes[0][5:] + qbicBarcodes[1][5:] + identString, "Q_NGS_VARIANT_CALLING")
-    newVCSample = transaction.createNewSample('/' + space + '/' + 'VC'+ identString2, "Q_NGS_VARIANT_CALLING")
+
+    existingSampleIDs = []
+        
+    for s in foundSamples:
+        existingSampleIDs.append(s.getSampleIdentifier())
+
+    found = False
+    freeID = varcode.split('_')[-1]
+    newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
+    while newVCFID in existingSampleIDs or found:
+        freeID = str(int(freeID) + 1).zfill(len(freeID))
+        newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
+        found = transaction.getSampleForUpdate(newVCFID)
+        existingSampleIDs.append(newVCFID)
+
+    print("new vc id: "+newVCFID)
+    newVCSample = transaction.createNewSample(newVCFID, "Q_NGS_VARIANT_CALLING")
     newVCSample.setParentSampleIdentifiers(parentIdentifiers)
     newVCSample.setExperiment(newVCExp)
 
@@ -394,7 +378,7 @@ def find_and_register_ngs(transaction, jsonContent):
             sa.setPropertyValue("Q_SECONDARY_NAME", idGenetics)
 
             datasetSample = sa
-            sampleFound = True
+            sampleFound = False # TODO this negates this block, it should be true ONLY IF the found sample has no data attached (for each new ngs run a new sample is created)
 
     if not sampleFound:
         # register new experiment and sample
