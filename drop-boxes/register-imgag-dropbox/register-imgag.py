@@ -228,7 +228,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
         existingSampleIDs.append(s.getSampleIdentifier())
 
     found = False
-    freeID = varcode.split('_')[-1]
+    freeID = "01"#varcode.split('_')[-1]""
     newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
     while newVCFID in existingSampleIDs or found:
         freeID = str(int(freeID) + 1).zfill(len(freeID))
@@ -403,7 +403,7 @@ def find_and_register_ngs(transaction, jsonContent):
         newNGSMeasurementExp.setPropertyValue('Q_SEQUENCING_TYPE', typesDict[expType])
         newNGSID = '/' + space + '/' + 'NGS'+ idGenetics.split('_')[-1] + testSampleCode
 
-        freeID = idGenetics.split('_')[-1]
+        freeID = "01"#idGenetics.split('_')[-1]
         existingSampleIDs = []
         
         for s in foundSamples:
@@ -620,7 +620,7 @@ def process(transaction):
             os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
 
             for g in gsvars:
-                if(ident == g.split('.')[0].replace('adme', '')):
+                if(ident in g.split('.')[0]):
                     os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
             # also register tsv files if they are contained in the incoming vcf folder, e.g. fkpm counts
