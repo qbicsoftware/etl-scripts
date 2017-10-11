@@ -216,8 +216,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
 
     identString2 = ''
     print(testParentIdentifiers)
-    for tpi in testParentIdentifiers:
-        identString2 += '_'+tpi.split('/')[-1]
+    identString2 = '_'.join([tpi.split('/')[-1] for tpi in testParentIdentifiers])
 
     print('identstring ' + identString2)
 
