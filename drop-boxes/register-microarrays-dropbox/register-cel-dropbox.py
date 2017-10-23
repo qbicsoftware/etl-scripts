@@ -18,6 +18,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 mftPattern = re.compile('I[0-9]{2}R[0-9]{3}[a-z][0-9]{2}')
+FORMAT_TO_DATASET_TYPE = {'.cel':'Q_MA_RAW_DATA', '.txt':'Q_MA_AGILENT_DATA'}
 expType = "Q_MICROARRAY_MEASUREMENT"
 
 def isExpected(identifier):
@@ -71,10 +72,6 @@ def process(transaction):
         key = context.get("RETRY_COUNT")
         if (key == None):
                 key = 1
-
-
-        # Get the name of the incoming file
-        #name = transaction.getIncoming().getName()
 
         pdf = None
         arrayExperiment = None
@@ -155,8 +152,12 @@ def process(transaction):
                         arraySample.setExperiment(arrayExperiment)
 
                 # create new dataset
-                extIDs = mftPattern.findall(filesForID[identifier][0])
-                dataSet = transaction.createNewDataSet("Q_MA_RAW_DATA")
+                firstFile = filesForID[identifier][0]
+                extIDs = mftPattern.findall(firstFile)
+
+                stem, ext = os.path.splitext(firstFile)
+                dataSetType = FORMAT_TO_DATASET_TYPE[ext.lower()]
+                dataSet = transaction.createNewDataSet(dataSetType)
                 if extIDs:
                         dataSet.setPropertyValue("Q_EXTERNALDB_ID", extIDs[0])
                 dataSet.setMeasuredData(False)
