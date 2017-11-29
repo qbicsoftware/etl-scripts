@@ -230,13 +230,12 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
     freeID = "01"#varcode.split('_')[-1]""
     newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
     while newVCFID in existingSampleIDs or found:
+        existingSampleIDs.append(newVCFID)
         freeID = str(int(freeID) + 1).zfill(len(freeID))
         print('new id test: '+newVCFID)
         newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
         found = transaction.getSampleForUpdate(newVCFID)
-        existingSampleIDs.append(newVCFID)
 
-    print("new vc id: "+newVCFID)
     newVCSample = transaction.createNewSample(newVCFID, "Q_NGS_VARIANT_CALLING")
     newVCSample.setParentSampleIdentifiers(parentIdentifiers)
     newVCSample.setExperiment(newVCExp)
@@ -411,6 +410,7 @@ def find_and_register_ngs(transaction, jsonContent):
 
         found = False
         while newNGSID in existingSampleIDs or found:
+            existingSampleIDs.append(newNGSID)
             freeID = str(int(freeID) + 1).zfill(len(freeID))
             newNGSID = '/' + space + '/' + 'NGS'+ freeID + testSampleCode
             found = transaction.getSampleForUpdate(newNGSID)
