@@ -231,6 +231,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
     newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
     while newVCFID in existingSampleIDs or found:
         freeID = str(int(freeID) + 1).zfill(len(freeID))
+        print('new id test: '+newVCFID)
         newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
         found = transaction.getSampleForUpdate(newVCFID)
         existingSampleIDs.append(newVCFID)
