@@ -543,14 +543,14 @@ def handleImmunoFiles(transaction):
         raw_path = os.path.join(incomingPath, name)
         print raw_path
         stem, ext = os.path.splitext(name)
+        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
         try:
             convert = partial(convert_raw,
                     remote_base=REMOTE_BASE,
                     host=MSCONVERT_HOST,
                     timeout=CONVERSION_TIMEOUT,
                     user=MSCONVERT_USER)
-            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
             else:
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
