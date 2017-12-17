@@ -507,7 +507,11 @@ def handleImmunoFiles(transaction):
 
             #conversion process ended successfully if gzip process deleted mzml and created mzml.gz
             converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
-
+            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+                else:
+                    raise ValueError("Invalid incoming file %s" % incomingPath)
+                    
             if not converted_exists:
                 try:
                     convert = partial(convert_raw,
@@ -515,10 +519,6 @@ def handleImmunoFiles(transaction):
                             host=MSCONVERT_HOST,
                             timeout=CONVERSION_TIMEOUT,
                             user=MSCONVERT_USER)
-                    if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                        openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-                    else:
-                        raise ValueError("Invalid incoming file %s" % incomingPath)
 
                     mzml_path = os.path.join(tmpdir, mzml_name)
                     convert(raw_path, mzml_path)
