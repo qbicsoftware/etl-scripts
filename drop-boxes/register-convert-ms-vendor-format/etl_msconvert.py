@@ -509,9 +509,9 @@ def handleImmunoFiles(transaction):
             converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
                     openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-                else:
-                    raise ValueError("Invalid incoming file %s" % incomingPath)
-                    
+            else:
+                raise ValueError("Invalid incoming file %s" % incomingPath)
+
             if not converted_exists:
                 try:
                     convert = partial(convert_raw,
