@@ -262,10 +262,6 @@ class DropboxhandlerFile(object):
                 raise
             self.barcode, self.project = None, None
 
-    def write_metadata(self, measurement=None, run=None, dataset=None):
-        """Write metadata to openbis experiments / samples as appropriate."""
-        raise NotImplementedError()
-
     @property
     def meta(self):
         """Metadata about the dataset."""
@@ -367,6 +363,14 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
                     return True
     return False
 
+class SampleAlreadyCreatedError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 def createRawDataSet(transaction, incomingPath, sample, format):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
@@ -374,7 +378,7 @@ def createRawDataSet(transaction, incomingPath, sample, format):
     rawDataSet.setSample(sample)
     transaction.moveFile(incomingPath, rawDataSet)
 
-def GZipAndMoveMZMLDataSet(transaction, filepath, sample):
+def GZipAndMoveMZMLDataSet(transaction, filepath, sample, file_exists = False):
     #TODO read metadata from this file path:
     #open(filepath)
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
@@ -382,11 +386,12 @@ def GZipAndMoveMZMLDataSet(transaction, filepath, sample):
     #mzmlDataSet.setPropertyValue()
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
-    subprocess.call(["gzip", filepath])
+    if not file_exists:
+        subprocess.call(["gzip", filepath])
     zipped = filepath+".gz"
     transaction.moveFile(zipped, mzmlDataSet)
 
-'''Script written by Chris, handles everything but conversion. Support for batch upload (no metadata here) by Andreas'''
+'''Metadata extraction written by Chris, handles everything but conversion. Support for batch upload (no metadata here) by Andreas'''
 def handleImmunoFiles(transaction):
 
     xmltemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?> <qproperties> <qfactors> <qcategorical label=\"technical_replicate\" value=\"%s\"/> <qcategorical label=\"workflow_type\" value=\"%s\"/> </qfactors> </qproperties>"
@@ -435,7 +440,17 @@ def handleImmunoFiles(transaction):
         existingExperimentIDs = []
         existingExperiments = search_service.listExperiments("/" + space + "/" + project)
 
-        run = 1
+        #test for existing samples before conversion step
+        run = 0
+        sampleExists = True
+        while sampleExists:
+            run += 1
+            newSampleID = '/' + space + '/' + 'MS'+ str(run) + parentCode
+            sampleExists = transaction.getSampleForUpdate(newSampleID)
+                #raise SampleAlreadyCreatedError("Sample "+newSampleID+" already exists.")
+
+        # start at first ms run id not yet found. datasets might be registered more than once, if they arrive multiple times
+        #run = 1
         for line in metadataFile:
             splitted = line.split('\t')
             fileName = splitted[0]
@@ -472,7 +487,9 @@ def handleImmunoFiles(transaction):
             newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
             newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method.replace('@','').replace('+', '').replace('_100ms', ''))
 
-            newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
+            newSampleID = '/' + space + '/' + 'MS'+ str(run) + parentCode
+
+            newMSSample = transaction.createNewSample(newSampleID, "Q_MS_RUN")
             newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
             newMSSample.setExperiment(newMSExperiment)
             properties = xmltemplate % (repl, wf_type)
@@ -482,28 +499,35 @@ def handleImmunoFiles(transaction):
             tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
             raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
             stem, ext = os.path.splitext(fileName)
-            try:
-                convert = partial(convert_raw,
-                        remote_base=REMOTE_BASE,
-                        host=MSCONVERT_HOST,
-                        timeout=CONVERSION_TIMEOUT,
-                        user=MSCONVERT_USER)
-                if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-                else:
-                    raise ValueError("Invalid incoming file %s" % incomingPath)
 
-                mzml_path = os.path.join(tmpdir, stem + '.mzML')
-                convert(raw_path, mzml_path)
+            #test if some or all files are left over from earlier conversion attempt (e.g. failure of transaction, but successful conversion)
+            mzml_name = stem + '.mzML'
+            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+            gzip_dest = os.path.join(DROPBOX_PATH, mzml_name + '.gz')
 
-                mzml_name = os.path.basename(mzml_path)
-                mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+            #conversion process ended successfully if gzip process deleted mzml and created mzml.gz
+            converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
 
-                os.rename(mzml_path, mzml_dest)
-            finally:
-                shutil.rmtree(tmpdir)
+            if not converted_exists:
+                try:
+                    convert = partial(convert_raw,
+                            remote_base=REMOTE_BASE,
+                            host=MSCONVERT_HOST,
+                            timeout=CONVERSION_TIMEOUT,
+                            user=MSCONVERT_USER)
+                    if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                        openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+                    else:
+                        raise ValueError("Invalid incoming file %s" % incomingPath)
+
+                    mzml_path = os.path.join(tmpdir, mzml_name)
+                    convert(raw_path, mzml_path)
+
+                    os.rename(mzml_path, mzml_dest)
+                finally:
+                    shutil.rmtree(tmpdir)
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
-            GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
+            GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         search_service = transaction.getSearchService()
