@@ -545,15 +545,14 @@ def handleImmunoFiles(transaction):
         stem, ext = os.path.splitext(name)
         if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
             openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+        else:
+            raise ValueError("Invalid incoming file %s" % incomingPath)
         try:
             convert = partial(convert_raw,
                     remote_base=REMOTE_BASE,
                     host=MSCONVERT_HOST,
                     timeout=CONVERSION_TIMEOUT,
                     user=MSCONVERT_USER)
-            else:
-                raise ValueError("Invalid incoming file %s" % incomingPath)
-
             mzml_path = os.path.join(tmpdir, stem + '.mzML')
             convert(raw_path, mzml_path)
 
