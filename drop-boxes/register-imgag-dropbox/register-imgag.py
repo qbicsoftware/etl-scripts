@@ -288,7 +288,7 @@ def createNewBarcode(project, tr):
     return newBarcode
 
 def find_and_register_ngs(transaction, jsonContent):
-    if "qc" in jsconContent["sample1"]:
+    if "qc" in jsonContent["sample1"]:
         qcValues = jsonContent["sample1"]["qc"]
     genome = jsonContent["sample1"]["genome"]
     idGenetics = jsonContent["sample1"]["id_genetics"]
