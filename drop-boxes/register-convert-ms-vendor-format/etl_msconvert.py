@@ -371,6 +371,14 @@ class SampleAlreadyCreatedError(Exception):
     def __str__(self):
         return self.value
 
+class SampleNotFoundError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 def createRawDataSet(transaction, incomingPath, sample, format):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
@@ -711,7 +719,8 @@ def process(transaction):
             sc = SearchCriteria()
             sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
             foundSamples = search_service.searchForSamples(sc)
-
+            if len(foundSamples) < 1:
+                raise SampleNotFoundError("Neither the sample "+code+" nor MS"+code+" was found.")
             sampleIdentifier = foundSamples[0].getSampleIdentifier()
             space = foundSamples[0].getSpace()
             sType = foundSamples[0].getSampleType()
