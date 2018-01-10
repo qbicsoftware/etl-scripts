@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import signal
 import datetime
+import xml.etree.ElementTree
 from functools import partial
 import logging
 import ch.systemsx.cisd.etlserver.registrator.api.v2
@@ -58,10 +59,15 @@ CONVERSION_TIMEOUT = 7200
 # Standard BSA sample and experiment
 BSA_MPC_SPACE = "MFT_QC_MPC"
 BSA_MPC_PROJECT = "QCMPC"
-BSA_MPC_SAMPLE_ID = "/MFT_QC_MPC/QCMPC002AO"
+
 BSA_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE4"
+BLANK_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE6"
+
 BSA_MPC_BARCODE = "QCMPC002AO"
+BLANK_MPC_BARCODE = "QCMPC003AW"
+
 bsa_run_pattern = re.compile(BSA_MPC_BARCODE)
+blank_run_pattern = re.compile(BLANK_MPC_BARCODE)
 
 try:
     TimeoutError
@@ -202,6 +208,20 @@ def extract_barcode(filename):
     except:
         return True
 
+def parse_timestamp_from_mzml(mzml_path):
+    schema = '{http://psi.hupo.org/ms/mzml}'
+    root = xml.etree.ElementTree.parse(mzml_path).getroot()
+    try:
+        run = root.find(schema+'mzML').find(schema+'run')
+    except AttributeError:
+        print "unexpected mzml structure"
+
+    xsdDateTime = run.get('startTimeStamp')
+    try:
+        time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+    except TypeError:
+        print "no startTimeStamp found"
+    return ""
 
 class DropboxhandlerFile(object):
     """Represent a new file coming from dropboxhandler.
@@ -341,7 +361,6 @@ class QBisRegistration(object):
         exps = search.listExperiments(path)
         return [exp for exp in exps if exp.getExperimentType() == exp_type]
 
-
 def isCurrentMSRun(tr, parentExpID, msExpID):
     """Ask Andreas"""
     search_service = tr.getSearchService()
@@ -379,25 +398,29 @@ class SampleNotFoundError(Exception):
     def __str__(self):
         return self.value
 
-def createRawDataSet(transaction, incomingPath, sample, format):
+def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
+    if time_stamp:
+        rawDataSet.setPropertyValue("Q_MEASUREMENT_START_DATE", time_stamp)
     rawDataSet.setMeasuredData(False)
     rawDataSet.setSample(sample)
     transaction.moveFile(incomingPath, rawDataSet)
 
 def GZipAndMoveMZMLDataSet(transaction, filepath, sample, file_exists = False):
-    #TODO read metadata from this file path:
-    #open(filepath)
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
-    #TODO set property values from
-    #mzmlDataSet.setPropertyValue()
+    #TODO more properties from mzml?
+    time_stamp = parse_timestamp_from_mzml(filepath)
+
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
+    if time_stamp:
+        mzmlDataSet.setPropertyValue("Q_MEASUREMENT_START_DATE", time_stamp)
     if not file_exists:
         subprocess.call(["gzip", filepath])
     zipped = filepath+".gz"
     transaction.moveFile(zipped, mzmlDataSet)
+    return time_stamp
 
 '''Metadata extraction written by Chris, handles everything but conversion. Support for batch upload (no metadata here) by Andreas'''
 def handleImmunoFiles(transaction):
@@ -534,8 +557,9 @@ def handleImmunoFiles(transaction):
                     os.rename(mzml_path, mzml_dest)
                 finally:
                     shutil.rmtree(tmpdir)
-            createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
-            GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
+            time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
+            createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
+            
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         search_service = transaction.getSearchService()
@@ -570,14 +594,24 @@ def handleImmunoFiles(transaction):
             os.rename(mzml_path, mzml_dest)
         finally:
             shutil.rmtree(tmpdir)
-        createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code)
-        GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+        createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
 
 
-def handle_BSA_Run(transaction):
+def handle_QC_Run(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
     incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    if len(bsa_run_pattern.findall(name)) > 0:
+        code = BSA_MPC_BARCODE
+        # The MS experiment
+        msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
+    else:
+        code = BLANK_MPC_BARCODE
+        # The MS experiment
+        msExp = transaction.getExperiment(BLANK_MPC_EXPERIMENT_ID)
 
     stem, ext = os.path.splitext(name)
 
@@ -606,11 +640,8 @@ def handle_BSA_Run(transaction):
     finally:
         shutil.rmtree(tmpdir)
 
-    # The MS experiment
-    msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
-
     #TODO create new ms sample? if so, use normal qbic barcodes?
-    msCode = "MS"+BSA_MPC_BARCODE
+    msCode = "MS"+code
 
     search_service = transaction.getSearchService()
     sc = SearchCriteria()
@@ -628,13 +659,14 @@ def handle_BSA_Run(transaction):
                 run = existingRun + 1
 
     msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + str(run), "Q_MS_RUN")
-    #set parent sample, always the same for bsa run
-    msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
+    #set parent sample
+
+    msSample.setParentSampleIdentifiers("/"+BSA_MPC_SPACE+"/"+code)
     msSample.setExperiment(msExp)
 
-    createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-    GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
-
+    time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+    createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
+    
     for f in os.listdir(incomingPath):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
@@ -659,7 +691,7 @@ def process(transaction):
     # If special format from Immuno Dropbox handle separately
     #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
-    bsa = len(bsa_run_pattern.findall(name)) > 0
+    qc_run = len(bsa_run_pattern.findall(name)+blank_run_pattern.findall(name)) > 0
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
             source_file = open(os.path.join(incomingPath, f))
@@ -667,9 +699,9 @@ def process(transaction):
             if "cloud-immuno" in source or "qeana18-immuno" in source:
                 immuno = True
                 handleImmunoFiles(transaction)
-    if not immuno and bsa:
-        handle_BSA_Run(transaction)
-    if not immuno and not bsa:
+    if not immuno and qc_run:
+        handle_QC_Run(transaction)
+    if not immuno and not qc_run:
         # Get the name of the incoming file
 
         code = barcode_pattern.findall(name)[0]
@@ -759,8 +791,8 @@ def process(transaction):
                 msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
                 msSample.setExperiment(MSRawExperiment)
 
-        createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-        GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+        createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
 
         for f in os.listdir(incomingPath):
             if ".testorig" in f:
