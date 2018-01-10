@@ -661,7 +661,7 @@ def handle_QC_Run(transaction):
     msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + str(run), "Q_MS_RUN")
     #set parent sample
 
-    msSample.setParentSampleIdentifiers("/"+BSA_MPC_SPACE+"/"+code)
+    msSample.setParentSampleIdentifiers(["/"+BSA_MPC_SPACE+"/"+code])
     msSample.setExperiment(msExp)
 
     time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
