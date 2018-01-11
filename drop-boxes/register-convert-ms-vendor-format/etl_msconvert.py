@@ -210,7 +210,7 @@ def extract_barcode(filename):
 
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
-    for event, element in xml.etree.ElementTree.iterparse(mzml):
+    for event, element in xml.etree.ElementTree.iterparse(mzml_path):
         if element.tag == schema+'spectrum':
             element.clear()
         if element.tag == schema+'run':
