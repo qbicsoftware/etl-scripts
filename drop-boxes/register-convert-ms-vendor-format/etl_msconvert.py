@@ -402,7 +402,6 @@ class SampleNotFoundError(Exception):
 def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
-    print time_stamp
     if time_stamp:
         rawDataSet.setPropertyValue("Q_MEASUREMENT_START_DATE", time_stamp)
     rawDataSet.setMeasuredData(False)
@@ -416,7 +415,6 @@ def GZipAndMoveMZMLDataSet(transaction, filepath, sample, file_exists = False):
 
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
-    print time_stamp
     if time_stamp:
         mzmlDataSet.setPropertyValue("Q_MEASUREMENT_START_DATE", time_stamp)
     if not file_exists:
