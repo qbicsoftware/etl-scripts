@@ -210,13 +210,12 @@ def extract_barcode(filename):
 
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
-    root = xml.etree.ElementTree.parse(mzml_path).getroot()
-    try:
-        run = root.find(schema+'mzML').find(schema+'run')
-    except AttributeError:
-        print "unexpected mzml structure"
-
-    xsdDateTime = run.get('startTimeStamp')
+    for event, element in xml.etree.ElementTree.iterparse(mzml):
+        if element.tag == schema+'spectrum':
+            element.clear()
+        if element.tag == schema+'run':
+            xsdDateTime = element.get('startTimeStamp')
+            break
     time = None
     try:
         time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
