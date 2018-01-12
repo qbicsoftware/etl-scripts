@@ -208,6 +208,19 @@ def extract_barcode(filename):
     except:
         return True
 
+def parse_timestamp_easy(mzml_path):
+    mzml = open(mzml_path)
+    time = None
+    for line in mzml:
+        if "<run id=" in line:
+            for token in line.split(" "):
+                if "startTimeStamp=" in token:
+                    xsdDateTime = token.split('"')[1]
+                    time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+            break
+            mzml.close()
+    return time
+
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
     for event, element in xml.etree.ElementTree.iterparse(mzml_path):
@@ -221,7 +234,7 @@ def parse_timestamp_from_mzml(mzml_path):
         time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
     except TypeError:
         print "no startTimeStamp found"
-    return time;
+    return time
 
 class DropboxhandlerFile(object):
     """Represent a new file coming from dropboxhandler.
@@ -410,7 +423,7 @@ def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
 def GZipAndMoveMZMLDataSet(transaction, filepath, sample, file_exists = False):
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
     #TODO more properties from mzml?
-    time_stamp = parse_timestamp_from_mzml(filepath)
+    time_stamp = parse_timestamp_easy(filepath)
 
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
