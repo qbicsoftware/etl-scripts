@@ -221,6 +221,24 @@ def parse_timestamp_easy(mzml_path):
             mzml.close()
     return time
 
+def parse_instrument_accession(mzml_path):
+    mzml = open(mzml_path)
+    accession = None
+    out = True
+    for line in mzml:
+        if "<instrumentConfigurationList" in line or 'id="CommonInstrumentParams">' in line:
+            out = False
+        if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
+            out = True
+        if not out and '<cvParam cvRef="MS"' in line:
+            line = line.split(" ")
+            for token in line:
+                if "accession=" in line:
+                    accession = token.split('"')[1]
+            mzml.close()
+            break
+    return term
+
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
     for event, element in xml.etree.ElementTree.iterparse(mzml_path):
@@ -570,7 +588,11 @@ def handleImmunoFiles(transaction):
                     os.rename(mzml_path, mzml_dest)
                 finally:
                     shutil.rmtree(tmpdir)
+            # parse some information from mzml
             time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
+            instrument_accession = parse_instrument_accession(mzml_dest)
+            if instrument_accession:
+                newMSExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
             
     # no metadata file: just one RAW file to convert and attach to samples
@@ -609,6 +631,15 @@ def handleImmunoFiles(transaction):
             shutil.rmtree(tmpdir)
 
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+        instrument_accession = parse_instrument_accession(mzml_dest)
+        if instrument_accession:
+                exp = ms_samp.getExperimentForUpdate()
+                old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
+                if old_accession and old_accession is not accession:
+                    exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+                else:
+                    raise ValueError("Found instrument accession "+instrument_accession+" in mzml, but "+old_accession+" in experiment!")
+
         createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
 
 
@@ -770,6 +801,7 @@ def process(transaction):
             space = foundSamples[0].getSpace()
             sType = foundSamples[0].getSampleType()
             sa = transaction.getSampleForUpdate(sampleIdentifier)
+            MSRawExperiment = None
 
             if(sType == "Q_MS_RUN"):
                 msSample = sa
@@ -777,7 +809,6 @@ def process(transaction):
                 # get or create MS-specific experiment/sample and
                 # attach to the test sample
                 expType = "Q_MS_MEASUREMENT"
-                MSRawExperiment = None
                 experiments = search_service.listExperiments("/" + space + "/" + project)
                 experimentIDs = []
                 for exp in experiments:
@@ -805,6 +836,16 @@ def process(transaction):
                 msSample.setExperiment(MSRawExperiment)
 
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+        if instrument_accession:
+            old_accession = None
+            if not MSRawExperiment:
+                MSRawExperiment = getExperimentForUpdate()
+                old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
+            if old_accession and old_accession is not accession:
+                MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+            else:
+                raise ValueError("Found instrument accession "+instrument_accession+" in mzml, but "+old_accession+" in experiment!")
+
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
 
         for f in os.listdir(incomingPath):
