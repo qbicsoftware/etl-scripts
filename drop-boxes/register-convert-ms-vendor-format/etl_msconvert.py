@@ -531,7 +531,7 @@ def handleImmunoFiles(transaction):
             sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
             # register new experiment and sample
-            numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
+            numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run-1
 
             for eexp in existingExperiments:
                 existingExperimentIDs.append(eexp.getExperimentIdentifier())
