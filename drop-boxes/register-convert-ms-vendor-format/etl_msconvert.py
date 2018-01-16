@@ -238,7 +238,7 @@ def parse_instrument_accession(mzml_path):
                     accession = token.split('"')[1]
             mzml.close()
             break
-    print "accession for "+meta_path+": "+accession
+    print "accession for "+mzml_path+": "+accession
     return accession
 
 def parse_timestamp_from_mzml(mzml_path):
