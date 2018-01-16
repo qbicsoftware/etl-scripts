@@ -825,6 +825,7 @@ def process(transaction):
                 msSample.setExperiment(MSRawExperiment)
 
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+        instrument_accession = parse_instrument_accession(mzml_dest)
         if instrument_accession:
             old_accession = None
             if not MSRawExperiment:
