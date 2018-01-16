@@ -237,7 +237,7 @@ def parse_instrument_accession(mzml_path):
                     accession = token.split('"')[1]
             mzml.close()
             break
-    return term
+    return accession
 
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
