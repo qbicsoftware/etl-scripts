@@ -590,8 +590,8 @@ def handleImmunoFiles(transaction):
                 finally:
                     shutil.rmtree(tmpdir)
             # parse some information from mzml
-            time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
             instrument_accession = parse_instrument_accession(mzml_dest)
+            time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
             if instrument_accession:
                 newMSExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
@@ -631,8 +631,8 @@ def handleImmunoFiles(transaction):
         finally:
             shutil.rmtree(tmpdir)
 
-        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         instrument_accession = parse_instrument_accession(mzml_dest)
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         if instrument_accession:
                 exp = ms_samp.getExperimentForUpdate()
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
@@ -825,8 +825,8 @@ def process(transaction):
                 msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
                 msSample.setExperiment(MSRawExperiment)
 
-        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
         instrument_accession = parse_instrument_accession(mzml_dest)
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
         if instrument_accession:
             old_accession = None
             if not MSRawExperiment:
