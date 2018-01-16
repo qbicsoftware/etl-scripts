@@ -232,14 +232,13 @@ def parse_instrument_accession(mzml_path):
         if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
             out = True
         if not out and '<cvParam cvRef="MS"' in line:
-            print line
             line = line.split(" ")
             for token in line:
                 if "accession=" in token:
                     accession = token.split('"')[1]
             mzml.close()
             break
-    print "accession: "+accession
+    print "accession for "+meta_path+": "+accession
     return accession
 
 def parse_timestamp_from_mzml(mzml_path):
@@ -835,7 +834,6 @@ def process(transaction):
                 MSRawExperiment = getExperimentForUpdate()
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
             if old_accession and old_accession is not accession:
-                print "setting accession"
                 MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
             else:
                 raise ValueError("Found instrument accession "+instrument_accession+" in mzml, but "+old_accession+" in experiment!")
