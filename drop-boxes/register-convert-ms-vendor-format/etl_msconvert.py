@@ -222,6 +222,7 @@ def parse_timestamp_easy(mzml_path):
     return time
 
 def parse_instrument_accession(mzml_path):
+    print ""
     mzml = open(mzml_path)
     accession = None
     out = True
@@ -231,13 +232,14 @@ def parse_instrument_accession(mzml_path):
         if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
             out = True
         if not out and '<cvParam cvRef="MS"' in line:
+            print line
             line = line.split(" ")
             for token in line:
                 if "accession=" in line:
                     accession = token.split('"')[1]
             mzml.close()
             break
-    print accession
+    print "accession: "+accession
     return accession
 
 def parse_timestamp_from_mzml(mzml_path):
