@@ -235,7 +235,7 @@ def parse_instrument_accession(mzml_path):
             print line
             line = line.split(" ")
             for token in line:
-                if "accession=" in line:
+                if "accession=" in token:
                     accession = token.split('"')[1]
             mzml.close()
             break
