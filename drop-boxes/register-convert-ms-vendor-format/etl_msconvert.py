@@ -575,7 +575,7 @@ def handleImmunoFiles(transaction):
             else:
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
-            if not converted_exists:
+            if true: #not converted_exists: (needed for mzml parsing)
                 try:
                     convert = partial(convert_raw,
                             remote_base=REMOTE_BASE,
