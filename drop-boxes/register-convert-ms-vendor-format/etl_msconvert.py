@@ -715,16 +715,6 @@ def handle_QC_Run(transaction):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
 
-#unused, can't be decided just by source at the moment
-def decideOnMethod(transaction, source_dropbox):
-    switch={
-        'cloud-immuno': handleImmunoFiles,
-        'qeana05-mpc': handle_BSA_Run}
-    try:
-        switch[source_dropbox](transaction)
-    except KeyError:
-        handleDefault(transaction)
-
 def process(transaction):
     """Ask Andreas"""
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -733,7 +723,6 @@ def process(transaction):
     incomingPath = transaction.getIncoming().getAbsolutePath()
     name = transaction.getIncoming().getName()
     # If special format from Immuno Dropbox handle separately
-    #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
     qc_run = len(bsa_run_pattern.findall(name)+blank_run_pattern.findall(name)) > 0
     for f in os.listdir(incomingPath):
@@ -772,7 +761,7 @@ def process(transaction):
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
             mzml_path = os.path.join(tmpdir, stem + '.mzML')
-            raw_path = os.path.join(incomingPath, name)#raw file has the same name as the incoming folder, this is the path to this file!
+            raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
             convert(raw_path, mzml_path)
 
             mzml_name = os.path.basename(mzml_path)
