@@ -116,6 +116,12 @@ def check_output(cmd, timeout=None, **kwargs):
             signal.alarm(old_alarm)
             signal.signal(signal.SIGALRM, old_handler)
 
+# mzml.gz to mzml - keeps gz file
+def gunzip(inpath, outpath):
+    p = subprocess.Popen(["zcat", inpath], stdout=subprocess.PIPE)
+    (stdout, stderr) = p.communicate()
+    with file(outpath, 'w') as fp:
+        fp.write(stdout)
 
 def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
           dest_user=None, timeout=None, extra_options=None):
@@ -572,11 +578,11 @@ def handleImmunoFiles(transaction):
             #conversion process ended successfully if gzip process deleted mzml and created mzml.gz
             converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
             else:
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
-            if True: #not converted_exists: (needed for mzml parsing)
+            if not converted_exists:
                 try:
                     convert = partial(convert_raw,
                             remote_base=REMOTE_BASE,
@@ -590,11 +596,15 @@ def handleImmunoFiles(transaction):
                     os.rename(mzml_path, mzml_dest)
                 finally:
                     shutil.rmtree(tmpdir)
-            # parse some information from mzml
+            # parse some information from mzml, if mzmML.gz exists we need to unpack first
+            if converted_exists:
+                gunzip(gzip_dest, mzml_dest)
             instrument_accession = parse_instrument_accession(mzml_dest)
             time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
             if instrument_accession:
                 newMSExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+            if converted_exists:
+                print "test, deleting "+mzml_dest
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
             
     # no metadata file: just one RAW file to convert and attach to samples
@@ -610,7 +620,6 @@ def handleImmunoFiles(transaction):
 
         tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
         raw_path = os.path.join(incomingPath, name)
-        print raw_path
         stem, ext = os.path.splitext(name)
         if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
             openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
@@ -749,30 +758,33 @@ def process(transaction):
         stem, ext = os.path.splitext(name)
         search_service = transaction.getSearchService()
 
-        # Convert the raw file and write it to an mzml tmp folder.
-        # Sadly, I can not see a way to make this part of the transaction.
-        tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
-        try:
-            convert = partial(convert_raw,
-                      remote_base=REMOTE_BASE,
-                      host=MSCONVERT_HOST,
-                      timeout=CONVERSION_TIMEOUT,
-                      user=MSCONVERT_USER)
-            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-            else:
-                raise ValueError("Invalid incoming file %s" % incomingPath)
 
-            mzml_path = os.path.join(tmpdir, stem + '.mzML')
-            raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
-            convert(raw_path, mzml_path)
+        #test if some or all files are left over from earlier conversion attempt (e.g. failure of transaction, but successful conversion)
+        mzml_name = stem + '.mzML'
+        mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+        gzip_dest = os.path.join(DROPBOX_PATH, mzml_name + '.gz')
+        #conversion process ended successfully if gzip process deleted mzml and created mzml.gz
+        converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
+        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+        else:
+            raise ValueError("Invalid incoming file %s" % incomingPath)
 
-            mzml_name = os.path.basename(mzml_path)
-            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
-
-            os.rename(mzml_path, mzml_dest)
-        finally:
-            shutil.rmtree(tmpdir)
+        if not converted_exists:
+            # Convert the raw file and write it to an mzml tmp folder.
+            tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+            try:
+                convert = partial(convert_raw,
+                          remote_base=REMOTE_BASE,
+                          host=MSCONVERT_HOST,
+                          timeout=CONVERSION_TIMEOUT,
+                          user=MSCONVERT_USER)
+                mzml_path = os.path.join(tmpdir, stem + '.mzML')
+                raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                convert(raw_path, mzml_path)
+                os.rename(mzml_path, mzml_dest)
+            finally:
+                shutil.rmtree(tmpdir)
 
         # Try to find an existing MS sample
         sc = SearchCriteria()
@@ -827,6 +839,9 @@ def process(transaction):
                 msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
                 msSample.setExperiment(MSRawExperiment)
 
+        # parse some information from mzml, if mzmML.gz exists we need to unpack first
+        if converted_exists:
+            gunzip(gzip_dest, mzml_dest)
         instrument_accession = parse_instrument_accession(mzml_dest)
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
         if instrument_accession:
@@ -835,13 +850,12 @@ def process(transaction):
                 expID = msSample.getExperiment().getExperimentIdentifier()
                 MSRawExperiment = transaction.getExperimentForUpdate(expID)
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
-            print "old: "+str(old_accession)
-            print "new: "+str(instrument_accession)
             if old_accession and old_accession != instrument_accession:
                 raise ValueError("Found instrument accession "+str(instrument_accession)+" in mzml, but "+str(old_accession)+" in experiment!")
             else:
                 MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
-
+        if converted_exists:
+            print "test, deleting "+mzml_dest
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
 
         for f in os.listdir(incomingPath):
