@@ -835,8 +835,8 @@ def process(transaction):
                 expID = msSample.getExperiment().getExperimentIdentifier()
                 MSRawExperiment = transaction.getExperimentForUpdate(expID)
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
-            print "old: "+old_accession
-            print "new: "+instrument_accession
+            print "old: "+str(old_accession)
+            print "new: "+str(instrument_accession)
             if old_accession and old_accession is not instrument_accession:
                 raise ValueError("Found instrument accession "+str(instrument_accession)+" in mzml, but "+str(old_accession)+" in experiment!")
             else:
