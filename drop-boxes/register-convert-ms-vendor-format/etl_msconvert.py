@@ -635,7 +635,8 @@ def handleImmunoFiles(transaction):
         instrument_accession = parse_instrument_accession(mzml_dest)
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         if instrument_accession:
-                exp = ms_samp.getExperimentForUpdate()
+                expID = ms_samp.getExperiment().getExperimentIdentifier()
+                exp = transaction.getExperimentForUpdate(expID)
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
                 if old_accession and old_accession is not accession:
                     exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
@@ -778,7 +779,7 @@ def process(transaction):
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
         foundSamples = search_service.searchForSamples(sc)
         MSRawExperiment = None
-        
+
         if len(foundSamples) > 0:
             msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
             #msSample.getExperiment() update experiment here
@@ -831,7 +832,8 @@ def process(transaction):
         if instrument_accession:
             old_accession = None
             if not MSRawExperiment:
-                MSRawExperiment = msSample.getExperimentForUpdate()
+                expID = msSample.getExperiment().getExperimentIdentifier()
+                MSRawExperiment = transaction.getExperimentForUpdate(expID)
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
             if old_accession and old_accession is not accession:
                 MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
