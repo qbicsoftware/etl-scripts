@@ -777,7 +777,8 @@ def process(transaction):
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
         foundSamples = search_service.searchForSamples(sc)
-
+        MSRawExperiment = None
+        
         if len(foundSamples) > 0:
             msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
             #msSample.getExperiment() update experiment here
@@ -792,7 +793,6 @@ def process(transaction):
             space = foundSamples[0].getSpace()
             sType = foundSamples[0].getSampleType()
             sa = transaction.getSampleForUpdate(sampleIdentifier)
-            MSRawExperiment = None
 
             if(sType == "Q_MS_RUN"):
                 msSample = sa
@@ -831,7 +831,7 @@ def process(transaction):
         if instrument_accession:
             old_accession = None
             if not MSRawExperiment:
-                MSRawExperiment = getExperimentForUpdate()
+                MSRawExperiment = msSample.getExperimentForUpdate()
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
             if old_accession and old_accession is not accession:
                 MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
