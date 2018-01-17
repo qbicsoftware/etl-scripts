@@ -586,7 +586,7 @@ def handleImmunoFiles(transaction):
             else:
                 raise ValueError("Invalid incoming file %s" % incomingPath)
 
-            if not converted_exists:
+            if True: #not converted_exists:
                 try:
                     convert = partial(convert_raw,
                             remote_base=REMOTE_BASE,
@@ -601,13 +601,13 @@ def handleImmunoFiles(transaction):
                 finally:
                     shutil.rmtree(tmpdir)
             # parse some information from mzml, if mzmML.gz exists we need to unpack first
-            if converted_exists:
+            if False: #converted_exists:
                 gunzip(gzip_dest, mzml_dest)
             instrument_accession = parse_instrument_accession(mzml_dest)
             time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
             if instrument_accession:
                 newMSExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
-            if converted_exists:
+            if False: #converted_exists:
                 print "test, deleting "+mzml_dest
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
             
@@ -774,7 +774,7 @@ def process(transaction):
         else:
             raise ValueError("Invalid incoming file %s" % incomingPath)
 
-        if not converted_exists:
+        if True: #not converted_exists:
             # Convert the raw file and write it to an mzml tmp folder.
             tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
             try:
@@ -844,7 +844,7 @@ def process(transaction):
                 msSample.setExperiment(MSRawExperiment)
 
         # parse some information from mzml, if mzmML.gz exists we need to unpack first
-        if converted_exists:
+        if False: #converted_exists:
             gunzip(gzip_dest, mzml_dest)
         instrument_accession = parse_instrument_accession(mzml_dest)
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
@@ -858,7 +858,7 @@ def process(transaction):
                 raise ValueError("Found instrument accession "+str(instrument_accession)+" in mzml, but "+str(old_accession)+" in experiment!")
             else:
                 MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
-        if converted_exists:
+        if False: #converted_exists:
             print "test, deleting "+mzml_dest
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
 
