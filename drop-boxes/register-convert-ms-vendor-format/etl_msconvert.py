@@ -80,7 +80,7 @@ class ConversionError(RuntimeError):
     pass
 
 
-def check_output(cmd, timeout=None, **kwargs):
+def check_output(cmd, timeout=None, write_stdout=False, **kwargs):
     """Run a program and raise an error on error exit code.
 
     This is basically just `subprocess.check_output`, but the version
@@ -103,7 +103,8 @@ def check_output(cmd, timeout=None, **kwargs):
         if retcode:
             logging.debug("Command %s failed with error code %s",
                           " ".join(cmd), retcode)
-            logging.debug("stdout: %s", out)
+            if not write_stdout:
+                logging.debug("stdout: %s", out)
             logging.debug("stderr: %s", err)
             raise subprocess.CalledProcessError(retcode, " ".join(cmd))
         return out, err
@@ -118,8 +119,11 @@ def check_output(cmd, timeout=None, **kwargs):
 
 # mzml.gz to mzml - keeps gz file
 def gunzip(inpath, outpath):
-    p = subprocess.Popen(["zcat", inpath], stdout=subprocess.PIPE)
-    (stdout, stderr) = p.communicate()
+    print inpath
+    print outpath
+    cmd = ["zcat", inpath]
+    #p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    (stdout, stderr) = check_output(cmd, timeout = CONVERSION_TIMEOUT, write_stdout=True) #p.communicate()
     with file(outpath, 'w') as fp:
         fp.write(stdout)
 
