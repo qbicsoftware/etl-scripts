@@ -417,6 +417,7 @@ def createSimilarMSExperiment(tr, space, project, existing):
     return newExp
 
 def createSimilarMSSample(tr, space, exp, properties, parents):
+    code = None
     for p in parents:
         code = p.split("/")[2]
     run = 0
