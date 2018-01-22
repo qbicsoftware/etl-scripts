@@ -417,6 +417,10 @@ def createSimilarMSExperiment(tr, space, project, existing):
     return newExp
 
 def createSimilarMSSample(tr, space, exp, properties, parents):
+    print space
+    print exp
+    print properties
+    print parents
     code = None
     for p in parents:
         code = p.split("/")[2]
