@@ -416,7 +416,9 @@ def createSimilarMSExperiment(tr, space, project, existing):
     newExp.setPropertyValue('Q_ADDITIONAL_INFO', "Automatically created experiment: instrument ID did not fit existing experiment")
     return newExp
 
-def createSimilarMSSample(tr, space, exp, code, properties, parents):
+def createSimilarMSSample(tr, space, exp, properties, parents):
+    for p in parents:
+        code = p.split("/")[2]
     run = 0
     sampleExists = True
     newSampleID = None
