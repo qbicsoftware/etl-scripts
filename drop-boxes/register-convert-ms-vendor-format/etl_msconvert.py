@@ -404,6 +404,32 @@ class QBisRegistration(object):
         exps = search.listExperiments(path)
         return [exp for exp in exps if exp.getExperimentType() == exp_type]
 
+def createSimilarMSExperiment(tr, space, project, existing):
+    numberOfExperiments = len(existing)
+    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+    while newExpID in existing:
+        numberOfExperiments += 1 
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+    existing.append(newExpID)
+    newExp = tr.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
+    newExp.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+    newExp.setPropertyValue('Q_ADDITIONAL_INFO', "Automatically created experiment: instrument ID did not fit existing experiment")
+    return newExp
+
+def createSimilarMSSample(tr, space, exp, code, properties, parents):
+    run = 0
+    sampleExists = True
+    newSampleID = None
+    while sampleExists:
+        run += 1
+        newSampleID = '/' + space + '/' + 'MS'+ str(run) + code
+        sampleExists = tr.getSampleForUpdate(newSampleID)
+    newMSSample = transaction.createNewSample(newSampleID, "Q_MS_RUN")
+    newMSSample.setParentSampleIdentifiers(parents)
+    newMSSample.setExperiment(exp)
+    newMSSample.setPropertyValue('Q_PROPERTIES', properties)
+    return newMSSample 
+
 def isCurrentMSRun(tr, parentExpID, msExpID):
     """Ask Andreas"""
     search_service = tr.getSearchService()
@@ -488,7 +514,14 @@ def handleImmunoFiles(transaction):
         experiment = code[1:5]
         parentCode = code[:10]
     else:
-        raise ValueError("Invalid barcode: %s" % code)        
+        raise ValueError("Invalid barcode: %s" % code)
+
+    # find existing experiments
+    search_service = transaction.getSearchService()
+    existingExperimentIDs = []
+    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    for eexp in existingExperiments:
+        existingExperimentIDs.append(eexp.getExperimentIdentifier())
 
     data_files = []
     metadataFile = None
@@ -506,13 +539,10 @@ def handleImmunoFiles(transaction):
         line = metadataFile.readline()
 
         #info needed in the for loop
-        search_service = transaction.getSearchService()
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
         foundSamples = search_service.searchForSamples(sc)
         space = foundSamples[0].getSpace()
-        existingExperimentIDs = []
-        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
 
         #test for existing samples before conversion step
         run = 0
@@ -541,13 +571,9 @@ def handleImmunoFiles(transaction):
             sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
             # register new experiment and sample
-            numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run-1
-
-            for eexp in existingExperiments:
-                existingExperimentIDs.append(eexp.getExperimentIdentifier())
-
+            numberOfExperiments = len(existingExperimentIDs)
             newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
+            
             while newExpID in existingExperimentIDs:
                 numberOfExperiments += 1 
                 newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
@@ -613,7 +639,6 @@ def handleImmunoFiles(transaction):
             
     # no metadata file: just one RAW file to convert and attach to samples
     else:
-        search_service = transaction.getSearchService()
         # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
         prefix = ms_prefix_pattern.findall(name)[0]
         ms_code = prefix+code
@@ -654,8 +679,13 @@ def handleImmunoFiles(transaction):
                 if old_accession and old_accession is not accession:
                     exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
                 else:
-                    raise ValueError("Found instrument accession "+instrument_accession+" in mzml, but "+old_accession+" in experiment!")
-
+                    print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
+                    space = ms_samp.getSpace()
+                    parents = ms_samp.getParentSampleIdentifiers()
+                    properties = ms_samp.getPropertyValue("Q_PROPERTIES")
+                    newExp = createSimilarMSExperiment(transaction, space, project, existingExperimentIDs)
+                    ms_samp = createSimilarMSSample(transaction, space, newExp, properties, parents)
+                    newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
         createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
 
 
@@ -762,7 +792,6 @@ def process(transaction):
         stem, ext = os.path.splitext(name)
         search_service = transaction.getSearchService()
 
-
         #test if some or all files are left over from earlier conversion attempt (e.g. failure of transaction, but successful conversion)
         mzml_name = stem + '.mzML'
         mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
@@ -795,10 +824,13 @@ def process(transaction):
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
         foundSamples = search_service.searchForSamples(sc)
         MSRawExperiment = None
+        experimentIDs = []
 
         if len(foundSamples) > 0:
             msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
-            #msSample.getExperiment() update experiment here
+            experiments = search_service.listExperiments("/" + foundSamples[0].getSpace() + "/" + project)
+            for exp in experiments:
+                experimentIDs.append(exp.getExperimentIdentifier())
         else:
             # Find the test sample or ms sample without prefix (wash runs)
             sc = SearchCriteria()
@@ -818,7 +850,6 @@ def process(transaction):
                 # attach to the test sample
                 expType = "Q_MS_MEASUREMENT"
                 experiments = search_service.listExperiments("/" + space + "/" + project)
-                experimentIDs = []
                 for exp in experiments:
                     experimentIDs.append(exp.getExperimentIdentifier())
                     if exp.getExperimentType() == expType:
@@ -855,9 +886,15 @@ def process(transaction):
                 MSRawExperiment = transaction.getExperimentForUpdate(expID)
                 old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
             if old_accession and old_accession != instrument_accession:
-                raise ValueError("Found instrument accession "+str(instrument_accession)+" in mzml, but "+str(old_accession)+" in experiment!")
-            else:
-                MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+                print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
+                space = msSample.getSpace()
+                parents = msSample.getParentSampleIdentifiers()
+                properties = msSample.getPropertyValue("Q_PROPERTIES")
+                newExp = createSimilarMSExperiment(transaction, space, project, experimentIDs)
+                msSample = createSimilarMSSample(transaction, space, newExp, properties, parents)
+                newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+        else:
+            MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
         if False: #converted_exists:
             print "test, deleting "+mzml_dest
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
