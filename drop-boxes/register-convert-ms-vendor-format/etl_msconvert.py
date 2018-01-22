@@ -417,10 +417,6 @@ def createSimilarMSExperiment(tr, space, project, existing):
     return newExp
 
 def createSimilarMSSample(tr, space, exp, properties, parents):
-    print space
-    print exp
-    print properties
-    print parents
     code = None
     for p in parents:
         code = p.split("/")[2]
@@ -431,7 +427,7 @@ def createSimilarMSSample(tr, space, exp, properties, parents):
         run += 1
         newSampleID = '/' + space + '/' + 'MS'+ str(run) + code
         sampleExists = tr.getSampleForUpdate(newSampleID)
-    newMSSample = transaction.createNewSample(newSampleID, "Q_MS_RUN")
+    newMSSample = tr.createNewSample(newSampleID, "Q_MS_RUN")
     newMSSample.setParentSampleIdentifiers(parents)
     newMSSample.setExperiment(exp)
     newMSSample.setPropertyValue('Q_PROPERTIES', properties)
@@ -687,7 +683,7 @@ def handleImmunoFiles(transaction):
                 else:
                     print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
                     space = ms_samp.getSpace()
-                    parents = ms_samp.getParentSampleIdentifiers()
+                    parents = foundSamples[0].getParentSampleIdentifiers()
                     properties = ms_samp.getPropertyValue("Q_PROPERTIES")
                     newExp = createSimilarMSExperiment(transaction, space, project, existingExperimentIDs)
                     ms_samp = createSimilarMSSample(transaction, space, newExp, properties, parents)
