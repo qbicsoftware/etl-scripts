@@ -678,7 +678,6 @@ def handleImmunoFiles(transaction):
             shutil.rmtree(tmpdir)
 
         instrument_accession = parse_instrument_accession(mzml_dest)
-        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         if instrument_accession:
                 expID = ms_samp.getExperiment().getExperimentIdentifier()
                 exp = transaction.getExperimentForUpdate(expID)
@@ -693,6 +692,7 @@ def handleImmunoFiles(transaction):
                     newExp = createSimilarMSExperiment(transaction, space, project, existingExperimentIDs)
                     ms_samp = createSimilarMSSample(transaction, space, newExp, properties, parents)
                     newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
 
 
@@ -885,7 +885,6 @@ def process(transaction):
         if False: #converted_exists:
             gunzip(gzip_dest, mzml_dest)
         instrument_accession = parse_instrument_accession(mzml_dest)
-        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
         if instrument_accession:
             old_accession = None
             if not MSRawExperiment:
@@ -896,6 +895,8 @@ def process(transaction):
                 print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
                 space = msSample.getSpace()
                 parents = msSample.getParentSampleIdentifiers()
+                if len(parents) < 1:
+                    parents = transaction.getSample(msSample.getSampleIdentifier()).getParentSampleIdentifiers()
                 properties = msSample.getPropertyValue("Q_PROPERTIES")
                 newExp = createSimilarMSExperiment(transaction, space, project, experimentIDs)
                 msSample = createSimilarMSSample(transaction, space, newExp, properties, parents)
@@ -904,6 +905,7 @@ def process(transaction):
             MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
         if False: #converted_exists:
             print "test, deleting "+mzml_dest
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
 
         for f in os.listdir(incomingPath):
