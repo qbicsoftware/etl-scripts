@@ -832,8 +832,10 @@ def process(transaction):
         foundSamples = search_service.searchForSamples(sc)
         MSRawExperiment = None
         experimentIDs = []
+        parents = []
 
         if len(foundSamples) > 0:
+            parents = foundSamples[0].getParentSampleIdentifiers()
             msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
             experiments = search_service.listExperiments("/" + foundSamples[0].getSpace() + "/" + project)
             for exp in experiments:
@@ -849,10 +851,13 @@ def process(transaction):
             space = foundSamples[0].getSpace()
             sType = foundSamples[0].getSampleType()
             sa = transaction.getSampleForUpdate(sampleIdentifier)
+            parents = [code]
 
             if(sType == "Q_MS_RUN"):
                 msSample = sa
+                parents = foundSamples[0].getParentSampleIdentifiers()
             else:
+                parents = [sa.getSampleIdentifier()]
                 # get or create MS-specific experiment/sample and
                 # attach to the test sample
                 expType = "Q_MS_MEASUREMENT"
@@ -894,9 +899,9 @@ def process(transaction):
             if old_accession and old_accession != instrument_accession:
                 print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
                 space = msSample.getSpace()
-                parents = msSample.getParentSampleIdentifiers()
-                if len(parents) < 1:
-                    parents = transaction.getSample(msSample.getSampleIdentifier()).getParentSampleIdentifiers()
+                #parents = msSample.getParentSampleIdentifiers()
+                #if len(parents) < 1:
+                #    parents = transaction.getSample(msSample.getSampleIdentifier()).getParentSampleIdentifiers()
                 properties = msSample.getPropertyValue("Q_PROPERTIES")
                 newExp = createSimilarMSExperiment(transaction, space, project, experimentIDs)
                 msSample = createSimilarMSSample(transaction, space, newExp, properties, parents)
