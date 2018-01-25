@@ -519,12 +519,12 @@ def handleImmunoFiles(transaction):
     else:
         raise ValueError("Invalid barcode: %s" % code)
 
+    search_service = transaction.getSearchService()
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
     found = search_service.searchForSamples(sc)
     space = found[0].getSpace()
     # find existing experiments
-    search_service = transaction.getSearchService()
     existingExperimentIDs = []
     existingExperiments = search_service.listExperiments("/" + space + "/" + project)
     for eexp in existingExperiments:
