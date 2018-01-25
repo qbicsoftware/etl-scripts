@@ -685,7 +685,7 @@ def handleImmunoFiles(transaction):
         if instrument_accession:
                 expID = ms_samp.getExperiment().getExperimentIdentifier()
                 exp = transaction.getExperimentForUpdate(expID)
-                old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
+                old_accession = exp.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
                 if old_accession and old_accession is not accession:
                     exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
                 else:
