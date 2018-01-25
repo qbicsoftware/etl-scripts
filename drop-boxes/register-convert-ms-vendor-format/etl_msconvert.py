@@ -519,6 +519,10 @@ def handleImmunoFiles(transaction):
     else:
         raise ValueError("Invalid barcode: %s" % code)
 
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+    found = search_service.searchForSamples(sc)
+    space = found[0].getSpace()
     # find existing experiments
     search_service = transaction.getSearchService()
     existingExperimentIDs = []
@@ -545,7 +549,6 @@ def handleImmunoFiles(transaction):
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
         foundSamples = search_service.searchForSamples(sc)
-        space = foundSamples[0].getSpace()
 
         #test for existing samples before conversion step
         run = 0
@@ -686,7 +689,6 @@ def handleImmunoFiles(transaction):
                     exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
                 else:
                     print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
-                    space = ms_samp.getSpace()
                     parents = foundSamples[0].getParentSampleIdentifiers()
                     properties = ms_samp.getPropertyValue("Q_PROPERTIES")
                     newExp = createSimilarMSExperiment(transaction, space, project, existingExperimentIDs)
