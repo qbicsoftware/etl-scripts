@@ -643,7 +643,11 @@ def handleImmunoFiles(transaction):
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
-        prefix = ms_prefix_pattern.findall(name)[0]
+        prefixes = ms_prefix_pattern.findall(name)
+        prefix = prefixes[0]
+        for p in prefixes:
+            if len(p) > prefix:
+                prefix = p
         ms_code = prefix+code
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
