@@ -546,6 +546,7 @@ def handleImmunoFiles(transaction):
         line = metadataFile.readline()
 
         #info needed in the for loop
+        search_service = transaction.getSearchService()
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
         foundSamples = search_service.searchForSamples(sc)
