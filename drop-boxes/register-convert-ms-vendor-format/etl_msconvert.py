@@ -686,15 +686,15 @@ def handleImmunoFiles(transaction):
                 expID = ms_samp.getExperiment().getExperimentIdentifier()
                 exp = transaction.getExperimentForUpdate(expID)
                 old_accession = exp.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
-                if old_accession and old_accession is not accession:
-                    exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
-                else:
+                if old_accession and old_accession != instrument_accession:
                     print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
                     parents = foundSamples[0].getParentSampleIdentifiers()
                     properties = ms_samp.getPropertyValue("Q_PROPERTIES")
                     newExp = createSimilarMSExperiment(transaction, space, project, existingExperimentIDs)
                     ms_samp = createSimilarMSSample(transaction, space, newExp, properties, parents)
                     newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+                else:
+                    exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
 
@@ -909,8 +909,8 @@ def process(transaction):
                 newExp = createSimilarMSExperiment(transaction, space, project, experimentIDs)
                 msSample = createSimilarMSSample(transaction, space, newExp, properties, parents)
                 newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
-        else:
-            MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+            else:
+                MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
         if False: #converted_exists:
             print "test, deleting "+mzml_dest
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
