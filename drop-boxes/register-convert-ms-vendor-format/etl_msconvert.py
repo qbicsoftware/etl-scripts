@@ -782,7 +782,7 @@ def process(transaction):
         if "source_dropbox.txt" in f:
             source_file = open(os.path.join(incomingPath, f))
             source = source_file.readline()
-            if "cloud-immuno" in source or "qeana18-immuno" in source:
+            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source:
                 immuno = True
                 handleImmunoFiles(transaction)
     if not immuno and qc_run:
