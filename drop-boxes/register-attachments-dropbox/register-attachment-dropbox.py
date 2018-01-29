@@ -55,7 +55,6 @@ def process(transaction):
 	transaction.setUserId(user)
 
 	inputFile = os.path.join(incomingPath, name)
-	newname = name.split("_")[-1]
 	newname = urllib.unquote(newname)
 	dataFile = os.path.join(incomingPath, newname)
 	print "renaming "+inputFile+" to "+dataFile
