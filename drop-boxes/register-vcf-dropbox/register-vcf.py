@@ -139,11 +139,11 @@ def process(transaction):
                 sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))   
         
-            elif f.endswith('sha256sum') or f.endswith('vcf'):
+            elif f.endswith('sha256sum') or f.endswith('vcf') or f.endswith('vcf.gz'):
                 pass
                 #transaction.moveFile(os.path.join(incomingPath,f), dataSet)
-            else:
-                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+            #else:
+                #os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         dataSet.setSample(vcSample)
         transaction.moveFile(incomingPath, dataSet)
