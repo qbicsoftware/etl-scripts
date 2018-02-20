@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """
 @author: Sven Fillinger
 
@@ -43,7 +45,6 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 import sys
 import mtbutils
 import logging
-from __future__ import print_function
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
