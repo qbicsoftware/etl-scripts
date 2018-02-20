@@ -59,11 +59,10 @@ if cmd_status != 0:
 
 print(mtbutils.log_stardate("Conda environment loaded successfully"))
 
-
 def process(transaction):
     """The main dropbox funtion.
     openBIS executes this function during an incoming file event.
     """
     incoming_path = transaction.getIncoming().getAbsolutePath()
     file_name = transaction.getIncoming().getName()
-    print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name))
+    print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
