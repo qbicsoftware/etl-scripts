@@ -36,7 +36,24 @@ Step 1 - 'convert' command: Takes the ZIP Archive and the patient ID and creates
 
 Step 2 - 'push' command: Takes the XML and submits it to CentraXX
 
-
 Note:
 print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 """
+
+import sys
+import mtbutils
+import logging
+# Path to checksum.py
+sys.path.append('/home-link/qeana10/bin')
+# Path to the miniconda env hosting mtbconverter
+sys.path.append('/home-link/qeana10/bin/miniconda/bin')
+
+CONDA_ENV = 'centraxx_mtb'
+
+if mtbutils.conda_activate(CONDA_ENV) != 0:
+    raise mtbutils.MTBdropboxerrer("Conda environment ")
+
+
+
+
+
