@@ -52,8 +52,10 @@ sys.path.append('/home-link/qeana10/bin/miniconda/bin')
 
 CONDA_ENV = 'centraxx_mtb'
 
-if mtbutils.conda_activate(CONDA_ENV) != 0:
-    raise mtbutils.MTBdropboxerrer("Conda environment ")
+cmd_status = mtbutils.conda_activate(CONDA_ENV)
+
+if cmd_status != 0:
+    raise mtbutils.MTBdropboxerrer("Conda environment could not be loaded. Exit status was: " + cmd_status)
 
 print(mtbutils.log_stardate("Conda environment loaded successfully"))
 
