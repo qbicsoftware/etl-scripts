@@ -4,10 +4,11 @@ for the main dropbox """
 import datetime
 import subprocess as sp
 
-def conda_activate(conda_env):
+MTB_CONVERTER_PATH = '/home/qeana10/bin/miniconda/bin/mtbconverter'
+
+def mtbconverter(*cmds):
     """Tries to activate a given conda environment"""
-    
-    command = ['/home/qeana10/bin/miniconda/bin/mtbconverter']
+    command = [MTB_CONVERTER_PATH] + list(cmds)
     ret_code = sp.call(command)
     return ret_code
 

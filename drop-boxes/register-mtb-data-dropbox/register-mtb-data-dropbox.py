@@ -51,12 +51,14 @@ sys.path.append('/home-link/qeana10/bin')
 
 CONDA_ENV = 'centraxx_mtb'
 
-cmd_status = mtbutils.conda_activate(CONDA_ENV)
+cmd_status = mtbutils.mtbconverter('-h')
+
+print('Return code is {}'.format(cmd_status))
 
 if cmd_status != 0:
-    raise mtbutils.MTBdropboxerror("Conda environment could not be loaded. Exit status was: " + cmd_status)
+    raise mtbutils.MTBdropboxerror("Mtbconverter could not be loaded: " + cmd_status)
 
-print(mtbutils.log_stardate("Conda environment loaded successfully"))
+print(mtbutils.log_stardate("Mtbconverter executable found."))
 
 def process(transaction):
     """The main dropbox funtion.
