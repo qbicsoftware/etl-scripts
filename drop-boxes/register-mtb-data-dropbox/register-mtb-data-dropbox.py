@@ -48,15 +48,13 @@ import logging
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
-# Path to the miniconda env hosting mtbconverter
-sys.path.append('/home-link/qeana10/bin/miniconda/bin')
 
 CONDA_ENV = 'centraxx_mtb'
 
 cmd_status = mtbutils.conda_activate(CONDA_ENV)
 
 if cmd_status != 0:
-    raise mtbutils.MTBdropboxerrer("Conda environment could not be loaded. Exit status was: " + cmd_status)
+    raise mtbutils.MTBdropboxerror("Conda environment could not be loaded. Exit status was: " + cmd_status)
 
 print(mtbutils.log_stardate("Conda environment loaded successfully"))
 
@@ -67,3 +65,4 @@ def process(transaction):
     incoming_path = transaction.getIncoming().getAbsolutePath()
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
+    raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')

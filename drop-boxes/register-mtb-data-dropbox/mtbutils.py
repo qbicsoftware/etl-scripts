@@ -6,7 +6,8 @@ import subprocess as sp
 
 def conda_activate(conda_env):
     """Tries to activate a given conda environment"""
-    command = ['source', 'activate', conda_env]
+    
+    command = ['/home/qeana10/bin/miniconda/bin/mtbconverter']
     ret_code = sp.call(command)
     return ret_code
 
@@ -15,5 +16,5 @@ def log_stardate(msg):
     stardate = datetime.datetime.now()
     return '{} [{}]: {}'.format(stardate.isoformat(), 'mtbconverter', msg)
 
-class MTBdropboxerrer(Exception):
+class MTBdropboxerror(Exception):
     """A generic Exception class for this dropbox."""
