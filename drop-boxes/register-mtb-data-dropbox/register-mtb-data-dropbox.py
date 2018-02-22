@@ -46,6 +46,7 @@ import os
 import sys
 import mtbutils
 import logging
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
