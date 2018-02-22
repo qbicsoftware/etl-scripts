@@ -106,6 +106,11 @@ def getentityandpbmc(path, transcation):
 def getentity(qcode, transaction):
 
     tumor_sample = getsample(qcode, transaction)
+    print(tumor_sample)
+    print(tumor_sample.getSampleIdentifier())
+    parent_ids = tumor_sample.getParentSampleIdentifiers()
+    print(len(parent_ids))
+    print(parent_ids)
     for parent in tumor_sample.getParentSampleIdentifiers():
         print(getsample(parent, transaction))
     
@@ -126,5 +131,5 @@ def getsample(qcode, transaction):
     if len(result) > 1:
         raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
     
-    return result[0].getSample()
+    return result[0]
 
