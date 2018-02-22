@@ -46,6 +46,7 @@ import os
 import sys
 import mtbutils
 import logging
+import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 
 # Path to checksum.py
