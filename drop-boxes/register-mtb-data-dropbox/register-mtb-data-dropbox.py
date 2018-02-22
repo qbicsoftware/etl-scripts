@@ -67,6 +67,7 @@ def process(transaction):
     incoming_path = transaction.getIncoming().getAbsolutePath()
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
+    getfiles(incoming_path)
     raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
 
 def getfiles(path):
