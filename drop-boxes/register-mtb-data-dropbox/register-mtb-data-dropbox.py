@@ -41,6 +41,7 @@ Step 2 - 'push' command: Takes the XML and submits it to CentraXX
 Note:
 print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 """
+import re
 import os
 import sys
 import mtbutils
@@ -49,7 +50,7 @@ import logging
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
 
-CONDA_ENV = 'centraxx_mtb'
+QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 cmd_status = mtbutils.mtbconverter('-h')
 
@@ -67,15 +68,52 @@ def process(transaction):
     incoming_path = transaction.getIncoming().getAbsolutePath()
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
-    getfiles(incoming_path)
+    file_list = getfiles(incoming_path)
     raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
 
 def getfiles(path):
+    """Retrieve all the absolute paths recursively from
+    a given directory.
+
+    Returns: list of abs file paths
+    """
     if not os.path.isdir(path):
         raise mtbutils.MTBdropboxerror('The incoming data is not a directory.')
     file_list = []
     for path, subdirs, files in os.walk(path):
         for name in files:
             file_list.append(os.path.join(path, name))
-    print(file_list)
     return file_list
+
+def getentityandpbmc(path, transcation):
+    qcode_findings = QCODE_REG.findall(path)
+    if not qcode_findings:
+        raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(path))
+    if len(qcode_findings) > 1:
+        raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(path))
+    qcode = qcode_findings[0]
+
+    entity_id = getentity(qcode, transcation)
+    pbmc_id = getpbmc(qcode, transcation)
+
+    print(mtbutils.log_stardate('Found parent with id {}'.format(entity_id)))
+
+    return (path, entity_id, pbmc_id)
+
+def getentity(qcode, transaction):
+    sserv = transaction.getSearchService()
+    scrit = SearchCriteria()
+    scrit.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
+        SearchCriteria.MatchClauseAttribute.CODE, qCode))
+    result = sserv.searchForSamples(scrit)
+
+    if not result:
+        raise mtbutils.MTBdropboxerror('No matching sample found in openBIS for code {}.'.format(qcode))
+    if len(result) > 1:
+        raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
+
+    tumor_sample = result[0]
+    return(tumor_sample.getCode())
+
+def getpbmc(qcode, transaction):
+    return ""
