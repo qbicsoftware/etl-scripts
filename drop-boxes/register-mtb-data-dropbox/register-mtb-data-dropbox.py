@@ -41,7 +41,7 @@ Step 2 - 'push' command: Takes the XML and submits it to CentraXX
 Note:
 print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 """
-
+import os
 import sys
 import mtbutils
 import logging
@@ -53,8 +53,8 @@ CONDA_ENV = 'centraxx_mtb'
 
 cmd_status = mtbutils.mtbconverter('-h')
 
-print('Return code is {}'.format(cmd_status))
-
+# Print the return code from the subprocess command
+#print('Return code is {}'.format(cmd_status))
 if cmd_status != 0:
     raise mtbutils.MTBdropboxerror("Mtbconverter could not be loaded: " + cmd_status)
 
@@ -68,3 +68,13 @@ def process(transaction):
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
     raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
+
+def getfiles(path):
+    if not os.path.isdir(path):
+        raise mtbutils.MTBdropboxerror('The incoming data is not a directory.')
+    file_list = []
+    for path, subdirs, files in os.walk(path):
+        for name in files:
+            file_list.append(os.path.join(path, name))
+    print(file_list)
+    return file_list
