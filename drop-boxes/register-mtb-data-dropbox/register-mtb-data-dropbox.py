@@ -104,20 +104,27 @@ def getentityandpbmc(path, transcation):
     return (path, entity_id, pbmc_id)
 
 def getentity(qcode, transaction):
+
+    tumor_sample = getsample(qcode, transaction)
+    for parent in tumor_sample.getParentSampleIdentifiers():
+        print(getsample(parent, transaction))
+    
+    return(tumor_sample.getSample().getParents()[0].getCode())
+
+def getpbmc(qcode, transaction):
+    return ""
+
+def getsample(qcode, transaction):
     sserv = transaction.getSearchService()
     scrit = SearchCriteria()
     scrit.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
         SearchCriteria.MatchClauseAttribute.CODE, qcode))
     result = sserv.searchForSamples(scrit)
-
+    
     if not result:
         raise mtbutils.MTBdropboxerror('No matching sample found in openBIS for code {}.'.format(qcode))
     if len(result) > 1:
         raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
+    
+    return result[0].getSample()
 
-    tumor_sample = result[0].getSample()
-    print(tumor_sample.getParents()[0])
-    return(tumor_sample.getSample().getParents()[0].getCode())
-
-def getpbmc(qcode, transaction):
-    return ""
