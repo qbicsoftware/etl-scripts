@@ -115,7 +115,7 @@ def getentity(qcode, transaction):
         raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
 
     tumor_sample = result[0]
-    return(tumor_sample.getCode())
+    return(tumor_sample.getParents()[0].getCode())
 
 def getpbmc(qcode, transaction):
     return ""
