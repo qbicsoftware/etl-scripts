@@ -106,7 +106,7 @@ def getentity(qcode, transaction):
     sserv = transaction.getSearchService()
     scrit = SearchCriteria()
     scrit.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, qCode))
+        SearchCriteria.MatchClauseAttribute.CODE, qcode))
     result = sserv.searchForSamples(scrit)
 
     if not result:
