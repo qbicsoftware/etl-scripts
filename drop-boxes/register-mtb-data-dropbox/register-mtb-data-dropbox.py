@@ -97,7 +97,7 @@ def getentityandpbmc(path, transcation):
         raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(path))
     qcode = qcode_findings[0]
 
-    entity_id = getentity(qcode, transcation).split('/')[-1]
+    entity_id = getentity(qcode, transcation)
     pbmc_id = getpbmc(entity_id, transcation)
 
     print(mtbutils.log_stardate('Found parent with id {}'.format(entity_id)))
@@ -118,7 +118,7 @@ def getentity(qcode, transaction):
     if len(grandparents_found) > 1:
         raise mtbutils.MTBdropboxerror("More than one patient "
             "id found for tumor sample: {}".format(grandparents_found))  
-    return(grandparents_found[0])
+    return(grandparents_found[0].split('/')[-1])
 
 def getpbmc(qcode_entity, transaction):
     
