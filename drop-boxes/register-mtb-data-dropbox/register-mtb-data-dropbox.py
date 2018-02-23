@@ -55,7 +55,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
 import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi
-import ch.systemsx.cisd.common.spring.HttpInvokerUtils
+from ch.systemsx.cisd.common.spring import HttpInvokerUtils
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
