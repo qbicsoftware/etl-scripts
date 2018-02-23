@@ -48,6 +48,7 @@ import mtbutils
 import logging
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
@@ -121,7 +122,7 @@ def getentity(qcode, transaction):
 
 def getpbmc(qcode_entity, transaction):
     
-    descendand_samples = getallchildren(qcode, transcaction)
+    descendand_samples = getallchildren(qcode_entity, transaction)
     print(descendand_samples)
     
     return ""
@@ -132,7 +133,7 @@ def getallchildren(qcode, transaction):
 
     Returns: List of sample objects
     """
-    scrit = new SearchCriteria()
+    scrit = SearchCriteria()
     scrit.addMatchClause(SearchCriteria.MatchClause
         .createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, qcode))
     fetch_opts = EnumSet.of(SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES)
