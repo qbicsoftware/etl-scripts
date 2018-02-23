@@ -119,9 +119,9 @@ def getentity(qcode, transaction):
         raise mtbutils.MTBdropboxerror("More than one patient "
             "id found for tumor sample: {}".format(grandparents_found))  
     
-    grandparent = grandparents_found[0]
+    grandparent = grandparents_found[0][0]
     print(grandparent)
-    
+
     return(grandparent.split('/')[-1])
 
 def getpbmc(qcode_entity, transaction):
