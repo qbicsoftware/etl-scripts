@@ -46,7 +46,7 @@ import os
 import sys
 import mtbutils
 import logging
-import configparser
+import ConfigParser
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
@@ -73,7 +73,7 @@ if cmd_status != 0:
 
 print(mtbutils.log_stardate("Mtbconverter executable found."))
 
-config = configparser.ConfigParser()
+config = ConfigParser.ConfigParser()
 config.read(PROPERTIES)
 
 api = HttpInvokerUtils.createServiceStub(IApplicationServerApi.class, config['openbis'].url, 5000)
