@@ -76,11 +76,9 @@ print(mtbutils.log_stardate("Mtbconverter executable found."))
 config = ConfigParser.ConfigParser()
 config.read(PROPERTIES)
 
-print(config['openbis'])
-
-api = HttpInvokerUtils.createServiceStub(IApplicationServerApi.__class__, config['openbis']['url'], 5000)
+api = HttpInvokerUtils.createServiceStub(IApplicationServerApi.__class__, config.get('openbis','url'), 5000)
  
-sessionToken = api.login(config['openbis'].user, config['openbis'].password)
+sessionToken = api.login(config.get('openbis','user'), config.get('openbis','password'))
 
 def process(transaction):
     """The main dropbox funtion.
