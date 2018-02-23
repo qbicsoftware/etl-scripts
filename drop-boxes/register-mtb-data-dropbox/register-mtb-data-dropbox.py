@@ -140,9 +140,10 @@ def getallchildren(qcode, transaction):
     scrit = SearchCriteria()
     scrit.addMatchClause(SearchCriteria.MatchClause
         .createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, qcode))
-    fetch_opts = EnumSet.of(SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES)
+    #fetch_opts = EnumSet.of(SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES)
+    fetch_opts = [SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES]
     sserv = transaction.getSearchService()
-    samples_found = sserv.searchForSamples(scrit)
+    samples_found = sserv.searchForSamples(scrit, fetch_opts)
     return samples_found
 
 
