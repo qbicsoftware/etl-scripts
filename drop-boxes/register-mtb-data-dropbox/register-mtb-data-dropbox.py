@@ -106,13 +106,10 @@ def getentityandpbmc(path, transcation):
 def getentity(qcode, transaction):
 
     tumor_sample = getsample(qcode, transaction)
-    print(tumor_sample)
-    print(tumor_sample.getSampleIdentifier())
     parent_ids = tumor_sample.getParentSampleIdentifiers()
-    print(len(parent_ids))
-    print(parent_ids)
-    for parent in tumor_sample.getParentSampleIdentifiers():
-        print(getsample(parent, transaction))
+    
+    for parent in parent_ids:
+        print(getsample(parent, transaction).getParentSampleIdentifiers())
     
     return(tumor_sample.getSample().getParents()[0].getCode())
 
