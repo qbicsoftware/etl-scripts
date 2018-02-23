@@ -83,6 +83,8 @@ api = HttpInvokerUtils.createServiceStub(IApplicationServerApi, config.get('open
  
 sessionToken = api.login(config.get('openbis','user'), config.get('openbis','password'))
 
+print(sessionToken)
+
 def process(transaction):
     """The main dropbox funtion.
     openBIS executes this function during an incoming file event.
