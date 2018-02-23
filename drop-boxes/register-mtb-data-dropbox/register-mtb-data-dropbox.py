@@ -96,8 +96,8 @@ def getentityandpbmc(path, transcation):
         raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(path))
     qcode = qcode_findings[0]
 
-    entity_id = getentity(qcode, transcation)
-    pbmc_id = getpbmc(qcode, transcation)
+    entity_id = getentity(qcode, transcation).split('/')[-1]
+    pbmc_id = getpbmc(entity_id, transcation)
 
     print(mtbutils.log_stardate('Found parent with id {}'.format(entity_id)))
 
@@ -108,13 +108,38 @@ def getentity(qcode, transaction):
     tumor_sample = getsample(qcode, transaction)
     parent_ids = tumor_sample.getParentSampleIdentifiers()
     
+    grandparents_found = []
     for parent in parent_ids:
-        print(getsample(parent, transaction).getParentSampleIdentifiers())
-    
-    return(tumor_sample.getSample().getParents()[0].getCode())
+        grandparents_found.append(getsample(parent, transaction).getParentSampleIdentifiers())
 
-def getpbmc(qcode, transaction):
+    if not grandparents_found:
+        raise mtbutils.MTBdropboxerror('No corresponding patient for tumor sample found.')
+    if len(grandparents_found) > 1:
+        raise mtbutils.MTBdropboxerror("More than one patient "
+            "id found for tumor sample: {}".format(grandparents_found))  
+    return(grandparents_found[0])
+
+def getpbmc(qcode_entity, transaction):
+    
+    descendand_samples = getallchildren(qcode, transcaction)
+    print(descendand_samples)
+    
     return ""
+
+def getallchildren(qcode, transaction):
+    """Fetch all children samples of a given
+    sample code and return them as a list
+
+    Returns: List of sample objects
+    """
+    scrit = new SearchCriteria()
+    scrit.addMatchClause(SearchCriteria.MatchClause
+        .createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, qcode))
+    fetch_opts = EnumSet.of(SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES)
+    sserv = transaction.getSearchService()
+    samples_found = sserv.searchForSamples(scrit)
+    return samples_found
+
 
 def getsample(qcode, transaction):
     sserv = transaction.getSearchService()
