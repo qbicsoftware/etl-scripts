@@ -138,7 +138,7 @@ def getallchildren(qcode, transaction):
     Returns: List of sample objects
     """
     sample = getsample(qcode, transaction)
-    print(sample.getChildren())
+    print(sample.getSample())
     sserv = transaction.getSearchService()
     fetch_opt = SampleFetchOption()
     fetch_opt.withChildrenUsing(fetch_opt)
