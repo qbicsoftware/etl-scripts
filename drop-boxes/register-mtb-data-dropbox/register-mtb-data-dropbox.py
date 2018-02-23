@@ -76,7 +76,9 @@ print(mtbutils.log_stardate("Mtbconverter executable found."))
 config = ConfigParser.ConfigParser()
 config.read(PROPERTIES)
 
-api = HttpInvokerUtils.createServiceStub(IApplicationServerApi.__class__, config['openbis'].url, 5000)
+print(config['openbis'])
+
+api = HttpInvokerUtils.createServiceStub(IApplicationServerApi.__class__, config['openbis']['url'], 5000)
  
 sessionToken = api.login(config['openbis'].user, config['openbis'].password)
 
