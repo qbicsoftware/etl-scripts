@@ -167,6 +167,9 @@ def getallchildren(qcode, transaction):
 
     result = api.searchSamples(sessionToken, scrit, fetch_opt)
     
+    print(result)
+    print(result.getObjects())
+
     for sample in result.getObjects():
         print(sample.getChildren())
 
