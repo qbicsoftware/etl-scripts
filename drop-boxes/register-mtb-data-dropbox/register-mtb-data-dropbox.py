@@ -54,7 +54,7 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
-import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi
+from ch.ethz.sis.openbis.generic.asapi.v3 import IApplicationServerApi
 from ch.systemsx.cisd.common.spring import HttpInvokerUtils
 
 # Path to checksum.py
