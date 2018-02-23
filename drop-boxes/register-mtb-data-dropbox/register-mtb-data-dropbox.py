@@ -49,13 +49,14 @@ import logging
 import ConfigParser
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
-from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions
+from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleFetchOptions
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3 import IApplicationServerApi
 from ch.systemsx.cisd.common.spring import HttpInvokerUtils
+from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchCriteria
+
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
@@ -92,9 +93,6 @@ def process(transaction):
     file_list = getfiles(incoming_path)
     getentityandpbmc(file_list[0], transaction)
     raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
-
-
-
 
 
 def getfiles(path):
@@ -158,17 +156,17 @@ def getallchildren(qcode, transaction):
     sample code and return them as a list
 
     Returns: List of sample objects
-    """
-    sample = getsample(qcode, transaction)
-    print(sample.getSample().getChildren())
-    sserv = transaction.getSearchService()
-    fetch_opt = SampleFetchOption()
+    """ 
+    fetch_opt = SampleFetchOptions()
     fetch_opt.withChildrenUsing(fetch_opt)
 
-    scrit = SearchCriteria()
-    scrit.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, qcode))
-    sserv.searchForSamples(scrit, fetch_opt)
+    scrit = SampleSearchCriteria()
+    scrit.withType().withCode().thatEquals(qcode)
+
+    result = api.searchSamples(sessionToken, scrit, fetch_opt)
+    
+    for sample in result:
+        print(sample.getChildren())
 
     return sample
 
