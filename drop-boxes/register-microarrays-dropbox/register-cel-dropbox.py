@@ -19,6 +19,7 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 mftPattern = re.compile('I[0-9]{2}R[0-9]{3}[a-z][0-9]{2}')
 FORMAT_TO_DATASET_TYPE = {'.cel':'Q_MA_RAW_DATA', '.txt':'Q_MA_AGILENT_DATA'}
+ARCHIVE_FORMATS = ['.gz']
 expType = "Q_MICROARRAY_MEASUREMENT"
 
 def isExpected(identifier):
@@ -156,8 +157,8 @@ def process(transaction):
                 extIDs = mftPattern.findall(firstFile)
 
                 stem, ext = os.path.splitext(firstFile)
-                if ext.endswith(".gz"):
-                        ext = ext.replace(".gz","")
+                if ext in archives:
+                        stem, ext = os.path.splitext(stem)
                 dataSetType = FORMAT_TO_DATASET_TYPE[ext.lower()]
                 dataSet = transaction.createNewDataSet(dataSetType)
                 if extIDs:
