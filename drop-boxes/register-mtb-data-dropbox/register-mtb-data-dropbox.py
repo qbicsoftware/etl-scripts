@@ -47,8 +47,8 @@ import sys
 import mtbutils
 import logging
 import ch.systemsx.cisd.etlserver.registrator.api.v2
-from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
-from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
+from ch.systemsx.cisd.openbis.generic.shared.api.v2.dto import SearchCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v2.dto import SampleFetchOption
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
@@ -137,14 +137,10 @@ def getallchildren(qcode, transaction):
 
     Returns: List of sample objects
     """
-    scrit = SearchCriteria()
-    scrit.addMatchClause(SearchCriteria.MatchClause
-        .createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, qcode))
-    #fetch_opts = EnumSet.of(SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES)
-    fetch_opts = [SampleFetchOption.DESCENDANTS, SampleFetchOption.PROPERTIES]
-    sserv = transaction.getSearchService()
-    samples_found = sserv.searchForSamples(scrit, fetch_opts)
-    return samples_found
+    sample = getsample(qcode, transaction)
+    print(sample.getContainedSamples())
+    
+    return sample
 
 
 def getsample(qcode, transaction):
