@@ -156,6 +156,8 @@ def process(transaction):
                 extIDs = mftPattern.findall(firstFile)
 
                 stem, ext = os.path.splitext(firstFile)
+                if ext.endswith(".gz")
+                        ext = ext.replace(".gz","")
                 dataSetType = FORMAT_TO_DATASET_TYPE[ext.lower()]
                 dataSet = transaction.createNewDataSet(dataSetType)
                 if extIDs:
