@@ -148,12 +148,12 @@ def getentity(qcode, transaction):
 
 def getpbmc(qcode_entity, transaction):
     
-    descendand_samples = getallchildren(qcode_entity, transaction)
+    descendand_samples = getallchildren(qcode_entity)
     print(descendand_samples)
     
     return ""
 
-def getallchildren(qcode, transaction):
+def getallchildren(qcode):
     """Fetch all children samples of a given
     sample code and return them as a list
 
@@ -163,7 +163,7 @@ def getallchildren(qcode, transaction):
     fetch_opt.withChildrenUsing(fetch_opt)
 
     scrit = SampleSearchCriteria()
-    scrit.withType().withCode().thatEquals(qcode)
+    scrit.withCode().thatEquals(qcode)
 
     result = api.searchSamples(sessionToken, scrit, fetch_opt)
     
