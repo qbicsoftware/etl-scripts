@@ -47,8 +47,8 @@ import sys
 import mtbutils
 import logging
 import ch.systemsx.cisd.etlserver.registrator.api.v2
-from ch.systemsx.cisd.openbis.generic.shared.api.v2.dto import SearchCriteria
-from ch.systemsx.cisd.openbis.generic.shared.api.v2.dto import SampleFetchOption
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
