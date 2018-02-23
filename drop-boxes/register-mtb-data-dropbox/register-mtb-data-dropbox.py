@@ -49,7 +49,7 @@ import logging
 import ConfigParser
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult
+from ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search import SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleFetchOptions
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
@@ -167,7 +167,7 @@ def getallchildren(qcode, transaction):
 
     result = api.searchSamples(sessionToken, scrit, fetch_opt)
     
-    for sample in result:
+    for sample in result.getObjects():
         print(sample.getChildren())
 
     return sample
