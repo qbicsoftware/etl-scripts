@@ -49,6 +49,10 @@ import logging
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions
+import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
