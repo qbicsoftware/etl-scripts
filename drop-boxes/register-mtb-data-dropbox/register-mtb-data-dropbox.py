@@ -46,6 +46,7 @@ import os
 import sys
 import mtbutils
 import logging
+import configparser
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SampleFetchOption
@@ -53,11 +54,15 @@ import ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search.SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions.SampleFetchOptions
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
+import ch.ethz.sis.openbis.generic.asapi.v3.IApplicationServerApi
+import ch.systemsx.cisd.common.spring.HttpInvokerUtils
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
 
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
+
+PROPERTIES = '/etc/openbis.properties'
 
 cmd_status = mtbutils.mtbconverter('-h')
 
@@ -67,6 +72,13 @@ if cmd_status != 0:
     raise mtbutils.MTBdropboxerror("Mtbconverter could not be loaded: " + cmd_status)
 
 print(mtbutils.log_stardate("Mtbconverter executable found."))
+
+config = configparser.ConfigParser()
+config.read(PROPERTIES)
+
+api = HttpInvokerUtils.createServiceStub(IApplicationServerApi.class, config['openbis'].url, 5000)
+ 
+sessionToken = api.login(config['openbis'].user, config['openbis'].password)
 
 def process(transaction):
     """The main dropbox funtion.
@@ -78,6 +90,10 @@ def process(transaction):
     file_list = getfiles(incoming_path)
     getentityandpbmc(file_list[0], transaction)
     raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
+
+
+
+
 
 def getfiles(path):
     """Retrieve all the absolute paths recursively from
