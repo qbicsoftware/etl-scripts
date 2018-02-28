@@ -164,9 +164,11 @@ def getallchildren(qcode):
     """ 
     fetch_opt = SampleFetchOptions()
     fetch_opt.withChildrenUsing(fetch_opt)
-
+    fetch_opt.withProperties()
+	
     scrit = SampleSearchCriteria()
     scrit.withCode().thatEquals(qcode)
+   
 
     result = api.searchSamples(sessionToken, scrit, fetch_opt)
     
@@ -175,8 +177,13 @@ def getallchildren(qcode):
 
     for sample in result.getObjects():
 
-        print(sample.getCode)
-        print(sample.getChildren().getProperty("Q_PRIMARY_TISSUES"))
+        print(sample.getCode())
+        print(sample.getChildren())
+	for kid in sample.getChildren():
+		props = kid.getProperties()
+		print(props['Q_PRIMARY_TISSUE'])
+		for grandkid in kid.getChildren():
+		   print(grandkid.getCode())	
 
     return sample
 
