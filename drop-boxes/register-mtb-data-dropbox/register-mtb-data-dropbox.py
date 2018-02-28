@@ -171,7 +171,7 @@ def getallchildren(qcode):
     print(result.getObjects())
 
     for sample in result.getObjects():
-        print(sample.getChildren())
+        print(sample.getCode)
 
     return sample
 
