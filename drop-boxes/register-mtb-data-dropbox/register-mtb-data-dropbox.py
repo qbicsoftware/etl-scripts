@@ -83,7 +83,10 @@ api = HttpInvokerUtils.createServiceStub(IApplicationServerApi, config.get('open
  
 sessionToken = api.login(config.get('openbis','user'), config.get('openbis','password'))
 
-print(sessionToken)
+if sessionToken:
+    mtbutils.log_stardate("Successfully authenticated against the openBIS API.")
+else:
+    raise mtbutils.MTBdropboxerror("Could not authenticate against openBIS.")
 
 def process(transaction):
     """The main dropbox funtion.
@@ -171,7 +174,9 @@ def getallchildren(qcode):
     print(result.getObjects())
 
     for sample in result.getObjects():
+
         print(sample.getCode)
+        print(sample.getChildren().getProperty("Q_PRIMARY_TISSUES"))
 
     return sample
 
