@@ -143,7 +143,7 @@ def proc_fastq(fastq_file, transaction):
             .format(qbiccode_f1[0], qbiccode_f2[0]))
     space, project = space_and_project(qbiccode_f1[0])
     search_service = transaction.getSearchService()
-    experiments = search_service.listExperiments('\/{}\/{}'.format(space, project))
+    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
     print(experiments)
     new_exp_id = len(experiments) + 1
     
