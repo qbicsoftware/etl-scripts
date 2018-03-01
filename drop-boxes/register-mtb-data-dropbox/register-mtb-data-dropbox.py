@@ -281,7 +281,7 @@ def getsamplev3(qcode):
     scrit = SampleSearchCriteria()
     scrit.withCode().thatEquals(qcode)
 
-    SampleFetchOptions fetchOptions = SampleFetchOptions()
+    fetchOptions = SampleFetchOptions()
     fetchOptions.withProperties()
 
     result = api.searchSamples(sessionToken, scrit, fetchOptions)
