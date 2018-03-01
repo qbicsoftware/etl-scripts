@@ -92,10 +92,35 @@ def process(transaction):
     incoming_path = transaction.getIncoming().getAbsolutePath()
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
+    # Iterate through the incoming path and get all files
     file_list = getfiles(incoming_path)
-    getentityandpbmc(file_list[0], transaction)
-    raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
+    
+    # Determine the types of incoming files and route the process
+    unknown_file_types = []
+    for in_file in file_list:
+        if 'fastq' in in_file:
+            proc_fastq(in_file)
+        if in_file.endswith('.zip'):
+            proc_mtb(in_file)
+        else:
+            unknown_file_types.append(in_file)
 
+    # Check, if there are files of unknown type left
+    if unknown_file_types:
+        for file_name in unknown_file_types:
+            mtbutils.log_stardate('Unknown file type: {}'.format(file_name))
+        raise mtbutils.MTBdropboxerror('We have found files that could not be processed!'
+            'Manual intervention needed.')
+
+    mtbutils.log_stardate('Processing finished.')
+
+def proc_fastq(fastq_file):
+    """Register fastq as dataset in openBIS"""
+    pass
+
+def proc_mtb(zip_archive):
+    """Register archive and submit to CentraXX"""
+    pass
 
 def getfiles(path):
     """Retrieve all the absolute paths recursively from
@@ -112,6 +137,13 @@ def getfiles(path):
     return file_list
 
 def getentityandpbmc(path, transcation):
+    """Parses the QBiC barcode from the incoming file path
+    and requests the corresponding QBiC patient id and
+    PBMC sample id for further processing the registration 
+    of tumor and blood sequencing data.
+
+    Returns: Tuple of (path, entity_id, pbmc_id)
+    """
     qcode_findings = QCODE_REG.findall(path)
     if not qcode_findings:
         raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(path))
@@ -128,7 +160,11 @@ def getentityandpbmc(path, transcation):
     return (path, entity_id, pbmc_id)
 
 def getentity(qcode, transaction):
-
+    """Find the corresponding patient id (Q_BIOLOGICAL_ENTITY)
+    for a given tumor sample DNA (Q_TEST_SAMPLE)
+    
+    Returns: The qbic barcode for the patient
+    """
     tumor_sample = getsample(qcode, transaction)
     parent_ids = tumor_sample.getParentSampleIdentifiers()
     
@@ -143,11 +179,17 @@ def getentity(qcode, transaction):
             "id found for tumor sample: {}".format(grandparents_found))  
     
     grandparent = grandparents_found[0][0]
-    print(grandparent)
-
+    
     return(grandparent.split('/')[-1])
 
 def getpbmc(qcode_entity, transaction):
+    """Searches for corresponding blood samples (type PBMC)
+    for a given patient ID. It is expected, that a given patient
+    has only one DNA sample extracted from PBMC as reference for
+    somatic variant calling.
+
+    Returns: The QBiC barcode of the corresponding PBMC Q_TEST_SAMPLE
+    """
     pbmc_samples = []
     descendand_samples = getallchildren(qcode_entity)
     for sample in descendand_samples:
