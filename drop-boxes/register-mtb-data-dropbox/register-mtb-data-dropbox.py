@@ -131,9 +131,11 @@ def space_and_project(qbiccode):
     Returns: Tuple (space, project)
     """
     sample = getsamplev3(qbiccode)
-    print(sample.getSpace())
+    space = sample.getSpace()
+    project = qbiccode[:6]
 
-    return "",""
+    print(space+'/'+project)
+    return space, project
 
 
 def proc_mtb(zip_archive):
@@ -282,11 +284,11 @@ def getsamplev3(qcode):
     scrit = SampleSearchCriteria()
     scrit.withCode().thatEquals(qcode)
 
-    fetchOptions = SampleFetchOptions()
-    fetchOptions.withProperties()
+    fetch_opt = SampleFetchOptions()
+    fetch_opt.withProperties()
     fetch_opt.withSpace()
 
-    result = api.searchSamples(sessionToken, scrit, fetchOptions)
+    result = api.searchSamples(sessionToken, scrit, fetch_opt)
     samples = []
     for sample in result.getObjects():
         samples.append(sample)
