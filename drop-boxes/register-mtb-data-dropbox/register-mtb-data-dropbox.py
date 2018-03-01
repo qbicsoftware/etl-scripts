@@ -190,9 +190,9 @@ def getallchildren(qcode):
         # Q_BIOLOGICAL_SAMPLE level
         for kid in sample.getChildren():
             children_samples.append(kid)
-            # Q_B
+            # Q_TEST_SAMPLE level
             for grandkid in kid.getChildren():
-                sample.append(grandkid)
+                children_samples.append(grandkid)
 
     return children_samples
 
