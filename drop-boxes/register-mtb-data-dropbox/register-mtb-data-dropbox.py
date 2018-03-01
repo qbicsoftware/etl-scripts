@@ -116,7 +116,24 @@ def process(transaction):
 
 def proc_fastq(fastq_file):
     """Register fastq as dataset in openBIS"""
+    qbiccode = QCODE_REG.findall(fastq_file)
+    if not qbiccode:
+        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(fastq_file))
+    if len(qbiccode) > 1:
+        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(fastq_file))
+    space = space_and_project(qbiccode[0])
     pass
+
+def space_and_project(qbiccode):
+    """Determines the space and project of a given
+    sample id.
+    
+    Returns: Tuple (space, project)
+    """
+    sample = getsamplev3(qbiccode)
+
+    return "",""
+
 
 def proc_mtb(zip_archive):
     """Register archive and submit to CentraXX"""
@@ -254,4 +271,18 @@ def getsample(qcode, transaction):
         raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
     
     return result[0]
+
+def getsamplev3(qcode):
+    """Get a sample object of a given identifier
+    in API V3 style
+
+    Returns: A sample (v3) object
+    """
+    scrit = SampleSearchCriteria()
+    scrit.withCode().thatEquals(qcode)
+
+    result = api.searchSamples(sessionToken, scrit)
+    print(result)
+    return result
+    
 
