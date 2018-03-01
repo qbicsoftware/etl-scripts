@@ -132,9 +132,9 @@ def space_and_project(qbiccode):
     """
     sample = getsamplev3(qbiccode)
     space = sample.getSpace()
-    project = qbiccode[:6]
+    project = qbiccode[:5]
 
-    print(space+'/'+project)
+    print(str(space)+'/'+project)
     return space, project
 
 
