@@ -131,6 +131,7 @@ def space_and_project(qbiccode):
     Returns: Tuple (space, project)
     """
     sample = getsamplev3(qbiccode)
+    print(sample.getSpace())
 
     return "",""
 
