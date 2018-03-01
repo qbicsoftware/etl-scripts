@@ -64,6 +64,9 @@ QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 PROPERTIES = '/etc/openbis.properties'
 
+NGS_SAMPLE_TYPE = 'Q_NGS_SINGE_SAMPLE_RUN'
+NGS_EXP_TYPE = 'Q_NGS_MEASUREMENT'
+
 cmd_status = mtbutils.mtbconverter('-h')
 
 # Print the return code from the subprocess command
@@ -97,13 +100,23 @@ def process(transaction):
     
     # Determine the types of incoming files and route the process
     unknown_file_types = []
+    fastqs_tumor = []
+    fastqs_normal = []
     for in_file in file_list:
         if 'fastq' in in_file:
-            proc_fastq(in_file)
+            if 'normal' in in_file:
+                fastqs_normal.append(in_file)
+            if 'tumor' in in_file:
+                fastqs_tumor.append(in_file)
+            else:
+                unknown_file_types.append(in_file)
         if in_file.endswith('.zip'):
             proc_mtb(in_file)
         else:
             unknown_file_types.append(in_file)
+    
+    proc_fastq(fastqs_tumor, transaction)
+    proc_fastq(fastqs_normal, transaction)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
@@ -114,15 +127,25 @@ def process(transaction):
 
     mtbutils.log_stardate('Processing finished.')
 
-def proc_fastq(fastq_file):
+def proc_fastq(fastq_file, transaction):
     """Register fastq as dataset in openBIS"""
-    qbiccode = QCODE_REG.findall(fastq_file)
-    if not qbiccode:
+    if len(fastq_file) != 2:
+        mtbutils.MTBdropboxerror('Expecting paired end reads files, found only {}'
+            .format(len(fastq_file)))
+    qbiccode_f1 = QCODE_REG.findall(fastq_file[0])
+    qbiccode_f2 = QCODE_REG.findall(fastq_file[1])
+    if not qbiccode_f1 or not qbiccode_f2:
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(fastq_file))
-    if len(qbiccode) > 1:
+    if len(qbiccode_f1) > 1 or len(qbiccode_f2) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(fastq_file))
-    space, project = space_and_project(qbiccode[0])
-
+    if qbiccode_f1[0] != qbiccode_f2[0]:
+        raise mtbutils.MTBdropboxerror('Found two different barcodes for read pair: {}<->{}'
+            .format(qbiccode_f1[0], qbiccode_f2[0]))
+    space, project = space_and_project(qbiccode_f1[0])
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments("/" + space + "/" + project)
+    new_exp_id = len(experiments) + 1
+    
     pass
 
 def space_and_project(qbiccode):
