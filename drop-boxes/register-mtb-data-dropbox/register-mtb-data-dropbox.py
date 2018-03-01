@@ -284,7 +284,7 @@ def getsamplev3(qcode):
 
     fetchOptions = SampleFetchOptions()
     fetchOptions.withProperties()
-    fetch_opt.withSpace()
+    fetchOptions.withSpace()
 
     result = api.searchSamples(sessionToken, scrit, fetchOptions)
     samples = []
