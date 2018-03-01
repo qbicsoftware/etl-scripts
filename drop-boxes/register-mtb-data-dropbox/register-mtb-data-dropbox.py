@@ -288,7 +288,8 @@ def getsamplev3(qcode):
     samples = []
     for sample in result.getObjects():
         samples.append(sample)
-    print(samples)
-    return samples
+    if len(sample) > 1:
+        raise mtbutils.MTBdropboxerror('More than one sample found with identifier {}'.format(qcode))
+    return sample[0]
     
 
