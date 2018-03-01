@@ -121,7 +121,8 @@ def proc_fastq(fastq_file):
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(fastq_file))
     if len(qbiccode) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(fastq_file))
-    space = space_and_project(qbiccode[0])
+    space, project = space_and_project(qbiccode[0])
+
     pass
 
 def space_and_project(qbiccode):
@@ -131,10 +132,9 @@ def space_and_project(qbiccode):
     Returns: Tuple (space, project)
     """
     sample = getsamplev3(qbiccode)
-    space = sample.getSpace()
+    space = str(sample.getSpace())
     project = qbiccode[:6]
 
-    print(space+'/'+project)
     return space, project
 
 
