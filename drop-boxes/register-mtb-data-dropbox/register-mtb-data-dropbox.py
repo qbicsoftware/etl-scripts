@@ -129,6 +129,8 @@ def process(transaction):
 
 def proc_fastq(fastq_file, transaction):
     """Register fastq as dataset in openBIS"""
+
+    # Check, if there are file pairs present (paired-end data!)
     if len(fastq_file) != 2:
         raise mtbutils.MTBdropboxerror('Expecting paired end reads files, found only {}'
             .format(len(fastq_file)))
@@ -141,12 +143,14 @@ def proc_fastq(fastq_file, transaction):
     if qbiccode_f1[0] != qbiccode_f2[0]:
         raise mtbutils.MTBdropboxerror('Found two different barcodes for read pair: {}<->{}'
             .format(qbiccode_f1[0], qbiccode_f2[0]))
+    # Get space and project ids
     space, project = space_and_project(qbiccode_f1[0])
     search_service = transaction.getSearchService()
     experiments = search_service.listExperiments('/{}/{}'.format(space, project))
     print(experiments)
     new_exp_id = len(experiments) + 1
-    
+    print(new_exp_id)
+
     pass
 
 def space_and_project(qbiccode):
