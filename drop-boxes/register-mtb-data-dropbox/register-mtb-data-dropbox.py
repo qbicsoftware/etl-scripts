@@ -133,7 +133,7 @@ def space_and_project(qbiccode):
     """
     sample = getsamplev3(qbiccode)
     space = str(sample.getSpace())
-    project = qbiccode[:6]
+    project = qbiccode[:5]
 
     return space, project
 
