@@ -52,7 +52,6 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search import SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleFetchOptions
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3 import IApplicationServerApi
 from ch.systemsx.cisd.common.spring import HttpInvokerUtils
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchCriteria
@@ -76,8 +75,6 @@ print(mtbutils.log_stardate("Mtbconverter executable found."))
 
 config = ConfigParser.ConfigParser()
 config.read(PROPERTIES)
-
-print(config.get('openbis', 'url'))
 
 api = HttpInvokerUtils.createServiceStub(IApplicationServerApi, config.get('openbis','url') + IApplicationServerApi.SERVICE_URL, 5000)
  
@@ -126,6 +123,7 @@ def getentityandpbmc(path, transcation):
     pbmc_id = getpbmc(entity_id, transcation)
 
     print(mtbutils.log_stardate('Found parent with id {}'.format(entity_id)))
+    print(mtbutils.log_stardate('Found corresponding PBMC id {}'.format(pbmc_id)))
 
     return (path, entity_id, pbmc_id)
 
@@ -150,11 +148,26 @@ def getentity(qcode, transaction):
     return(grandparent.split('/')[-1])
 
 def getpbmc(qcode_entity, transaction):
-    
+    pbmc_samples = []
     descendand_samples = getallchildren(qcode_entity)
-    print(descendand_samples)
+    for sample in descendand_samples:
+        if sample.getProperty('Q_PRIMARY_TISSUE') == 'PBMC':
+            pbmc_samples.append(sample)
+    if not pbmc_samples:
+        raise mtbutils.MTBdropboxerror("Could not find any PBMC sample.")
+    if len(pbmc_samples) > 1:
+        raise mtbutils.MTBdropboxerror("More than 1 PBMC sample found for entity {}"
+            .format(qcode_entity))
     
-    return ""
+    # Get the id of the attached Q_TEST_SAMPLE
+    pbmc_id = ""
+    try:
+        children = pbmc_samples[0].getChildren()
+        pbmc_id = children[0].getCode()
+    except Exception as exc:
+        mtbutils.MTBdropboxerror("Could not access Q_TEST_SAMPLE code for PBMC in {}"
+            .format(qcode_entity))    
+    return pbmc_id
 
 def getallchildren(qcode):
     """Fetch all children samples of a given
@@ -169,26 +182,24 @@ def getallchildren(qcode):
     scrit = SampleSearchCriteria()
     scrit.withCode().thatEquals(qcode)
    
+    children_samples = []
 
     result = api.searchSamples(sessionToken, scrit, fetch_opt)
     
-    print(result)
-    print(result.getObjects())
-
     for sample in result.getObjects():
+        # Q_BIOLOGICAL_SAMPLE level
+        for kid in sample.getChildren():
+            children_samples.append(kid)
+            # Q_B
+            for grandkid in kid.getChildren():
+                sample.append(grandkid)
 
-        print(sample.getCode())
-        print(sample.getChildren())
-	for kid in sample.getChildren():
-		props = kid.getProperties()
-		print(props['Q_PRIMARY_TISSUE'])
-		for grandkid in kid.getChildren():
-		   print(grandkid.getCode())	
-
-    return sample
+    return children_samples
 
 
 def getsample(qcode, transaction):
+    """Resturns a immutable sample object for a given
+    QBIC barcode."""
     sserv = transaction.getSearchService()
     scrit = SearchCriteria()
     scrit.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
