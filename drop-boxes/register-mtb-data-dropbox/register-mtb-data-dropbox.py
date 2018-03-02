@@ -144,7 +144,7 @@ def proc_fastq(fastq_file, transaction):
     if qbiccode_f1[0] != qbiccode_f2[0]:
         raise mtbutils.MTBdropboxerror('Found two different barcodes for read pair: {}<->{}'
             .format(qbiccode_f1[0], qbiccode_f2[0]))
-            
+
     # Get space and project ids
     space, project = space_and_project(qbiccode_f1[0])
     search_service = transaction.getSearchService()
@@ -157,7 +157,7 @@ def proc_fastq(fastq_file, transaction):
     new_sample_id = '/{space}/{project}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
-    new_ngs_sample = transaction.createNewSample('/' + space + '/' + new_sample_id, NGS_SAMPLE_TYPE)
+    new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
     new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
