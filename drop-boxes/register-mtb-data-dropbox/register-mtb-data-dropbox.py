@@ -156,6 +156,9 @@ def proc_fastq(fastq_file, transaction):
         space=space, project=project, number=len(experiments) + 1)
     new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
+
+    mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
+        .format(sample=new_sample_id, experiment=new_exp_id))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
     new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
