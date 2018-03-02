@@ -123,11 +123,11 @@ def process(transaction):
     # Check, if there are files of unknown type left
     if unknown_file_types:
         for file_name in unknown_file_types:
-            mtbutils.log_stardate('Unknown file type: {}'.format(file_name))
+            print(mtbutils.log_stardate('Unknown file type: {}'.format(file_name)))
         raise mtbutils.MTBdropboxerror('We have found files that could not be processed!'
             'Manual intervention needed.')
 
-    mtbutils.log_stardate('Processing finished.')
+    print(mtbutils.log_stardate('Processing finished.'))
 
 def proc_fastq(fastq_file, transaction, exp_id):
     """Register fastq as dataset in openBIS"""
@@ -156,8 +156,8 @@ def proc_fastq(fastq_file, transaction, exp_id):
         space=space, project=project, number=len(experiments) + exp_id)
     new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
-    mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
-        .format(sample=new_sample_id, experiment=new_exp_id))
+    print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
+        .format(sample=new_sample_id, experiment=new_exp_id)))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
     new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
@@ -167,6 +167,8 @@ def proc_fastq(fastq_file, transaction, exp_id):
     data_set = transaction.createNewDataSet(NGS_RAW_DATA)
     data_set.setMeasuredData(False)
     data_set.setSample(new_ngs_sample)
+
+    print(fastq_file)
 
     # Attach the raw data to the 
     for raw_data in fastq_file:
