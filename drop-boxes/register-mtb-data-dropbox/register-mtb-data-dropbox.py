@@ -108,7 +108,7 @@ def process(transaction):
         if 'fastq' in in_file:
             if 'normal' in in_file:
                 fastqs_normal.append(find_pbmc(in_file, transaction))
-            if 'tumor' in in_file:
+            elif 'tumor' in in_file:
                 fastqs_tumor.append(in_file)
             else:
                 unknown_file_types.append(in_file)
