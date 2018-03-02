@@ -184,8 +184,6 @@ def proc_fastq(fastq_file, transaction, exp_id):
     data_set.setMeasuredData(False)
     data_set.setSample(new_ngs_sample)
 
-    print(fastq_file)
-
     # Attach the raw data to the 
     for raw_data in fastq_file:
         transaction.moveFile(raw_data, data_set)
