@@ -67,8 +67,7 @@ PROPERTIES = '/etc/openbis.properties'
 NGS_SAMPLE_TYPE = 'Q_NGS_SINGE_SAMPLE_RUN'
 NGS_EXP_TYPE = 'Q_NGS_MEASUREMENT'
 NGS_RAW_DATA = 'Q_NGS_RAW_DATA'
-
-EXPERIMENT_COUNTER = 0
+EXPERIMENT_ID = 0
 
 cmd_status = mtbutils.mtbconverter('-h')
 
@@ -118,8 +117,8 @@ def process(transaction):
         else:
             unknown_file_types.append(in_file)
     
-    proc_fastq(fastqs_tumor, transaction)
-    proc_fastq(fastqs_normal, transaction)
+    proc_fastq(fastqs_tumor, transaction, 0)
+    proc_fastq(fastqs_normal, transaction, 1)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
@@ -130,7 +129,7 @@ def process(transaction):
 
     mtbutils.log_stardate('Processing finished.')
 
-def proc_fastq(fastq_file, transaction):
+def proc_fastq(fastq_file, transaction, exp_id):
     """Register fastq as dataset in openBIS"""
 
     # Check, if there are file pairs present (paired-end data!)
@@ -153,12 +152,10 @@ def proc_fastq(fastq_file, transaction):
     experiments = search_service.listExperiments('/{}/{}'.format(space, project))
     
     # We design a new experiment identifier
-    # 
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments) + EXPERIMENT_COUNTER)
+        space=space, project=project, number=len(experiments) + exp_id)
     new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
-    EXPERIMENT_COUNTER += 1
     mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
