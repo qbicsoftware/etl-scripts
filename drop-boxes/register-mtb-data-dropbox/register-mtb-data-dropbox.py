@@ -107,7 +107,7 @@ def process(transaction):
     for in_file in file_list:
         if 'fastq' in in_file:
             if 'normal' in in_file:
-                fastqs_normal.append(in_file)
+                fastqs_normal.append(find_pbmc(in_file))
             if 'tumor' in in_file:
                 fastqs_tumor.append(in_file)
             else:
@@ -129,6 +129,9 @@ def process(transaction):
 
     print(mtbutils.log_stardate('Processing finished.'))
 
+def find_pbmc(in_file):
+    return in_file
+
 def proc_fastq(fastq_file, transaction, exp_id):
     """Register fastq as dataset in openBIS"""
 
@@ -136,8 +139,8 @@ def proc_fastq(fastq_file, transaction, exp_id):
     if len(fastq_file) != 2:
         raise mtbutils.MTBdropboxerror('Expecting paired end reads files, found only {}'
             .format(len(fastq_file)))
-    qbiccode_f1 = QCODE_REG.findall(fastq_file[0])
-    qbiccode_f2 = QCODE_REG.findall(fastq_file[1])
+    qbiccode_f1 = QCODE_REG.findall(os.path.basename(fastq_file[0]))
+    qbiccode_f2 = QCODE_REG.findall(os.path.basename(fastq_file[1]))
     if not qbiccode_f1 or not qbiccode_f2:
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(fastq_file))
     if len(qbiccode_f1) > 1 or len(qbiccode_f2) > 1:
