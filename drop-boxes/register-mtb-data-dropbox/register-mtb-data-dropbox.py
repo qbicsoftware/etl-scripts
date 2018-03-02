@@ -154,7 +154,7 @@ def proc_fastq(fastq_file, transaction):
     # 
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=len(experiments) + 1)
-    new_sample_id = '/{space}/{project}/NGS{barcode}'.format(
+    new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
