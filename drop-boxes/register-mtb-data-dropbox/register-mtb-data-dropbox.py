@@ -130,14 +130,20 @@ def process(transaction):
     print(mtbutils.log_stardate('Processing finished.'))
 
 def find_pbmc(in_file, transaction):
-    barcode = QCODE_REG.findall(os.path.basename(in_file))
+    basename = os.path.basename(in_file)
+    parent_dir = os.path.dirname(in_file)
+    barcode = QCODE_REG.findall(basename)
     if not barcode:
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(in_file))
     if len(set(barcode)) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
     _, _, pbmc = getentityandpbmc(barcode[0], transaction)
-    print(pbmc)
-    return in_file
+    
+    new_name = basename.replace(barcode[0], pbmc)
+    new_path = os.path.join(parent_dir, new_name)
+    os.rename(in_file, new_path)
+
+    return new_path
 
 def proc_fastq(fastq_file, transaction, exp_id):
     """Register fastq as dataset in openBIS"""
