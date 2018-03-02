@@ -107,7 +107,7 @@ def process(transaction):
     for in_file in file_list:
         if 'fastq' in in_file:
             if 'normal' in in_file:
-                fastqs_normal.append(find_pbmc(in_file))
+                fastqs_normal.append(find_pbmc(in_file, transaction))
             if 'tumor' in in_file:
                 fastqs_tumor.append(in_file)
             else:
@@ -129,7 +129,14 @@ def process(transaction):
 
     print(mtbutils.log_stardate('Processing finished.'))
 
-def find_pbmc(in_file):
+def find_pbmc(in_file, transaction):
+    barcode = QCODE_REG.findall(os.path.basename(in_file))
+    if not barcode:
+        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(in_file))
+    if len(set(barcode)) > 1:
+        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
+    _, _, pbmc = getentityandpbmc(barcode[0], transaction)
+    print(pbmc)
     return in_file
 
 def proc_fastq(fastq_file, transaction, exp_id):
