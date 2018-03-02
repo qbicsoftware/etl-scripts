@@ -112,7 +112,7 @@ def process(transaction):
                 fastqs_tumor.append(in_file)
             else:
                 unknown_file_types.append(in_file)
-        if in_file.endswith('.zip'):
+        elif in_file.endswith('.zip'):
             proc_mtb(in_file)
         else:
             unknown_file_types.append(in_file)
