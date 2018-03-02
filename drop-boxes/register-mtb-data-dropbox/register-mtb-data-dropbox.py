@@ -66,6 +66,7 @@ PROPERTIES = '/etc/openbis.properties'
 
 NGS_SAMPLE_TYPE = 'Q_NGS_SINGE_SAMPLE_RUN'
 NGS_EXP_TYPE = 'Q_NGS_MEASUREMENT'
+NGS_RAW_DATA = 'Q_NGS_RAW_DATA'
 
 cmd_status = mtbutils.mtbconverter('-h')
 
@@ -143,15 +144,31 @@ def proc_fastq(fastq_file, transaction):
     if qbiccode_f1[0] != qbiccode_f2[0]:
         raise mtbutils.MTBdropboxerror('Found two different barcodes for read pair: {}<->{}'
             .format(qbiccode_f1[0], qbiccode_f2[0]))
+            
     # Get space and project ids
     space, project = space_and_project(qbiccode_f1[0])
     search_service = transaction.getSearchService()
     experiments = search_service.listExperiments('/{}/{}'.format(space, project))
-    print(experiments)
-    new_exp_id = len(experiments) + 1
-    print(new_exp_id)
+    
+    # We design a new experiment identifier
+    # 
+    new_exp_id = '/{space}/{project}/{project}E{number}'.format(
+        space=space, project=project, number=len(experiments) + 1)
+    new_sample_id = '/{space}/{project}/NGS{barcode}'.format(
+        space=space, project=project, barcode=qbiccode_f1[0])
+    new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
+    new_ngs_sample = transaction.createNewSample('/' + space + '/' + new_sample_id, NGS_SAMPLE_TYPE)
+    new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
+    new_ngs_sample.setExperiment(new_ngs_experiment)
 
-    pass
+    # Create a data-set attached to the NGS sample
+    data_set = transaction.createNewDataSet(NGS_RAW_DATA)
+    data_set.setMeasuredData(False)
+    data_set.setSample(new_ngs_sample)
+
+    # Attach the raw data to the 
+    for raw_data in fastq_file:
+        transaction.moveFile(raw_data, data_set)
 
 def space_and_project(qbiccode):
     """Determines the space and project of a given
