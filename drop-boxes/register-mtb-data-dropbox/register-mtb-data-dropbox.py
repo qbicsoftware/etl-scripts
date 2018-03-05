@@ -209,9 +209,24 @@ def space_and_project(qbiccode):
     return space, project
 
 
-def proc_mtb(zip_archive):
+def proc_mtb(zip_archive, transaction):
     """Register archive and submit to CentraXX"""
+    # openBIS registration
+    registermtb(zip_archive, transaction)
+    # CentraXX submition
+    submit(zip_archive)
+
+def registermtb(archive, transaction):
+    """Register the MTB zipfile as own experiment
+    in openBIS"""
+
     pass
+
+def submit(archive):
+    """Handles the archive parsing and submition
+    to CentraXX"""
+    pass
+
 
 def getfiles(path):
     """Retrieve all the absolute paths recursively from
