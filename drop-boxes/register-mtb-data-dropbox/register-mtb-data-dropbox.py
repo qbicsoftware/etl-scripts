@@ -64,9 +64,14 @@ QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 PROPERTIES = '/etc/openbis.properties'
 
+# Some openBIS type definitions
 NGS_SAMPLE_TYPE = 'Q_NGS_SINGLE_SAMPLE_RUN'
 NGS_EXP_TYPE = 'Q_NGS_MEASUREMENT'
 NGS_RAW_DATA = 'Q_NGS_RAW_DATA'
+MTB_SAMPLE_TYPE = 'Q_NGS_MTB_DIAGNOSIS_RUN'
+MTB_EXP_TYPE = 'Q_NGS_MTB_DIAGNOSIS'
+MTB_RAW_DATA = 'Q_NGS_MTB_DATA'
+
 EXPERIMENT_ID = 0
 
 cmd_status = mtbutils.mtbconverter('-h')
@@ -113,7 +118,7 @@ def process(transaction):
             else:
                 unknown_file_types.append(in_file)
         elif in_file.endswith('.zip'):
-            proc_mtb(in_file)
+            proc_mtb(in_file, transaction)
         else:
             unknown_file_types.append(in_file)
     
@@ -219,8 +224,37 @@ def proc_mtb(zip_archive, transaction):
 def registermtb(archive, transaction):
     """Register the MTB zipfile as own experiment
     in openBIS"""
+    qbiccode_found = QCODE_REG.findall(os.path.basename(archive))
+    if not qbiccode_found:
+        raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(archive))
+    if len(qbiccode_found) > 1:
+        raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(archive))
+    qcode = qbiccode_found[0]
 
-    pass
+    # Get space and project ids
+    space, project = space_and_project(qcode)
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
+
+    # We design a new experiment and sample identifier
+    new_exp_id = '/{space}/{project}/{project}E{number}'.format(
+        space=space, project=project, number=len(experiments))
+    new_sample_id = '/{space}/MTB{barcode}'.format(
+        space=space, project=project, barcode=qcode)
+    print(mtbutils.log_stardate('Preparing MTB sample and experiment creation for {sample} and {experiment}'
+        .format(sample=new_sample_id, experiment=new_exp_id)))
+    new_ngs_experiment = transaction.createNewExperiment(new_exp_id, MTB_EXP_TYPE)
+    new_ngs_sample = transaction.createNewSample(new_sample_id, MTB_SAMPLE_TYPE)
+    new_ngs_sample.setParentSampleIdentifiers([qcode])
+    new_ngs_sample.setExperiment(new_ngs_experiment)
+
+    # Create a data-set attached to the NGS sample
+    data_set = transaction.createNewDataSet(MTB_RAW_DATA)
+    data_set.setMeasuredData(False)
+    data_set.setSample(new_ngs_sample)
+
+    # Attach the directory to the dataset
+    transaction.moveFile(archive, data_set)
 
 def submit(archive):
     """Handles the archive parsing and submition
