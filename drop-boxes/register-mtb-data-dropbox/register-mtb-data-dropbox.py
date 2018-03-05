@@ -184,9 +184,14 @@ def proc_fastq(fastq_file, transaction, exp_id):
     data_set.setMeasuredData(False)
     data_set.setSample(new_ngs_sample)
 
-    # Attach the raw data to the 
+    # Put the files in one directory
+    base_path = os.path.dirname(transaction.getIncoming().getAbsolutePath())
+    registration_dir = os.mkdir(os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(qbiccode_f1[0])))
     for raw_data in fastq_file:
-        transaction.moveFile(raw_data, data_set)
+        os.rename(raw_data, os.path.join(registration_dir, os.path.basename(raw_data)))
+
+    # Attach the directory to the dataset
+    transaction.moveFile(registration_dir, data_set)
 
 def space_and_project(qbiccode):
     """Determines the space and project of a given
