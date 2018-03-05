@@ -122,8 +122,9 @@ def process(transaction):
         else:
             unknown_file_types.append(in_file)
     
-    proc_fastq(fastqs_tumor, transaction, 0)
-    proc_fastq(fastqs_normal, transaction, 1)
+    if fastqs_normal and fastqs_tumor:
+        proc_fastq(fastqs_tumor, transaction, 0)
+        proc_fastq(fastqs_normal, transaction, 1)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
