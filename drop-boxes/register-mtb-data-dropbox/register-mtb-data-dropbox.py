@@ -55,7 +55,7 @@ from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleF
 from ch.ethz.sis.openbis.generic.asapi.v3 import IApplicationServerApi
 from ch.systemsx.cisd.common.spring import HttpInvokerUtils
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchCriteria
-
+from mtbutils import Counter
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
@@ -95,6 +95,8 @@ if sessionToken:
 else:
     raise mtbutils.MTBdropboxerror("Could not authenticate against openBIS.")
 
+COUNTER = Counter()
+
 def process(transaction):
     """The main dropbox funtion.
     openBIS executes this function during an incoming file event.
@@ -123,8 +125,8 @@ def process(transaction):
             unknown_file_types.append(in_file)
     
     if fastqs_normal and fastqs_tumor:
-        proc_fastq(fastqs_tumor, transaction, 0)
-        proc_fastq(fastqs_normal, transaction, 1)
+        proc_fastq(fastqs_tumor, transaction)
+        proc_fastq(fastqs_normal, transaction)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
@@ -151,7 +153,7 @@ def find_pbmc(in_file, transaction):
 
     return new_path
 
-def proc_fastq(fastq_file, transaction, exp_id):
+def proc_fastq(fastq_file, transaction):
     """Register fastq as dataset in openBIS"""
 
     # Check, if there are file pairs present (paired-end data!)
@@ -175,7 +177,7 @@ def proc_fastq(fastq_file, transaction, exp_id):
     
     # We design a new experiment and sample identifier
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments) + exp_id)
+        space=space, project=project, number=len(experiments) + COUNTER.newId())
     new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
@@ -239,7 +241,7 @@ def registermtb(archive, transaction):
 
     # We design a new experiment and sample identifier
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments))
+        space=space, project=project, number=len(experiments) + COUNTER.newId())
     new_sample_id = '/{space}/MTB{barcode}'.format(
         space=space, project=project, barcode=qcode)
     print(mtbutils.log_stardate('Preparing MTB sample and experiment creation for {sample} and {experiment}'

@@ -19,3 +19,12 @@ def log_stardate(msg):
 
 class MTBdropboxerror(Exception):
     """A generic Exception class for this dropbox."""
+
+class Counter():
+
+    def __init__(self):
+        self.counter = 0
+    
+    def newId(self):
+        self.counter += 1
+        return self.counter - 1
