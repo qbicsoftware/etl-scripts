@@ -64,7 +64,7 @@ QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 PROPERTIES = '/etc/openbis.properties'
 
-NGS_SAMPLE_TYPE = 'Q_NGS_SINGE_SAMPLE_RUN'
+NGS_SAMPLE_TYPE = 'Q_NGS_SINGLE_SAMPLE_RUN'
 NGS_EXP_TYPE = 'Q_NGS_MEASUREMENT'
 NGS_RAW_DATA = 'Q_NGS_RAW_DATA'
 EXPERIMENT_ID = 0
@@ -175,6 +175,7 @@ def proc_fastq(fastq_file, transaction, exp_id):
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
+    new_ngs_experiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UNSPECIFIED_ILLUMINA_HISEQ_2500')
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
     new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
     new_ngs_sample.setExperiment(new_ngs_experiment)
@@ -186,7 +187,9 @@ def proc_fastq(fastq_file, transaction, exp_id):
 
     # Put the files in one directory
     base_path = os.path.dirname(transaction.getIncoming().getAbsolutePath())
-    registration_dir = os.mkdir(os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(qbiccode_f1[0])))
+    registration_dir = os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(qbiccode_f1[0]))
+    os.mkdir(registration_dir)
+    
     for raw_data in fastq_file:
         os.rename(raw_data, os.path.join(registration_dir, os.path.basename(raw_data)))
 
