@@ -167,7 +167,7 @@ def proc_fastq(fastq_file, transaction, exp_id):
     search_service = transaction.getSearchService()
     experiments = search_service.listExperiments('/{}/{}'.format(space, project))
     
-    # We design a new experiment identifier
+    # We design a new experiment and sample identifier
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=len(experiments) + exp_id)
     new_sample_id = '/{space}/NGS{barcode}'.format(
