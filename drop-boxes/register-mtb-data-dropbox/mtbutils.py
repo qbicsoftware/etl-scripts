@@ -6,9 +6,9 @@ import subprocess as sp
 
 MTB_CONVERTER_PATH = '/home/qeana10/bin/miniconda/bin/mtbconverter'
 
-def mtbconverter(*cmds):
+def mtbconverter(cmds):
     """Tries to activate a given conda environment"""
-    command = [MTB_CONVERTER_PATH] + list(cmds)
+    command = [MTB_CONVERTER_PATH] + cmds
     ret_code = sp.call(command)
     return ret_code
 

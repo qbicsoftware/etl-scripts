@@ -77,7 +77,7 @@ MTB_RAW_DATA = 'Q_NGS_MTB_DATA'
 
 EXPERIMENT_ID = 0
 
-cmd_status = mtbutils.mtbconverter('-h')
+cmd_status = mtbutils.mtbconverter(['-h'])
 
 # Print the return code from the subprocess command
 #print('Return code is {}'.format(cmd_status))
@@ -222,10 +222,10 @@ def space_and_project(qbiccode):
 
 def proc_mtb(zip_archive, transaction):
     """Register archive and submit to CentraXX"""
-    # openBIS registration
-    registermtb(zip_archive, transaction)
     # CentraXX submition
     submit(zip_archive, transaction)
+    # openBIS registration
+    registermtb(zip_archive, transaction)
 
 def registermtb(archive, transaction):
     """Register the MTB zipfile as own experiment
@@ -275,8 +275,8 @@ def submit(archive, transaction):
     patient = getentity(qcode, transaction)
     
     # Arguments for mtbconverter: archive.zip patientID
-    args = [archive, patient]
-    print(args)
+    args = ['convert', archive, patient]
+   
     exit_code = mtbutils.mtbconverter(args)
 
     if exit_code > 0:
@@ -291,10 +291,9 @@ def submit(archive, transaction):
     #args = ['push', '-t', export_path]
     args = ['push', '-t', '--check', export_path]
     exit_status = mtbutils.mtbconverter(args)
-    
-    if exit_code > 0:
+    if exit_status > 0:
         raise mtbutils.MTBdropboxerror('Did not transfer xml to CentraXX successfully.'
-            'Process quit with exit code {}'.format(exit_code))
+            'Process quit with exit code {}'.format(exit_status))
 
     print(mtbutils.log_stardate('Successfully exported {} to CentraXX'.format(os.path.basename(archive))))
 
