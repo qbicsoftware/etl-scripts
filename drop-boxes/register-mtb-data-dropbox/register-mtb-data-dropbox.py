@@ -60,6 +60,9 @@ from mtbutils import Counter
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
 
+
+CENTRAXX_XML_NAME = '{patient_id}_{sample_id}_patient.centraxx.xml'
+
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 PROPERTIES = '/etc/openbis.properties'
@@ -222,7 +225,7 @@ def proc_mtb(zip_archive, transaction):
     # openBIS registration
     registermtb(zip_archive, transaction)
     # CentraXX submition
-    submit(zip_archive)
+    submit(zip_archive, transaction)
 
 def registermtb(archive, transaction):
     """Register the MTB zipfile as own experiment
@@ -259,11 +262,40 @@ def registermtb(archive, transaction):
     # Attach the directory to the dataset
     transaction.moveFile(archive, data_set)
 
-def submit(archive):
+def submit(archive, transaction):
     """Handles the archive parsing and submition
     to CentraXX"""
-    pass
+    print(mtbutils.log_stardate('Preparing CentraXX export of {}...'.format(os.path.basename(archive))))
+    qbiccode_found = QCODE_REG.findall(os.path.basename(archive))
+    if not qbiccode_found:
+        raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(archive))
+    if len(qbiccode_found) > 1:
+        raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(archive))
+    qcode = qbiccode_found[0]
+    patient = getentity(qcode, transaction)
+    
+    # Arguments for mtbconverter: archive.zip patientID
+    args = [archive, patient]
+    exit_code = mtbutils.mtbconverter(args)
 
+    if exit_code > 0:
+        raise mtbutils.MTBdropboxerror('Could not create patient xml for Centraxx export. '
+            'Process quit with exit code {}'.format(exit_code))
+    
+    # Format the patient export xml filename
+    export_fname = CENTRAXX_XML_NAME.format(patient_id=patient, sample_id=qcode)
+    export_path = os.path.join(os.path.dirname(archive), export_fname)
+
+    # Create arguments for mtbconverter
+    args = ['push', '-t', export_path]
+    
+    exit_status = mtbutils.mtbconverter(args)
+    
+    if exit_code > 0:
+        raise mtbutils.MTBdropboxerror('Did not transfer xml to CentraXX successfully.'
+            'Process quit with exit code {}'.format(exit_code))
+
+    print(mtbutils.log_stardate('Successfully exported {} to CentraXX'.format(os.path.basename(archive))))
 
 def getfiles(path):
     """Retrieve all the absolute paths recursively from
