@@ -276,6 +276,7 @@ def submit(archive, transaction):
     
     # Arguments for mtbconverter: archive.zip patientID
     args = [archive, patient]
+    print(args)
     exit_code = mtbutils.mtbconverter(args)
 
     if exit_code > 0:
