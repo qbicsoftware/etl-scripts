@@ -287,8 +287,8 @@ def submit(archive, transaction):
     export_path = os.path.join(os.path.dirname(archive), export_fname)
 
     # Create arguments for mtbconverter
-    args = ['push', '-t', export_path]
-    
+    #args = ['push', '-t', export_path]
+    args = ['push', '-t', '--check', export_path]
     exit_status = mtbutils.mtbconverter(args)
     
     if exit_code > 0:
