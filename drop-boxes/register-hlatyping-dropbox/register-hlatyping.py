@@ -96,7 +96,7 @@ def process(transaction):
             if subFolders:
                 subFolder = subFolders[0]
             for f in files:
-                if f.endswith('.alleles'):
+                if f.endswith('.alleles') or f.endswith('alleles.txt'):
                     resultPath = os.path.join(root, f)
                     resultFile = open(resultPath, 'r')
     else:

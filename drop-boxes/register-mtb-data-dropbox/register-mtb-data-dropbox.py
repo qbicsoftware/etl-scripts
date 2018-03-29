@@ -52,20 +52,32 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search import SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleFetchOptions
-import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search.SampleSearchCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3 import IApplicationServerApi
 from ch.systemsx.cisd.common.spring import HttpInvokerUtils
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchCriteria
-
+from mtbutils import Counter
 
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
+
+
+CENTRAXX_XML_NAME = '{patient_id}_{sample_id}_patient.centraxx.xml'
 
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 PROPERTIES = '/etc/openbis.properties'
 
-cmd_status = mtbutils.mtbconverter('-h')
+# Some openBIS type definitions
+NGS_SAMPLE_TYPE = 'Q_NGS_SINGLE_SAMPLE_RUN'
+NGS_EXP_TYPE = 'Q_NGS_MEASUREMENT'
+NGS_RAW_DATA = 'Q_NGS_RAW_DATA'
+MTB_SAMPLE_TYPE = 'Q_NGS_MTB_DIAGNOSIS_RUN'
+MTB_EXP_TYPE = 'Q_NGS_MTB_DIAGNOSIS'
+MTB_RAW_DATA = 'Q_NGS_MTB_DATA'
+
+EXPERIMENT_ID = 0
+
+cmd_status = mtbutils.mtbconverter(['-h'])
 
 # Print the return code from the subprocess command
 #print('Return code is {}'.format(cmd_status))
@@ -77,13 +89,16 @@ print(mtbutils.log_stardate("Mtbconverter executable found."))
 config = ConfigParser.ConfigParser()
 config.read(PROPERTIES)
 
-print(config.get('openbis', 'url'))
-
 api = HttpInvokerUtils.createServiceStub(IApplicationServerApi, config.get('openbis','url') + IApplicationServerApi.SERVICE_URL, 5000)
  
 sessionToken = api.login(config.get('openbis','user'), config.get('openbis','password'))
 
-print(sessionToken)
+if sessionToken:
+    mtbutils.log_stardate("Successfully authenticated against the openBIS API.")
+else:
+    raise mtbutils.MTBdropboxerror("Could not authenticate against openBIS.")
+
+COUNTER = Counter()
 
 def process(transaction):
     """The main dropbox funtion.
@@ -92,10 +107,195 @@ def process(transaction):
     incoming_path = transaction.getIncoming().getAbsolutePath()
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
+    # Iterate through the incoming path and get all files
     file_list = getfiles(incoming_path)
-    getentityandpbmc(file_list[0], transaction)
-    raise mtbutils.MTBdropboxerror('Diese Datei entfernst du nicht, openBIS')
+    
+    # Determine the types of incoming files and route the process
+    unknown_file_types = []
+    fastqs_tumor = []
+    fastqs_normal = []
+    for in_file in file_list:
+        if 'fastq' in in_file:
+            if 'normal' in in_file:
+                fastqs_normal.append(find_pbmc(in_file, transaction))
+            elif 'tumor' in in_file:
+                fastqs_tumor.append(in_file)
+            else:
+                unknown_file_types.append(in_file)
+        elif in_file.endswith('.zip'):
+            proc_mtb(in_file, transaction)
+        else:
+            unknown_file_types.append(in_file)
+    
+    if fastqs_normal and fastqs_tumor:
+        proc_fastq(fastqs_tumor, transaction)
+        proc_fastq(fastqs_normal, transaction)
 
+    # Check, if there are files of unknown type left
+    if unknown_file_types:
+        for file_name in unknown_file_types:
+            print(mtbutils.log_stardate('Unknown file type: {}'.format(file_name)))
+        raise mtbutils.MTBdropboxerror('We have found files that could not be processed!'
+            'Manual intervention needed.')
+
+    print(mtbutils.log_stardate('Processing finished.'))
+
+def find_pbmc(in_file, transaction):
+    basename = os.path.basename(in_file)
+    parent_dir = os.path.dirname(in_file)
+    barcode = QCODE_REG.findall(basename)
+    if not barcode:
+        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(in_file))
+    if len(set(barcode)) > 1:
+        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
+    _, _, pbmc = getentityandpbmc(barcode[0], transaction)
+    
+    new_name = basename.replace(barcode[0], pbmc)
+    new_path = os.path.join(parent_dir, new_name)
+    os.rename(in_file, new_path)
+
+    return new_path
+
+def proc_fastq(fastq_file, transaction):
+    """Register fastq as dataset in openBIS"""
+
+    # Check, if there are file pairs present (paired-end data!)
+    if len(fastq_file) != 2:
+        raise mtbutils.MTBdropboxerror('Expecting paired end reads files, found only {}'
+            .format(len(fastq_file)))
+    qbiccode_f1 = QCODE_REG.findall(os.path.basename(fastq_file[0]))
+    qbiccode_f2 = QCODE_REG.findall(os.path.basename(fastq_file[1]))
+    if not qbiccode_f1 or not qbiccode_f2:
+        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(fastq_file))
+    if len(qbiccode_f1) > 1 or len(qbiccode_f2) > 1:
+        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(fastq_file))
+    if qbiccode_f1[0] != qbiccode_f2[0]:
+        raise mtbutils.MTBdropboxerror('Found two different barcodes for read pair: {}<->{}'
+            .format(qbiccode_f1[0], qbiccode_f2[0]))
+
+    # Get space and project ids
+    space, project = space_and_project(qbiccode_f1[0])
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
+    
+    # We design a new experiment and sample identifier
+    new_exp_id = '/{space}/{project}/{project}E{number}'.format(
+        space=space, project=project, number=len(experiments) + COUNTER.newId())
+    new_sample_id = '/{space}/NGS{barcode}'.format(
+        space=space, project=project, barcode=qbiccode_f1[0])
+    print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
+        .format(sample=new_sample_id, experiment=new_exp_id)))
+    new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
+    new_ngs_experiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UNSPECIFIED_ILLUMINA_HISEQ_2500')
+    new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
+    new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
+    new_ngs_sample.setExperiment(new_ngs_experiment)
+
+    # Create a data-set attached to the NGS sample
+    data_set = transaction.createNewDataSet(NGS_RAW_DATA)
+    data_set.setMeasuredData(False)
+    data_set.setSample(new_ngs_sample)
+
+    # Put the files in one directory
+    base_path = os.path.dirname(transaction.getIncoming().getAbsolutePath())
+    registration_dir = os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(qbiccode_f1[0]))
+    os.mkdir(registration_dir)
+    
+    for raw_data in fastq_file:
+        os.rename(raw_data, os.path.join(registration_dir, os.path.basename(raw_data)))
+
+    # Attach the directory to the dataset
+    transaction.moveFile(registration_dir, data_set)
+
+def space_and_project(qbiccode):
+    """Determines the space and project of a given
+    sample id.
+    
+    Returns: Tuple (space, project)
+    """
+    sample = getsamplev3(qbiccode)
+    space = sample.getSpace().getCode()
+    project = qbiccode[:5]
+
+    return space, project
+
+
+def proc_mtb(zip_archive, transaction):
+    """Register archive and submit to CentraXX"""
+    # CentraXX submition
+    submit(zip_archive, transaction)
+    # openBIS registration
+    registermtb(zip_archive, transaction)
+
+def registermtb(archive, transaction):
+    """Register the MTB zipfile as own experiment
+    in openBIS"""
+    qbiccode_found = QCODE_REG.findall(os.path.basename(archive))
+    if not qbiccode_found:
+        raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(archive))
+    if len(qbiccode_found) > 1:
+        raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(archive))
+    qcode = qbiccode_found[0]
+
+    # Get space and project ids
+    space, project = space_and_project(qcode)
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
+
+    # We design a new experiment and sample identifier
+    new_exp_id = '/{space}/{project}/{project}E{number}'.format(
+        space=space, project=project, number=len(experiments) + COUNTER.newId())
+    new_sample_id = '/{space}/MTB{barcode}'.format(
+        space=space, project=project, barcode=qcode)
+    print(mtbutils.log_stardate('Preparing MTB sample and experiment creation for {sample} and {experiment}'
+        .format(sample=new_sample_id, experiment=new_exp_id)))
+    new_ngs_experiment = transaction.createNewExperiment(new_exp_id, MTB_EXP_TYPE)
+    new_ngs_sample = transaction.createNewSample(new_sample_id, MTB_SAMPLE_TYPE)
+    new_ngs_sample.setParentSampleIdentifiers([qcode])
+    new_ngs_sample.setExperiment(new_ngs_experiment)
+
+    # Create a data-set attached to the NGS sample
+    data_set = transaction.createNewDataSet(MTB_RAW_DATA)
+    data_set.setMeasuredData(False)
+    data_set.setSample(new_ngs_sample)
+
+    # Attach the directory to the dataset
+    transaction.moveFile(archive, data_set)
+
+def submit(archive, transaction):
+    """Handles the archive parsing and submition
+    to CentraXX"""
+    print(mtbutils.log_stardate('Preparing CentraXX export of {}...'.format(os.path.basename(archive))))
+    qbiccode_found = QCODE_REG.findall(os.path.basename(archive))
+    if not qbiccode_found:
+        raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(archive))
+    if len(qbiccode_found) > 1:
+        raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(archive))
+    qcode = qbiccode_found[0]
+    patient = getentity(qcode, transaction)
+    
+    # Arguments for mtbconverter: archive.zip patientID
+    args = ['convert', archive, patient]
+   
+    exit_code = mtbutils.mtbconverter(args)
+
+    if exit_code > 0:
+        raise mtbutils.MTBdropboxerror('Could not create patient xml for Centraxx export. '
+            'Process quit with exit code {}'.format(exit_code))
+    
+    # Format the patient export xml filename
+    export_fname = CENTRAXX_XML_NAME.format(patient_id=patient, sample_id=qcode)
+    export_path = os.path.join(os.path.dirname(archive), export_fname)
+
+    # Create arguments for mtbconverter
+    #args = ['push', '-t', export_path]
+    args = ['push', '-t', '--check', export_path]
+    exit_status = mtbutils.mtbconverter(args)
+    if exit_status > 0:
+        raise mtbutils.MTBdropboxerror('Did not transfer xml to CentraXX successfully.'
+            'Process quit with exit code {}'.format(exit_status))
+
+    print(mtbutils.log_stardate('Successfully exported {} to CentraXX'.format(os.path.basename(archive))))
 
 def getfiles(path):
     """Retrieve all the absolute paths recursively from
@@ -112,6 +312,13 @@ def getfiles(path):
     return file_list
 
 def getentityandpbmc(path, transcation):
+    """Parses the QBiC barcode from the incoming file path
+    and requests the corresponding QBiC patient id and
+    PBMC sample id for further processing the registration 
+    of tumor and blood sequencing data.
+
+    Returns: Tuple of (path, entity_id, pbmc_id)
+    """
     qcode_findings = QCODE_REG.findall(path)
     if not qcode_findings:
         raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(path))
@@ -123,11 +330,16 @@ def getentityandpbmc(path, transcation):
     pbmc_id = getpbmc(entity_id, transcation)
 
     print(mtbutils.log_stardate('Found parent with id {}'.format(entity_id)))
+    print(mtbutils.log_stardate('Found corresponding PBMC id {}'.format(pbmc_id)))
 
     return (path, entity_id, pbmc_id)
 
 def getentity(qcode, transaction):
-
+    """Find the corresponding patient id (Q_BIOLOGICAL_ENTITY)
+    for a given tumor sample DNA (Q_TEST_SAMPLE)
+    
+    Returns: The qbic barcode for the patient
+    """
     tumor_sample = getsample(qcode, transaction)
     parent_ids = tumor_sample.getParentSampleIdentifiers()
     
@@ -142,16 +354,37 @@ def getentity(qcode, transaction):
             "id found for tumor sample: {}".format(grandparents_found))  
     
     grandparent = grandparents_found[0][0]
-    print(grandparent)
-
+    
     return(grandparent.split('/')[-1])
 
 def getpbmc(qcode_entity, transaction):
-    
+    """Searches for corresponding blood samples (type PBMC)
+    for a given patient ID. It is expected, that a given patient
+    has only one DNA sample extracted from PBMC as reference for
+    somatic variant calling.
+
+    Returns: The QBiC barcode of the corresponding PBMC Q_TEST_SAMPLE
+    """
+    pbmc_samples = []
     descendand_samples = getallchildren(qcode_entity)
-    print(descendand_samples)
+    for sample in descendand_samples:
+        if sample.getProperty('Q_PRIMARY_TISSUE') == 'PBMC':
+            pbmc_samples.append(sample)
+    if not pbmc_samples:
+        raise mtbutils.MTBdropboxerror("Could not find any PBMC sample.")
+    if len(pbmc_samples) > 1:
+        raise mtbutils.MTBdropboxerror("More than 1 PBMC sample found for entity {}"
+            .format(qcode_entity))
     
-    return ""
+    # Get the id of the attached Q_TEST_SAMPLE
+    pbmc_id = ""
+    try:
+        children = pbmc_samples[0].getChildren()
+        pbmc_id = children[0].getCode()
+    except Exception as exc:
+        mtbutils.MTBdropboxerror("Could not access Q_TEST_SAMPLE code for PBMC in {}"
+            .format(qcode_entity))    
+    return pbmc_id
 
 def getallchildren(qcode):
     """Fetch all children samples of a given
@@ -161,22 +394,29 @@ def getallchildren(qcode):
     """ 
     fetch_opt = SampleFetchOptions()
     fetch_opt.withChildrenUsing(fetch_opt)
-
+    fetch_opt.withProperties()
+	
     scrit = SampleSearchCriteria()
     scrit.withCode().thatEquals(qcode)
+   
+    children_samples = []
 
     result = api.searchSamples(sessionToken, scrit, fetch_opt)
     
-    print(result)
-    print(result.getObjects())
-
     for sample in result.getObjects():
-        print(sample.getChildren())
+        # Q_BIOLOGICAL_SAMPLE level
+        for kid in sample.getChildren():
+            children_samples.append(kid)
+            # Q_TEST_SAMPLE level
+            for grandkid in kid.getChildren():
+                children_samples.append(grandkid)
 
-    return sample
+    return children_samples
 
 
 def getsample(qcode, transaction):
+    """Resturns a immutable sample object for a given
+    QBIC barcode."""
     sserv = transaction.getSearchService()
     scrit = SearchCriteria()
     scrit.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
@@ -189,4 +429,26 @@ def getsample(qcode, transaction):
         raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
     
     return result[0]
+
+def getsamplev3(qcode):
+    """Get a sample object of a given identifier
+    in API V3 style
+
+    Returns: A sample (v3) object
+    """
+    scrit = SampleSearchCriteria()
+    scrit.withCode().thatEquals(qcode)
+
+    fetch_opt = SampleFetchOptions()
+    fetch_opt.withProperties()
+    fetch_opt.withSpace()
+
+    result = api.searchSamples(sessionToken, scrit, fetch_opt)
+    samples = []
+    for sample in result.getObjects():
+        samples.append(sample)
+    if len(samples) > 1:
+        raise mtbutils.MTBdropboxerror('More than one sample found with identifier {}'.format(qcode))
+    return samples[0]
+    
 
