@@ -873,7 +873,7 @@ def process(transaction):
                             sa.getExperiment().getExperimentIdentifier(),
                             exp.getExperimentIdentifier()
                         ):
-                            MSRawExperiment = exp
+                            MSRawExperiment = transaction.getExperimentForUpdate(exp.getExperimentIdentifier())
                 # no existing experiment for samples of this sample preparation found
                 if not MSRawExperiment:
                     expID = experimentIDs[0]
