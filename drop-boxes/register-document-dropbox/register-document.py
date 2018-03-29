@@ -65,4 +65,7 @@ def process(transaction):
         dataSet.setMeasuredData(False)
         dataSet.setSample(sample)
 
-        transaction.moveFile(incomingPath, dataSet)
+        for f in os.listdir(incomingPath):
+            if f.endswith('origlabfilename' or f.endswith('source_dropbox.txt') or f.endswith('sha256sum')):
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+        transaction.moveFile(os.path.join(incomingPath, name), dataSet)
