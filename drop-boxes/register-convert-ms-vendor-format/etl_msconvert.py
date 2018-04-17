@@ -648,11 +648,15 @@ def handleImmunoFiles(transaction):
     else:
         # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
         prefixes = ms_prefix_pattern.findall(name)
-        prefix = prefixes[0]
-        for p in prefixes:
-            if len(p) > prefix:
-                prefix = p
-        ms_code = prefix+code
+        if prefixes:
+            prefix = prefixes[0]
+            for p in prefixes:
+                if len(p) > prefix:
+                    prefix = p
+            ms_code = prefix+code
+        else:
+            # workaround, keep?
+            ms_code = "MS"+code
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
         foundSamples = search_service.searchForSamples(sc)
