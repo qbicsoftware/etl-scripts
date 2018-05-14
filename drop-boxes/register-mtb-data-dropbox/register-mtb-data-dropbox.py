@@ -115,6 +115,8 @@ def process(transaction):
     fastqs_tumor = []
     fastqs_normal = []
     for in_file in file_list:
+        if in_file.endswith('origlabfilename') or in_file.endswith('sha256sum') or 'source_dropbox.txt' in in_file:
+            continue
         if 'fastq' in in_file:
             if 'normal' in in_file:
                 fastqs_normal.append(find_pbmc(in_file, transaction))
