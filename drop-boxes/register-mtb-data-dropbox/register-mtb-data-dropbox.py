@@ -291,7 +291,7 @@ def submit(archive, transaction):
 
     # Create arguments for mtbconverter
     #args = ['push', '-t', export_path]
-    args = ['push', '-t', '--check', export_path]
+    args = ['push', '-t', export_path]
     exit_status = mtbutils.mtbconverter(args)
     if exit_status > 0:
         raise mtbutils.MTBdropboxerror('Did not transfer xml to CentraXX successfully.'
