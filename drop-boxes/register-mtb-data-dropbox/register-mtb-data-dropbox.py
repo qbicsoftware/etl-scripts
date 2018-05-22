@@ -46,6 +46,7 @@ import os
 import sys
 import mtbutils
 import logging
+import tarfile
 import ConfigParser
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
@@ -108,6 +109,18 @@ def process(transaction):
     file_name = transaction.getIncoming().getName()
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
     # Iterate through the incoming path and get all files
+    file_list = getfiles(incoming_path)
+    tar_present = any([f.endswith(".tar") for f in file_list])
+    if tar_present:
+        tar_balls = []
+	for f in file_list:
+	    if f.endswith(".tar"): tar_balls.append(f)
+	for ball in tar_balls:
+	    tar = tarfile.open(ball)
+	    tar.extractall()
+	    tar.close()
+	
+    # Scan incoming dir again
     file_list = getfiles(incoming_path)
     
     # Determine the types of incoming files and route the process
