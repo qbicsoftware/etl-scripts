@@ -192,6 +192,11 @@ def register_vcf(in_file, transaction):
     new_ngs_sample.setParentSampleIdentifiers([barcode[0]])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
+    if not barcode[0] in basename:
+        new_path = parent_dir + os.path.sep + basename
+        os.rename(in_file, new_path)
+        in_file = new_path
+
     # Create a data-set attached to the VARIANT CALL sample
     data_set = transaction.createNewDataSet(in_file)
     data_set.setMeasuredData(False)
