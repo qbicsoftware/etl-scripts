@@ -169,9 +169,9 @@ def register_vcf(in_file, transaction):
     parent_dir = os.path.dirname(in_file)
     barcode = QCODE_REG.findall(basename)
     if not barcode:
-        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(in_file))
+        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(basename))
     if len(set(barcode)) > 1:
-        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
+        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(basename))
     space, project = space_and_project(barcode[0])
     search_service = transaction.getSearchService()
     experiments = search_service.listExperiments('/{}/{}'.format(space, project))
