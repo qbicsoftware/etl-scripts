@@ -113,8 +113,7 @@ def process(transaction):
     # Iterate through the incoming path and get all files
     file_list = getfiles(incoming_path)
     tar_present = any([f.endswith(".tar") for f in file_list])
-    if tar_present:
-        tar_balls = []
+    tar_balls = []
     for f in file_list:
 	    if f.endswith(".tar"): tar_balls.append(f)
     
@@ -139,10 +138,10 @@ def process(transaction):
                 fastqs_normal.append(find_pbmc(in_file, transaction))
             elif 'tumor' in in_file:
                 fastqs_tumor.append(in_file)
-            elif in_file.endswith('vcf.gz'):
-                vcf_files.append(in_file)
             else:
                 unknown_file_types.append(in_file)
+        elif in_file.endswith('vcf.gz'):
+            vcf_files.append(in_file)
         elif in_file.endswith('.zip'):
             proc_mtb(in_file, transaction)
         else:
@@ -159,8 +158,8 @@ def process(transaction):
     if unknown_file_types:
         for file_name in unknown_file_types:
             print(mtbutils.log_stardate('Unknown file type: {}'.format(file_name)))
-        raise mtbutils.MTBdropboxerror('We have found files that could not be processed!'
-            'Manual intervention needed.')
+       # raise mtbutils.MTBdropboxerror('We have found files that could not be processed!'
+       #     'Manual intervention needed.')
 
     print(mtbutils.log_stardate('Processing finished.'))
 
