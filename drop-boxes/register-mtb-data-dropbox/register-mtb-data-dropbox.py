@@ -170,6 +170,8 @@ def register_vcf(in_file, transaction):
     parent_dir = os.path.dirname(in_file)
     barcode = QCODE_REG.findall(basename)
     if not barcode:
+        barcode = QCODE_REG.findall(parent_dir)
+    if not barcode:
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(basename))
     if len(set(barcode)) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(basename))
