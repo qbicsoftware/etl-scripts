@@ -180,7 +180,7 @@ def register_vcf(in_file, transaction):
     # We design a new experiment and sample identifier
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=len(experiments) + COUNTER.newId())
-    new_sample_id = '/{space}/VCF{barcode}'.format(
+    new_sample_id = '/{space}/VC{barcode}'.format(
         space=space, project=project, barcode=barcode[0])
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
