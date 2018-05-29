@@ -75,6 +75,8 @@ NGS_RAW_DATA = 'Q_NGS_RAW_DATA'
 MTB_SAMPLE_TYPE = 'Q_NGS_MTB_DIAGNOSIS_RUN'
 MTB_EXP_TYPE = 'Q_NGS_MTB_DIAGNOSIS'
 MTB_RAW_DATA = 'Q_NGS_MTB_DATA'
+NGS_VARIANT_CALL = 'Q_NGS_VARIANT_CALLING'
+
 
 EXPERIMENT_ID = 0
 
@@ -113,9 +115,10 @@ def process(transaction):
     tar_present = any([f.endswith(".tar") for f in file_list])
     if tar_present:
         tar_balls = []
-	for f in file_list:
+    for f in file_list:
 	    if f.endswith(".tar"): tar_balls.append(f)
-	for ball in tar_balls:
+    
+    for ball in tar_balls:
 	    tar = tarfile.open(ball)
 	    tar.extractall()
 	    tar.close()
@@ -127,6 +130,7 @@ def process(transaction):
     unknown_file_types = []
     fastqs_tumor = []
     fastqs_normal = []
+    vcf_files = []
     for in_file in file_list:
         if in_file.endswith('origlabfilename') or in_file.endswith('sha256sum') or 'source_dropbox.txt' in in_file:
             continue
@@ -135,12 +139,17 @@ def process(transaction):
                 fastqs_normal.append(find_pbmc(in_file, transaction))
             elif 'tumor' in in_file:
                 fastqs_tumor.append(in_file)
+            elif in_file.endswith('vcf.gz'):
+                vcf_files.append(in_file)
             else:
                 unknown_file_types.append(in_file)
         elif in_file.endswith('.zip'):
             proc_mtb(in_file, transaction)
         else:
             unknown_file_types.append(in_file)
+
+    for vcf in vcf_files:
+        register_vcf(vcf, transaction)
     
     if fastqs_normal and fastqs_tumor:
         proc_fastq(fastqs_tumor, transaction)
@@ -154,6 +163,40 @@ def process(transaction):
             'Manual intervention needed.')
 
     print(mtbutils.log_stardate('Processing finished.'))
+
+def register_vcf(in_file, transaction):
+    print(mtbutils.log_stardate('Registering VCF {}'.format(in_file)))
+    basename = os.path.basename(in_file)
+    parent_dir = os.path.dirname(in_file)
+    barcode = QCODE_REG.findall(basename)
+    if not barcode:
+        raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(in_file))
+    if len(set(barcode)) > 1:
+        raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
+    space, project = space_and_project(barcode[0])
+    search_service = transaction.getSearchService()
+    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
+    
+    # We design a new experiment and sample identifier
+    new_exp_id = '/{space}/{project}/{project}E{number}'.format(
+        space=space, project=project, number=len(experiments) + COUNTER.newId())
+    new_sample_id = '/{space}/VCF{barcode}'.format(
+        space=space, project=project, barcode=barcode[0])
+    print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
+        .format(sample=new_sample_id, experiment=new_exp_id)))
+    new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_VARIANT_CALL)
+    new_ngs_experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+    new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_VARIANT_CALL)
+    new_ngs_sample.setParentSampleIdentifiers([barcode[0]])
+    new_ngs_sample.setExperiment(new_ngs_experiment)
+
+    # Create a data-set attached to the VARIANT CALL sample
+    data_set = transaction.createNewDataSet(in_file)
+    data_set.setMeasuredData(False)
+    data_set.setSample(new_ngs_sample)  
+
+    # Attach the directory to the dataset
+    transaction.moveFile(in_file, data_set)
 
 def find_pbmc(in_file, transaction):
     basename = os.path.basename(in_file)
