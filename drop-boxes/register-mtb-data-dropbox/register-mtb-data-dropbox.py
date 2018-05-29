@@ -62,7 +62,7 @@ from mtbutils import Counter
 sys.path.append('/home-link/qeana10/bin')
 
 
-CENTRAXX_XML_NAME = '{patient_id}_{sample_id}_patient.centraxx.xml'
+CENTRAXX_XML_NAME = '{patient_id}_{sample_id}_patient_centraxx.xml'
 
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
@@ -355,7 +355,7 @@ def submit(archive, transaction):
     
     # Format the patient export xml filename
     export_fname = CENTRAXX_XML_NAME.format(patient_id=patient, sample_id=qcode)
-    export_path = os.path.join(os.path.dirname(archive), export_fname)
+    export_path = os.path.join(os.getcwd(), export_fname)
 
     # Create arguments for mtbconverter
     #args = ['push', '-t', export_path]
