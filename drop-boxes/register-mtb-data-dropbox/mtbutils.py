@@ -23,7 +23,7 @@ class MTBdropboxerror(Exception):
 class Counter():
 
     def __init__(self):
-        self.counter = 0
+        self.counter = 1
     
     def newId(self):
         self.counter += 1

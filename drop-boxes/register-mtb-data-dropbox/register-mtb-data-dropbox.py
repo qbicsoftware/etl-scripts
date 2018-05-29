@@ -118,9 +118,11 @@ def process(transaction):
 	    if f.endswith(".tar"): tar_balls.append(f)
     
     for ball in tar_balls:
-	    tar = tarfile.open(ball)
-	    tar.extractall()
-	    tar.close()
+        print(mtbutils.log_stardate('Putative tar-archive detected: {}'.format(ball)))
+	tar = tarfile.open(ball)
+	tar.extractall(path=incoming_path)
+        print(mtbutils.log_stardate('tar-archive extracted.'))
+	tar.close()
 	
     # Scan incoming dir again
     file_list = getfiles(incoming_path)
@@ -148,6 +150,7 @@ def process(transaction):
             unknown_file_types.append(in_file)
 
     for vcf in vcf_files:
+	print(vcf)
         register_vcf(vcf, transaction)
     
     if fastqs_normal and fastqs_tumor:
@@ -192,12 +195,15 @@ def register_vcf(in_file, transaction):
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
     if not barcode[0] in basename:
-        new_path = parent_dir + os.path.sep + basename
+        parent_dir_path = os.path.dirname(in_file)
+        print(parent_dir_path)
+	new_path = os.path.join(parent_dir_path, '{}_{}'.format(barcode[0], basename))
+	print(new_path)
         os.rename(in_file, new_path)
         in_file = new_path
 
     # Create a data-set attached to the VARIANT CALL sample
-    data_set = transaction.createNewDataSet(in_file)
+    data_set = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
     data_set.setMeasuredData(False)
     data_set.setSample(new_ngs_sample)  
 
