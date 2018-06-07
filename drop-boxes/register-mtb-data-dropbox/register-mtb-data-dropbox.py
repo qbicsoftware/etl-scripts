@@ -293,7 +293,7 @@ def space_and_project(qbiccode):
 def proc_mtb(zip_archive, transaction):
     """Register archive and submit to CentraXX"""
     # CentraXX submition
-    submit(zip_archive, transaction)
+    # submit(zip_archive, transaction)
     # openBIS registration
     registermtb(zip_archive, transaction)
 
