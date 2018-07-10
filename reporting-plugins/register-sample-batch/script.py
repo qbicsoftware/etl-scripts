@@ -6,9 +6,22 @@ sys.path.append('/abi-projects/QBiC/scripts')
 
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 
+
+class SampleAlreadyExistsError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 def process(tr, params, tableBuilder):
+  ignore_existing = "IGNORE EXISTING" in params
   if "user" in params:
     tr.setUserId(params.get("user"))
+  else:
+    print "user not in params:"
+    print params
   for sample in params.keySet():
     parameters = params.get(sample)
     sampleCode = parameters.get("code")
@@ -40,3 +53,6 @@ def process(tr, params, tableBuilder):
             val = unicode(val,"utf-8")
             val = val.encode("utf-8")
           sample.setPropertyValue(prop, val)
+    else:
+      if not ignore_existing:
+        raise SampleAlreadyExistsError("Sample "+sampleCode+" already exists in openBIS!")
