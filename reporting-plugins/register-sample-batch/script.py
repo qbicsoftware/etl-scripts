@@ -19,9 +19,6 @@ def process(tr, params, tableBuilder):
   ignore_existing = "IGNORE EXISTING" in params
   if "user" in params:
     tr.setUserId(params.get("user"))
-  else:
-    print "user not in params:"
-    print params
   for sample in params.keySet():
     parameters = params.get(sample)
     sampleCode = parameters.get("code")
