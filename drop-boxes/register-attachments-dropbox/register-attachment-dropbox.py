@@ -40,6 +40,7 @@ def process(transaction):
 		if f == "metadata.txt":
 			metadata = open(os.path.join(incomingPath, f))
 			fileInfo = dict(line.strip().split('=') for line in metadata)
+			metadata.close()
 			try:
 				user = fileInfo["user"]
 			except:
