@@ -1,5 +1,5 @@
 from __future__ import print_function
-
+# -*- coding: utf-8 -*-
 """
 @author: Sven Fillinger
 
@@ -41,13 +41,15 @@ Step 2 - 'push' command: Takes the XML and submits it to CentraXX
 Note:
 print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 """
-import re
+import checksum
 import os
+import re
 import sys
-import mtbutils
+
+import ConfigParser
 import logging
 import tarfile
-import ConfigParser
+
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search import SearchResult
@@ -56,16 +58,28 @@ from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleF
 from ch.ethz.sis.openbis.generic.asapi.v3 import IApplicationServerApi
 from ch.systemsx.cisd.common.spring import HttpInvokerUtils
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchCriteria
+
+import mtbutils
 from mtbutils import Counter
 
+#############################################################################
+#
+# The ETL environment setup.
+#
+#############################################################################
 # Path to checksum.py
 sys.path.append('/home-link/qeana10/bin')
 
-
+# String template for the CentraXX XML naming specification
 CENTRAXX_XML_NAME = '{patient_id}_{sample_id}_patient_centraxx.xml'
 
+# Regex matching the QBiC barcode naming specification
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
+# Regex matching the RNAseq sample file naming specification
+RNASEQ_REG = re.compile(r'.*tumor_rna[1,2]{1}.fastq.gz')
+
+# Path to the openBIS properties file
 PROPERTIES = '/etc/openbis.properties'
 
 # Some openBIS type definitions
@@ -77,13 +91,12 @@ MTB_EXP_TYPE = 'Q_NGS_MTB_DIAGNOSIS'
 MTB_RAW_DATA = 'Q_NGS_MTB_DATA'
 NGS_VARIANT_CALL = 'Q_NGS_VARIANT_CALLING'
 
-
+# Experiment ID counter
 EXPERIMENT_ID = 0
 
+# Check if the mtbconverter executable is found in the system path
 cmd_status = mtbutils.mtbconverter(['-h'])
 
-# Print the return code from the subprocess command
-#print('Return code is {}'.format(cmd_status))
 if cmd_status != 0:
     raise mtbutils.MTBdropboxerror("Mtbconverter could not be loaded: " + cmd_status)
 
@@ -103,6 +116,11 @@ else:
 
 COUNTER = Counter()
 
+#############################################################################
+#
+# The ETL logic starts here.
+#
+#############################################################################
 def process(transaction):
     """The main dropbox funtion.
     openBIS executes this function during an incoming file event.
@@ -112,18 +130,17 @@ def process(transaction):
     print(mtbutils.log_stardate('Incoming file event: {}'.format(file_name)))
     # Iterate through the incoming path and get all files
     file_list = getfiles(incoming_path)
-    tar_present = any([f.endswith(".tar") for f in file_list])
     tar_balls = []
     for f in file_list:
-	    if f.endswith(".tar"): tar_balls.append(f)
+        if f.endswith(".tar"): tar_balls.append(f)
     
     for ball in tar_balls:
         print(mtbutils.log_stardate('Putative tar-archive detected: {}'.format(ball)))
-	tar = tarfile.open(ball)
-	tar.extractall(path=incoming_path)
-        print(mtbutils.log_stardate('tar-archive extracted.'))
-	tar.close()
-	
+        tar = tarfile.open(ball)
+        tar.extractall(path=incoming_path)
+            print(mtbutils.log_stardate('tar-archive extracted.'))
+        tar.close()
+
     # Scan incoming dir again
     file_list = getfiles(incoming_path)
     
@@ -131,10 +148,13 @@ def process(transaction):
     unknown_file_types = []
     fastqs_tumor = []
     fastqs_normal = []
+    rna_seq_files = []
     vcf_files = []
     for in_file in file_list:
         if in_file.endswith('origlabfilename') or in_file.endswith('sha256sum') or 'source_dropbox.txt' in in_file:
             continue
+        if RNASEQ_REG.findall(in_file):
+            rna_seq_files.append(in_file)
         if 'fastq' in in_file:
             if 'normal' in in_file:
                 fastqs_normal.append(find_pbmc(in_file, transaction))
@@ -150,12 +170,13 @@ def process(transaction):
             unknown_file_types.append(in_file)
 
     for vcf in vcf_files:
-	print(vcf)
         register_vcf(vcf, transaction)
     
     if fastqs_normal and fastqs_tumor:
         proc_fastq(fastqs_tumor, transaction)
         proc_fastq(fastqs_normal, transaction)
+
+    register_rnaseq(rna_seq_files, transaction)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
@@ -165,6 +186,89 @@ def process(transaction):
        #     'Manual intervention needed.')
 
     print(mtbutils.log_stardate('Processing finished.'))
+
+
+def getNextFreeBarcode(projectcode, numberOfBarcodes):
+    letters = string.ascii_uppercase
+    numberOfBarcodes += 1
+
+    currentLetter = letters[numberOfBarcodes / 999]
+    currentNumber = numberOfBarcodes % 999
+    code = projectcode + str(currentNumber).zfill(3) + currentLetter
+    return code + checksum.checksum(code)
+
+
+def register_rnaseq(rna_seq_files, transaction):
+    """Registers RNAseq experiment raw data in openBIS.
+
+    The list must contain two elements, following the naming convention ``r'.*tumor_rna[1,2]{1}.fastq.gz'``.
+    Both files must additionally contain the same QBiC sample code in order to get registered.
+
+    Args:
+        rna_seq_files (list): A list with fastq files from an RNAseq experiment
+        transaction (:class:DataSetRegistrationTransaction): An openBIS data set registration object
+
+    Raises:
+        MTBdropboxerror: If some of the conditions have not been fullfilled, with a text string explaining
+                        the reason for the failure.
+    """
+    print(mtbutils.log_stardate('Registering incoming MTB RNAseq data {}'.format(rna_seq_files)))
+    assert len(rna_seq_files) == 2
+    file1 = os.path.basename(rna_seq_files[0])
+    file2 = os.path.basename(rna_seq_files[1])
+    assert len(set(QCODE_REG.findall(file1))) == 1
+    assert len(set(QCODE_REG.findall(file2))) == 1
+    assert QCODE_REG.findall(file1)[0] == QCODE_REG.findall(file2)[0]
+
+
+    # This is the tumor dna sample barcode (type: TEST_SAMPLE)
+    dna_barcode = QCODE_REG.findall(file1)[0]
+    # Find the corresponding space and project
+    space, project = space_and_project(dna_barcode)
+
+    criteria = SampleSearchCriteria()
+    criteria.withSpace().withCode().thatEquals(space)
+    criteria.withProject().withCode().thatEquals(project)
+
+    # tell the API to fetch properties for each returned sample
+    fetchOptions = SampleFetchOptions()
+
+    result = api.searchSamples(sessionToken, criteria, fetchOptions)
+    print("Found {} samples for project {} in space {}.".format(len(result.getObjects()), project, space))
+    new_rna_sample_barcode = getNextFreeBarcode(project, numberOfBarcodes=len(result.getObjects()))
+
+    # Now get the parent sample id (tumor sample, type: BIOLOGICAL_SAMPLE)
+    tumor_dna_sample = getsample(dna_barcode, transaction)
+    parent_ids = tumor_dna_sample.getParentSampleIdentifiers()
+    assert len(parent_ids) == 1
+    tumor_tissue_sample = getsample(dna_barcode[0], transaction)
+
+    # Now we have to create a new TEST_SAMPLE with sample type RNA and attach it
+    # to the tumor tissue sample
+    new_rna_sample = transaction.createNewSample(new_rna_sample_barcode, "Q_TEST_SAMPLE")
+    new_rna_sample.setParentSampleIdentifiers(tumor_tissue_sample.getSampleIdentifier())
+    new_rna_sample.setPropertyValue('Sample type', 'RNA')
+
+    # We design a new experiment and sample identifier
+    experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
+    new_exp_id = '/{space}/{project}/{project}E{number}'.format(
+        space=space, project=project, number=len(experiments) + COUNTER.newId())
+    new_sample_id = '/{space}/NGS{barcode}'.format(
+        space=space, project=project, barcode=new_rna_sample_barcode)
+    new_ngs_experiment = transaction.createNewExperiment(new_exp_id, "Q_NGS_MEASUREMENT")
+    new_ngs_experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+    new_ngs_sample = transaction.createNewSample(new_sample_id, "Q_NGS_SINGLE_SAMPLE_RUN")
+    new_ngs_sample.setParentSampleIdentifiers(new_rna_sample)
+    new_ngs_sample.setExperiment(new_ngs_experiment)
+
+    # Create a data-set attached to the VARIANT CALL sample
+    data_set = transaction.createNewDataSet("Q_NGS_RAW_DATA")
+    data_set.setMeasuredData(False)
+    data_set.setSample(new_ngs_sample)
+
+    # Attach the directory to the dataset
+    transaction.moveFile(in_file, data_set)
+
 
 def register_vcf(in_file, transaction):
     print(mtbutils.log_stardate('Registering VCF {}'.format(in_file)))
@@ -197,15 +301,15 @@ def register_vcf(in_file, transaction):
     if not barcode[0] in basename:
         parent_dir_path = os.path.dirname(in_file)
         print(parent_dir_path)
-	new_path = os.path.join(parent_dir_path, '{}_{}'.format(barcode[0], basename))
-	print(new_path)
+        new_path = os.path.join(parent_dir_path, '{}_{}'.format(barcode[0], basename))
+        print(new_path)
         os.rename(in_file, new_path)
         in_file = new_path
 
     # Create a data-set attached to the VARIANT CALL sample
     data_set = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
     data_set.setMeasuredData(False)
-    data_set.setSample(new_ngs_sample)  
+    data_set.setSample(new_ngs_sample)
 
     # Attach the directory to the dataset
     transaction.moveFile(in_file, data_set)
@@ -465,7 +569,7 @@ def getallchildren(qcode):
     fetch_opt = SampleFetchOptions()
     fetch_opt.withChildrenUsing(fetch_opt)
     fetch_opt.withProperties()
-	
+
     scrit = SampleSearchCriteria()
     scrit.withCode().thatEquals(qcode)
    
