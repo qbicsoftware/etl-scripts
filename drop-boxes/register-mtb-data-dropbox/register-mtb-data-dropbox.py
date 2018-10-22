@@ -242,6 +242,7 @@ def register_rnaseq(rna_seq_files, transaction):
     tumor_dna_sample = getsample(dna_barcode, transaction)
     parent_ids = tumor_dna_sample.getParentSampleIdentifiers()
     assert len(parent_ids) == 1
+    print(parent_ids)
     tumor_tissue_sample = getsample(parent_ids[0], transaction)
 
     # Now we have to create a new TEST_SAMPLE with sample type RNA and attach it
@@ -254,7 +255,8 @@ def register_rnaseq(rna_seq_files, transaction):
             number=3
         )
     ))
-    new_rna_sample.setParentSampleIdentifiers(tumor_tissue_sample.getSampleIdentifier())
+    parent_sample_id = tumor_tissue_sample.getSampleIdentifier()
+    new_rna_sample.setParentSampleIdentifiers([parent_sample_id])
     new_rna_sample.setPropertyValue('Sample type', 'RNA')
 
     # We design a new experiment and sample identifier
@@ -266,16 +268,23 @@ def register_rnaseq(rna_seq_files, transaction):
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, "Q_NGS_MEASUREMENT")
     new_ngs_experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
     new_ngs_sample = transaction.createNewSample(new_sample_id, "Q_NGS_SINGLE_SAMPLE_RUN")
-    new_ngs_sample.setParentSampleIdentifiers(new_rna_sample)
+    new_ngs_sample.setParentSampleIdentifiers([new_rna_sample_barcode])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
     # Create a data-set attached to the VARIANT CALL sample
     data_set = transaction.createNewDataSet("Q_NGS_RAW_DATA")
     data_set.setMeasuredData(False)
     data_set.setSample(new_ngs_sample)
-
+    
+    # Put the files in one directory
+    base_path = os.path.dirname(transaction.getIncoming().getAbsolutePath())
+    registration_dir = os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(new_rna_sample_barcode))
+    os.mkdir(registration_dir)
+    
+    for raw_data in rna_seq_files:
+        os.rename(raw_data, os.path.join(registration_dir, os.path.basename(raw_data)))
     # Attach the directory to the dataset
-    transaction.moveFile(in_file, data_set)
+    transaction.moveFile(registration_dir, data_set)
 
 
 def register_vcf(in_file, transaction):
