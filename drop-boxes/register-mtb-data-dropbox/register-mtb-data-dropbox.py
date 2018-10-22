@@ -1,5 +1,6 @@
 from __future__ import print_function
-# -*- coding: utf-8 -*-
+import sys
+sys.path.append('/home-link/qeana10/bin/')
 """
 @author: Sven Fillinger
 
@@ -138,7 +139,7 @@ def process(transaction):
         print(mtbutils.log_stardate('Putative tar-archive detected: {}'.format(ball)))
         tar = tarfile.open(ball)
         tar.extractall(path=incoming_path)
-            print(mtbutils.log_stardate('tar-archive extracted.'))
+        print(mtbutils.log_stardate('tar-archive extracted.'))
         tar.close()
 
     # Scan incoming dir again
