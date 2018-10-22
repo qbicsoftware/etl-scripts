@@ -1,5 +1,4 @@
 from __future__ import print_function
-# -*- coding: utf-8 -*-
 """
 @author: Sven Fillinger
 
@@ -52,6 +51,7 @@ import tarfile
 
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
+import ch.systemsx.cisd.openbis.generic.shared.api.v1.dto.SearchSubCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search import SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleFetchOptions
@@ -138,7 +138,7 @@ def process(transaction):
         print(mtbutils.log_stardate('Putative tar-archive detected: {}'.format(ball)))
         tar = tarfile.open(ball)
         tar.extractall(path=incoming_path)
-            print(mtbutils.log_stardate('tar-archive extracted.'))
+        print(mtbutils.log_stardate('tar-archive extracted.'))
         tar.close()
 
     # Scan incoming dir again
@@ -226,16 +226,14 @@ def register_rnaseq(rna_seq_files, transaction):
     # Find the corresponding space and project
     space, project = space_and_project(dna_barcode)
 
-    criteria = SampleSearchCriteria()
-    criteria.withSpace().withCode().thatEquals(space)
-    criteria.withProject().withCode().thatEquals(project)
-
-    # tell the API to fetch properties for each returned sample
-    fetchOptions = SampleFetchOptions()
-
-    result = api.searchSamples(sessionToken, criteria, fetchOptions)
-    print("Found {} samples for project {} in space {}.".format(len(result.getObjects()), project, space))
-    new_rna_sample_barcode = getNextFreeBarcode(project, numberOfBarcodes=len(result.getObjects()))
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    pc = SearchCriteria()
+    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
+    result = search_service.searchForSamples(sc)
+    print("Found {} samples for project {} in space {}.".format(len(result), project, space))
+    new_rna_sample_barcode = getNextFreeBarcode(project, numberOfBarcodes=len(result))
 
     # Now get the parent sample id (tumor sample, type: BIOLOGICAL_SAMPLE)
     tumor_dna_sample = getsample(dna_barcode, transaction)
