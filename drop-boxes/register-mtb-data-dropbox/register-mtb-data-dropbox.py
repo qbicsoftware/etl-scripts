@@ -45,6 +45,7 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 import checksum
 import os
 import re
+import string
 import sys
 
 import ConfigParser
@@ -53,7 +54,7 @@ import tarfile
 
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
-import ch.systemsx.cisd.openbis.generic.shared.api.v1.dto.SearchSubCriteria
+from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.common.search import SearchResult
 import ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.Sample
 from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.fetchoptions import SampleFetchOptions
@@ -241,7 +242,7 @@ def register_rnaseq(rna_seq_files, transaction):
     tumor_dna_sample = getsample(dna_barcode, transaction)
     parent_ids = tumor_dna_sample.getParentSampleIdentifiers()
     assert len(parent_ids) == 1
-    tumor_tissue_sample = getsample(dna_barcode[0], transaction)
+    tumor_tissue_sample = getsample(parent_ids[0], transaction)
 
     # Now we have to create a new TEST_SAMPLE with sample type RNA and attach it
     # to the tumor tissue sample
