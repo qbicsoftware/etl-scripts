@@ -1,4 +1,6 @@
 from __future__ import print_function
+import sys
+sys.path.append('/home-link/qeana10/bin/')
 """
 @author: Sven Fillinger
 
