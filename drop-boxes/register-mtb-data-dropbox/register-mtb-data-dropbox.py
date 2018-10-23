@@ -247,7 +247,9 @@ def register_rnaseq(rna_seq_files, transaction):
 
     # Now we have to create a new TEST_SAMPLE with sample type RNA and attach it
     # to the tumor tissue sample
-    new_rna_sample = transaction.createNewSample(new_rna_sample_barcode, "Q_TEST_SAMPLE")
+    new_rna_sample = transaction.createNewSample("/{space}/{barcode}".format(
+	space=space,
+	barcode=new_rna_sample_barcode), "Q_TEST_SAMPLE")
     new_rna_sample.setExperiment(transaction.getSearchService().getExperiment(
         "/{space}/{project}/{project}E{number}".format(
             space=space,
