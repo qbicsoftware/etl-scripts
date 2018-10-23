@@ -284,7 +284,10 @@ def register_rnaseq(rna_seq_files, transaction):
     os.mkdir(registration_dir)
     
     for raw_data in rna_seq_files:
-        os.rename(raw_data, os.path.join(registration_dir, os.path.basename(raw_data)))
+        # replace tumor dna barcode with tumor rna barcode
+        old_base = os.path.basename(raw_data)
+        new_base = old_base.replace(dna_barcode, new_rna_sample_barcode)
+        os.rename(raw_data, os.path.join(registration_dir, os.path.basename(new_base)))
     # Attach the directory to the dataset
     transaction.moveFile(registration_dir, data_set)
 
