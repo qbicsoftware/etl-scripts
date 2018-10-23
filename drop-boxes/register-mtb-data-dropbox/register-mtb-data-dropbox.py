@@ -259,7 +259,7 @@ def register_rnaseq(rna_seq_files, transaction):
     ))
     parent_sample_id = tumor_tissue_sample.getSampleIdentifier()
     new_rna_sample.setParentSampleIdentifiers([parent_sample_id])
-    new_rna_sample.setPropertyValue('Sample type', 'RNA')
+    new_rna_sample.setPropertyValue('Q_SAMPLE_TYPE', 'RNA')
 
     # We design a new experiment and sample identifier
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
@@ -270,7 +270,7 @@ def register_rnaseq(rna_seq_files, transaction):
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, "Q_NGS_MEASUREMENT")
     new_ngs_experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
     new_ngs_sample = transaction.createNewSample(new_sample_id, "Q_NGS_SINGLE_SAMPLE_RUN")
-    new_ngs_sample.setParentSampleIdentifiers([new_rna_sample_barcode])
+    new_ngs_sample.setParentSampleIdentifiers(["/{space}/{barcode}".format(space=space, barcode=new_rna_sample_barcode)])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
     # Create a data-set attached to the VARIANT CALL sample
