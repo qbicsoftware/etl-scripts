@@ -163,7 +163,10 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
         secName += '%s ' % geneticID
         if geneticID in newNGSSamples:
             parentIdentifiers.append(newNGSSamples[geneticID])
-            testParentIdentifiers.append(oldTestSamples[geneticID])
+            if geneticID in oldTestSamples:
+                testParentIdentifiers.append(oldTestSamples[geneticID])
+            elif geneticID in newTestSamples:
+                testParentIdentifiers.append(newTestSamples[geneticID])
         else:
             print('I am scanning for samples now')
             for barcode in qbicBarcodes:
