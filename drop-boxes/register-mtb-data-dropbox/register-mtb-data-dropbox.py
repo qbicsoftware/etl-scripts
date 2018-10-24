@@ -80,7 +80,7 @@ CENTRAXX_XML_NAME = '{patient_id}_{sample_id}_patient_centraxx.xml'
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 # Regex matching the RNAseq sample file naming specification
-RNASEQ_REG = re.compile(r'.*tumor_rna[1,2]{1}.fastq.gz')
+RNASEQ_REG = re.compile(r'.*tumor_rna.[1,2]{1}.fastq.gz')
 
 # Path to the openBIS properties file
 PROPERTIES = '/etc/openbis.properties'
