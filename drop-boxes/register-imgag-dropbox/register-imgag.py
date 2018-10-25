@@ -626,7 +626,7 @@ def process(transaction):
             os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
 
             for g in gsvars:
-                if(ident in g.split('.')[0]):
+                if(ident == g.split('.')[0]): # we have to test for equality in cases where the dataset contains somatic and germline variants (GSvar files)
                     os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
             # also register tsv files if they are contained in the incoming vcf folder, e.g. fkpm counts
