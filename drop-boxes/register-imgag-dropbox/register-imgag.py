@@ -616,7 +616,7 @@ def process(transaction):
             transaction.moveFile(fastqFolder, fastqDataSet)
             #transaction.moveFile(folder, fastqDataSet)
         for vc in vcfs:
-            ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','').replace('_adme', '') #example: GS130715_03-GS130717_03
+            ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','').replace('_adme', '').replace('_old', '') #example: GS130715_03-GS130717_03
             print ident
             vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
             vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
