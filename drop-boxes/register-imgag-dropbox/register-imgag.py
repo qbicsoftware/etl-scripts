@@ -626,7 +626,7 @@ def process(transaction):
             os.rename(os.path.join(folder, vc), os.path.join(vcfFolder, vc))
 
             for g in gsvars:
-                gs_file_ident = g.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','').replace('_adme', '')
+                gs_file_ident = g.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','').replace('_adme', '').replace('_old', '')
                 if(ident == gs_file_ident): # we have to test for equality in cases where the dataset contains somatic and germline variants (GSvar files)
                     os.rename(os.path.join(folder,g), os.path.join(vcfFolder, g))
 
