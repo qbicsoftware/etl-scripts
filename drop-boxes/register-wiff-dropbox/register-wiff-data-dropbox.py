@@ -98,7 +98,7 @@ def space_and_project(transaction, qbiccode):
     found_samples = search_service.searchForSamples(sc)
     space = found_samples[0].getSpace()
 
-    return space, qbiccode[0:4]
+    return space, qbiccode[0:5]
 
 
 def wiffpairs(files):
