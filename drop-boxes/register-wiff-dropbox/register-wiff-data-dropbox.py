@@ -19,7 +19,7 @@ sys.path.append('/home-link/qeana10/bin')
 QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 # Regex matching the WIFF files naming specification
-WIFF_FILE = re.compile(r'(\w*\.wiff)\b')
+WIFF_FILE = re.compile(r'(\w*\.wiff$)\b')
 WIFF_SCAN_FILE = re.compile(r'(\w*\.wiff.scan)\b')
 
 # Path to the openBIS properties file
