@@ -110,14 +110,14 @@ def wiffpairs(files):
     :return: A list of pairs of wiff files and wiff scan files
     """
     pairs = []
-    wiff_files = [wiff if re.findall(WIFF_FILE, wiff) else None for wiff in files]
+    wiff_files = [wiff for wiff in files if re.findall(WIFF_FILE, wiff)]
     assert wiff_files  # should not be empty
-    wiff_scans = [scan if re.findall(WIFF_SCAN_FILE, scan) else None for scan in files]
+    wiff_scans = [scan for scan in files if re.findall(WIFF_SCAN_FILE, scan)]
     assert wiff_scans  # should not be empty
     assert len(wiff_scans) == len(wiff_files)
     # Find the corresponding wiff scan file
     for wiff_file in wiff_files:
-        scan = [scan if wiff_file in scan else None for scan in wiff_scans]
+        scan = [scan for scan in wiff_scans if wiff_file in scan]
         assert scan
         pairs.append((wiff_file, scan[0]))
         wiff_scans.remove(scan[0])
