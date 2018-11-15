@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import signal
 import datetime
+import xml.etree.ElementTree
 from functools import partial
 import logging
 import ch.systemsx.cisd.etlserver.registrator.api.v2
@@ -58,10 +59,15 @@ CONVERSION_TIMEOUT = 7200
 # Standard BSA sample and experiment
 BSA_MPC_SPACE = "MFT_QC_MPC"
 BSA_MPC_PROJECT = "QCMPC"
-BSA_MPC_SAMPLE_ID = "/MFT_QC_MPC/QCMPC002AO"
+
 BSA_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE4"
+BLANK_MPC_EXPERIMENT_ID = "/MFT_QC_MPC/QCMPC/QCMPCE6"
+
 BSA_MPC_BARCODE = "QCMPC002AO"
+BLANK_MPC_BARCODE = "QCMPC003AW"
+
 bsa_run_pattern = re.compile(BSA_MPC_BARCODE)
+blank_run_pattern = re.compile(BLANK_MPC_BARCODE)
 
 try:
     TimeoutError
@@ -74,7 +80,7 @@ class ConversionError(RuntimeError):
     pass
 
 
-def check_output(cmd, timeout=None, **kwargs):
+def check_output(cmd, timeout=None, write_stdout=False, **kwargs):
     """Run a program and raise an error on error exit code.
 
     This is basically just `subprocess.check_output`, but the version
@@ -97,7 +103,8 @@ def check_output(cmd, timeout=None, **kwargs):
         if retcode:
             logging.debug("Command %s failed with error code %s",
                           " ".join(cmd), retcode)
-            logging.debug("stdout: %s", out)
+            if not write_stdout:
+                logging.debug("stdout: %s", out)
             logging.debug("stderr: %s", err)
             raise subprocess.CalledProcessError(retcode, " ".join(cmd))
         return out, err
@@ -110,6 +117,15 @@ def check_output(cmd, timeout=None, **kwargs):
             signal.alarm(old_alarm)
             signal.signal(signal.SIGALRM, old_handler)
 
+# mzml.gz to mzml - keeps gz file
+def gunzip(inpath, outpath):
+    print inpath
+    print outpath
+    cmd = ["zcat", inpath]
+    #p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    (stdout, stderr) = check_output(cmd, timeout = CONVERSION_TIMEOUT, write_stdout=True) #p.communicate()
+    with file(outpath, 'w') as fp:
+        fp.write(stdout)
 
 def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
           dest_user=None, timeout=None, extra_options=None):
@@ -202,6 +218,53 @@ def extract_barcode(filename):
     except:
         return True
 
+def parse_timestamp_easy(mzml_path):
+    mzml = open(mzml_path)
+    time = None
+    for line in mzml:
+        if "<run id=" in line:
+            for token in line.split(" "):
+                if "startTimeStamp=" in token:
+                    xsdDateTime = token.split('"')[1]
+                    time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+            break
+            mzml.close()
+    return time
+
+def parse_instrument_accession(mzml_path):
+    print ""
+    mzml = open(mzml_path)
+    accession = None
+    out = True
+    for line in mzml:
+        if "<instrumentConfigurationList" in line or 'id="CommonInstrumentParams">' in line:
+            out = False
+        if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
+            out = True
+        if not out and '<cvParam cvRef="MS"' in line:
+            line = line.split(" ")
+            for token in line:
+                if "accession=" in token:
+                    accession = token.split('"')[1]
+            mzml.close()
+            break
+    print "accession for "+mzml_path+": "+accession
+    return accession
+
+def parse_timestamp_from_mzml(mzml_path):
+    schema = '{http://psi.hupo.org/ms/mzml}'
+    for event, element in xml.etree.ElementTree.iterparse(mzml_path):
+        if element.tag == schema+'run':
+            xsdDateTime = element.get('startTimeStamp')
+            element.clear()
+            break
+        element.clear() # remove unused xml elements
+    time = None
+    try:
+        time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+    except TypeError:
+        print "no startTimeStamp found"
+    return time
 
 class DropboxhandlerFile(object):
     """Represent a new file coming from dropboxhandler.
@@ -261,10 +324,6 @@ class DropboxhandlerFile(object):
             if require_barcode:
                 raise
             self.barcode, self.project = None, None
-
-    def write_metadata(self, measurement=None, run=None, dataset=None):
-        """Write metadata to openbis experiments / samples as appropriate."""
-        raise NotImplementedError()
 
     @property
     def meta(self):
@@ -345,6 +404,34 @@ class QBisRegistration(object):
         exps = search.listExperiments(path)
         return [exp for exp in exps if exp.getExperimentType() == exp_type]
 
+def createSimilarMSExperiment(tr, space, project, existing):
+    numberOfExperiments = len(existing)
+    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+    while newExpID in existing:
+        numberOfExperiments += 1 
+        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+    existing.append(newExpID)
+    newExp = tr.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
+    newExp.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+    newExp.setPropertyValue('Q_ADDITIONAL_INFO', "Automatically created experiment: instrument ID did not fit existing experiment")
+    return newExp
+
+def createSimilarMSSample(tr, space, exp, properties, parents):
+    code = None
+    for p in parents:
+        code = p.split("/")[2]
+    run = 0
+    sampleExists = True
+    newSampleID = None
+    while sampleExists:
+        run += 1
+        newSampleID = '/' + space + '/' + 'MS'+ str(run) + code
+        sampleExists = tr.getSampleForUpdate(newSampleID)
+    newMSSample = tr.createNewSample(newSampleID, "Q_MS_RUN")
+    newMSSample.setParentSampleIdentifiers(parents)
+    newMSSample.setExperiment(exp)
+    newMSSample.setPropertyValue('Q_PROPERTIES', properties)
+    return newMSSample 
 
 def isCurrentMSRun(tr, parentExpID, msExpID):
     """Ask Andreas"""
@@ -367,26 +454,47 @@ def isCurrentMSRun(tr, parentExpID, msExpID):
                     return True
     return False
 
-def createRawDataSet(transaction, incomingPath, sample, format):
+class SampleAlreadyCreatedError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+class SampleNotFoundError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
+    if time_stamp:
+        rawDataSet.setPropertyValue("Q_MEASUREMENT_START_DATE", time_stamp)
     rawDataSet.setMeasuredData(False)
     rawDataSet.setSample(sample)
     transaction.moveFile(incomingPath, rawDataSet)
 
-def GZipAndMoveMZMLDataSet(transaction, filepath, sample):
-    #TODO read metadata from this file path:
-    #open(filepath)
+def GZipAndMoveMZMLDataSet(transaction, filepath, sample, file_exists = False):
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
-    #TODO set property values from
-    #mzmlDataSet.setPropertyValue()
+    #TODO more properties from mzml?
+    time_stamp = parse_timestamp_easy(filepath)
+
     mzmlDataSet.setMeasuredData(False)
     mzmlDataSet.setSample(sample)
-    subprocess.call(["gzip", filepath])
+    if time_stamp:
+        mzmlDataSet.setPropertyValue("Q_MEASUREMENT_START_DATE", time_stamp)
+    if not file_exists:
+        subprocess.call(["gzip", filepath])
     zipped = filepath+".gz"
     transaction.moveFile(zipped, mzmlDataSet)
+    return time_stamp
 
-'''Script written by Chris, handles everything but conversion'''
+'''Metadata extraction written by Chris, handles everything but conversion. Support for batch upload (no metadata here) by Andreas'''
 def handleImmunoFiles(transaction):
 
     xmltemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?> <qproperties> <qfactors> <qcategorical label=\"technical_replicate\" value=\"%s\"/> <qcategorical label=\"workflow_type\" value=\"%s\"/> </qfactors> </qproperties>"
@@ -409,7 +517,18 @@ def handleImmunoFiles(transaction):
         experiment = code[1:5]
         parentCode = code[:10]
     else:
-        raise ValueError("Invalid barcode: %s" % code)        
+        raise ValueError("Invalid barcode: %s" % code)
+
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+    found = search_service.searchForSamples(sc)
+    space = found[0].getSpace()
+    # find existing experiments
+    existingExperimentIDs = []
+    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    for eexp in existingExperiments:
+        existingExperimentIDs.append(eexp.getExperimentIdentifier())
 
     data_files = []
     metadataFile = None
@@ -431,11 +550,18 @@ def handleImmunoFiles(transaction):
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
         foundSamples = search_service.searchForSamples(sc)
-        space = foundSamples[0].getSpace()
-        existingExperimentIDs = []
-        existingExperiments = search_service.listExperiments("/" + space + "/" + project)
 
-        run = 1
+        #test for existing samples before conversion step
+        run = 0
+        sampleExists = True
+        while sampleExists:
+            run += 1
+            newSampleID = '/' + space + '/' + 'MS'+ str(run) + parentCode
+            sampleExists = transaction.getSampleForUpdate(newSampleID)
+                #raise SampleAlreadyCreatedError("Sample "+newSampleID+" already exists.")
+
+        # start at first ms run id not yet found. datasets might be registered more than once, if they arrive multiple times
+        #run = 1
         for line in metadataFile:
             splitted = line.split('\t')
             fileName = splitted[0]
@@ -452,13 +578,9 @@ def handleImmunoFiles(transaction):
             sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
             # register new experiment and sample
-            numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + run
-
-            for eexp in existingExperiments:
-                existingExperimentIDs.append(eexp.getExperimentIdentifier())
-
+            numberOfExperiments = len(existingExperimentIDs)
             newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
+            
             while newExpID in existingExperimentIDs:
                 numberOfExperiments += 1 
                 newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
@@ -472,7 +594,9 @@ def handleImmunoFiles(transaction):
             newMSExperiment.setPropertyValue('Q_ADDITIONAL_INFO', comment)
             newMSExperiment.setPropertyValue('Q_MS_LCMS_METHOD', method.replace('@','').replace('+', '').replace('_100ms', ''))
 
-            newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ str(run) + parentCode, "Q_MS_RUN")
+            newSampleID = '/' + space + '/' + 'MS'+ str(run) + parentCode
+
+            newMSSample = transaction.createNewSample(newSampleID, "Q_MS_RUN")
             newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
             newMSSample.setExperiment(newMSExperiment)
             properties = xmltemplate % (repl, wf_type)
@@ -482,34 +606,57 @@ def handleImmunoFiles(transaction):
             tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
             raw_path = os.path.join(incomingPath, os.path.join(name, fileName))
             stem, ext = os.path.splitext(fileName)
-            try:
-                convert = partial(convert_raw,
-                        remote_base=REMOTE_BASE,
-                        host=MSCONVERT_HOST,
-                        timeout=CONVERSION_TIMEOUT,
-                        user=MSCONVERT_USER)
-                if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                    openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-                else:
-                    raise ValueError("Invalid incoming file %s" % incomingPath)
 
-                mzml_path = os.path.join(tmpdir, stem + '.mzML')
-                convert(raw_path, mzml_path)
+            #test if some or all files are left over from earlier conversion attempt (e.g. failure of transaction, but successful conversion)
+            mzml_name = stem + '.mzML'
+            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+            gzip_dest = os.path.join(DROPBOX_PATH, mzml_name + '.gz')
 
-                mzml_name = os.path.basename(mzml_path)
-                mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+            #conversion process ended successfully if gzip process deleted mzml and created mzml.gz
+            converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
+            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+            else:
+                raise ValueError("Invalid incoming file %s" % incomingPath)
 
-                os.rename(mzml_path, mzml_dest)
-            finally:
-                shutil.rmtree(tmpdir)
-            createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code)
-            GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample)
+            if True: #not converted_exists:
+                try:
+                    convert = partial(convert_raw,
+                            remote_base=REMOTE_BASE,
+                            host=MSCONVERT_HOST,
+                            timeout=CONVERSION_TIMEOUT,
+                            user=MSCONVERT_USER)
+
+                    mzml_path = os.path.join(tmpdir, mzml_name)
+                    convert(raw_path, mzml_path)
+
+                    os.rename(mzml_path, mzml_dest)
+                finally:
+                    shutil.rmtree(tmpdir)
+            # parse some information from mzml, if mzmML.gz exists we need to unpack first
+            if False: #converted_exists:
+                gunzip(gzip_dest, mzml_dest)
+            instrument_accession = parse_instrument_accession(mzml_dest)
+            time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, newMSSample, converted_exists)
+            if instrument_accession:
+                newMSExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+            if False: #converted_exists:
+                print "test, deleting "+mzml_dest
+            createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
+            
     # no metadata file: just one RAW file to convert and attach to samples
     else:
-        search_service = transaction.getSearchService()
-        # TODO allow complex barcodes in dropboxhandler
-        prefix = ms_prefix_pattern.findall(name)[0]
-        ms_code = prefix+code
+        # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
+        prefixes = ms_prefix_pattern.findall(name)
+        if prefixes:
+            prefix = prefixes[0]
+            for p in prefixes:
+                if len(p) > prefix:
+                    prefix = p
+            ms_code = prefix+code
+        else:
+            # workaround, keep?
+            ms_code = "MS"+code
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
         foundSamples = search_service.searchForSamples(sc)
@@ -517,19 +664,17 @@ def handleImmunoFiles(transaction):
 
         tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
         raw_path = os.path.join(incomingPath, name)
-        print raw_path
         stem, ext = os.path.splitext(name)
+        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+        else:
+            raise ValueError("Invalid incoming file %s" % incomingPath)
         try:
             convert = partial(convert_raw,
                     remote_base=REMOTE_BASE,
                     host=MSCONVERT_HOST,
                     timeout=CONVERSION_TIMEOUT,
                     user=MSCONVERT_USER)
-            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-            else:
-                raise ValueError("Invalid incoming file %s" % incomingPath)
-
             mzml_path = os.path.join(tmpdir, stem + '.mzML')
             convert(raw_path, mzml_path)
 
@@ -539,14 +684,38 @@ def handleImmunoFiles(transaction):
             os.rename(mzml_path, mzml_dest)
         finally:
             shutil.rmtree(tmpdir)
-        createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code)
-        GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+
+        instrument_accession = parse_instrument_accession(mzml_dest)
+        if instrument_accession:
+                expID = ms_samp.getExperiment().getExperimentIdentifier()
+                exp = transaction.getExperimentForUpdate(expID)
+                old_accession = exp.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
+                if old_accession and old_accession != instrument_accession:
+                    print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
+                    parents = foundSamples[0].getParentSampleIdentifiers()
+                    properties = ms_samp.getPropertyValue("Q_PROPERTIES")
+                    newExp = createSimilarMSExperiment(transaction, space, project, existingExperimentIDs)
+                    ms_samp = createSimilarMSSample(transaction, space, newExp, properties, parents)
+                    newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+                else:
+                    exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
+        createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
 
 
-def handle_BSA_Run(transaction):
+def handle_QC_Run(transaction):
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
     incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    if len(bsa_run_pattern.findall(name)) > 0:
+        code = BSA_MPC_BARCODE
+        # The MS experiment
+        msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
+    else:
+        code = BLANK_MPC_BARCODE
+        # The MS experiment
+        msExp = transaction.getExperiment(BLANK_MPC_EXPERIMENT_ID)
 
     stem, ext = os.path.splitext(name)
 
@@ -575,11 +744,8 @@ def handle_BSA_Run(transaction):
     finally:
         shutil.rmtree(tmpdir)
 
-    # The MS experiment
-    msExp = transaction.getExperiment(BSA_MPC_EXPERIMENT_ID)
-
     #TODO create new ms sample? if so, use normal qbic barcodes?
-    msCode = "MS"+BSA_MPC_BARCODE
+    msCode = "MS"+code
 
     search_service = transaction.getSearchService()
     sc = SearchCriteria()
@@ -597,26 +763,17 @@ def handle_BSA_Run(transaction):
                 run = existingRun + 1
 
     msSample = transaction.createNewSample('/' + BSA_MPC_SPACE + '/' + msCode + "_" + str(run), "Q_MS_RUN")
-    #set parent sample, always the same for bsa run
-    msSample.setParentSampleIdentifiers([BSA_MPC_SAMPLE_ID])
+    #set parent sample
+
+    msSample.setParentSampleIdentifiers(["/"+BSA_MPC_SPACE+"/"+code])
     msSample.setExperiment(msExp)
 
-    createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-    GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
-
+    time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+    createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
+    
     for f in os.listdir(incomingPath):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
-
-#unused, can't be decided just by source at the moment
-def decideOnMethod(transaction, source_dropbox):
-    switch={
-        'cloud-immuno': handleImmunoFiles,
-        'qeana05-mpc': handle_BSA_Run}
-    try:
-        switch[source_dropbox](transaction)
-    except KeyError:
-        handleDefault(transaction)
 
 def process(transaction):
     """Ask Andreas"""
@@ -626,18 +783,18 @@ def process(transaction):
     incomingPath = transaction.getIncoming().getAbsolutePath()
     name = transaction.getIncoming().getName()
     # If special format from Immuno Dropbox handle separately
-    #TODO check for BSA_MPC_BARCODE and handle transaction in handle_BSA_Run()
     immuno = False 
-    bsa = len(bsa_run_pattern.findall(name)) > 0
+    qc_run = len(bsa_run_pattern.findall(name)+blank_run_pattern.findall(name)) > 0
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
-            source = open(os.path.join(incomingPath, f))
-            if "cloud-immuno" in source.readline():
+            source_file = open(os.path.join(incomingPath, f))
+            source = source_file.readline()
+            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source:
                 immuno = True
                 handleImmunoFiles(transaction)
-    if not immuno and bsa:
-        handle_BSA_Run(transaction)
-    if not immuno and not bsa:
+    if not immuno and qc_run:
+        handle_QC_Run(transaction)
+    if not immuno and not qc_run:
         # Get the name of the incoming file
 
         code = barcode_pattern.findall(name)[0]
@@ -649,59 +806,69 @@ def process(transaction):
         stem, ext = os.path.splitext(name)
         search_service = transaction.getSearchService()
 
-        # Convert the raw file and write it to an mzml tmp folder.
-        # Sadly, I can not see a way to make this part of the transaction.
-        tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
-        try:
-            convert = partial(convert_raw,
-                      remote_base=REMOTE_BASE,
-                      host=MSCONVERT_HOST,
-                      timeout=CONVERSION_TIMEOUT,
-                      user=MSCONVERT_USER)
-            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
-                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
-            else:
-                raise ValueError("Invalid incoming file %s" % incomingPath)
+        #test if some or all files are left over from earlier conversion attempt (e.g. failure of transaction, but successful conversion)
+        mzml_name = stem + '.mzML'
+        mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
+        gzip_dest = os.path.join(DROPBOX_PATH, mzml_name + '.gz')
+        #conversion process ended successfully if gzip process deleted mzml and created mzml.gz
+        converted_exists = not os.path.isfile(mzml_dest) and os.path.isfile(gzip_dest)
+        if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+            openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
+        else:
+            raise ValueError("Invalid incoming file %s" % incomingPath)
 
-            mzml_path = os.path.join(tmpdir, stem + '.mzML')
-            raw_path = os.path.join(incomingPath, name)#raw file has the same name as the incoming folder, this is the path to this file!
-            convert(raw_path, mzml_path)
-
-            mzml_name = os.path.basename(mzml_path)
-            mzml_dest = os.path.join(DROPBOX_PATH, mzml_name)
-
-            os.rename(mzml_path, mzml_dest)
-        finally:
-            shutil.rmtree(tmpdir)
+        if True: #not converted_exists:
+            # Convert the raw file and write it to an mzml tmp folder.
+            tmpdir = tempfile.mkdtemp(dir=MZML_TMP)
+            try:
+                convert = partial(convert_raw,
+                          remote_base=REMOTE_BASE,
+                          host=MSCONVERT_HOST,
+                          timeout=CONVERSION_TIMEOUT,
+                          user=MSCONVERT_USER)
+                mzml_path = os.path.join(tmpdir, stem + '.mzML')
+                raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                convert(raw_path, mzml_path)
+                os.rename(mzml_path, mzml_dest)
+            finally:
+                shutil.rmtree(tmpdir)
 
         # Try to find an existing MS sample
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
         foundSamples = search_service.searchForSamples(sc)
+        MSRawExperiment = None
+        experimentIDs = []
+        parents = []
 
         if len(foundSamples) > 0:
+            parents = foundSamples[0].getParentSampleIdentifiers()
             msSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
-            #msSample.getExperiment() update experiment here
+            experiments = search_service.listExperiments("/" + foundSamples[0].getSpace() + "/" + project)
+            for exp in experiments:
+                experimentIDs.append(exp.getExperimentIdentifier())
         else:
             # Find the test sample or ms sample without prefix (wash runs)
             sc = SearchCriteria()
             sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
             foundSamples = search_service.searchForSamples(sc)
-
+            if len(foundSamples) < 1:
+                raise SampleNotFoundError("Neither the sample "+code+" nor MS"+code+" was found.")
             sampleIdentifier = foundSamples[0].getSampleIdentifier()
             space = foundSamples[0].getSpace()
             sType = foundSamples[0].getSampleType()
             sa = transaction.getSampleForUpdate(sampleIdentifier)
+            parents = [code]
 
             if(sType == "Q_MS_RUN"):
                 msSample = sa
+                parents = foundSamples[0].getParentSampleIdentifiers()
             else:
+                parents = [sa.getSampleIdentifier()]
                 # get or create MS-specific experiment/sample and
                 # attach to the test sample
                 expType = "Q_MS_MEASUREMENT"
-                MSRawExperiment = None
                 experiments = search_service.listExperiments("/" + space + "/" + project)
-                experimentIDs = []
                 for exp in experiments:
                     experimentIDs.append(exp.getExperimentIdentifier())
                     if exp.getExperimentType() == expType:
@@ -710,7 +877,7 @@ def process(transaction):
                             sa.getExperiment().getExperimentIdentifier(),
                             exp.getExperimentIdentifier()
                         ):
-                            MSRawExperiment = exp
+                            MSRawExperiment = transaction.getExperimentForUpdate(exp.getExperimentIdentifier())
                 # no existing experiment for samples of this sample preparation found
                 if not MSRawExperiment:
                     expID = experimentIDs[0]
@@ -726,8 +893,32 @@ def process(transaction):
                 msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
                 msSample.setExperiment(MSRawExperiment)
 
-        createRawDataSet(transaction, raw_path, msSample, openbis_format_code)
-        GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+        # parse some information from mzml, if mzmML.gz exists we need to unpack first
+        if False: #converted_exists:
+            gunzip(gzip_dest, mzml_dest)
+        instrument_accession = parse_instrument_accession(mzml_dest)
+        if instrument_accession:
+            old_accession = None
+            if not MSRawExperiment:
+                expID = msSample.getExperiment().getExperimentIdentifier()
+                MSRawExperiment = transaction.getExperimentForUpdate(expID)
+                old_accession = MSRawExperiment.getPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID')
+            if old_accession and old_accession != instrument_accession:
+                print "Found instrument accession "+instrument_accession+" in mzML, but "+old_accession+" in experiment! Creating new sample and experiment."
+                space = msSample.getSpace()
+                #parents = msSample.getParentSampleIdentifiers()
+                #if len(parents) < 1:
+                #    parents = transaction.getSample(msSample.getSampleIdentifier()).getParentSampleIdentifiers()
+                properties = msSample.getPropertyValue("Q_PROPERTIES")
+                newExp = createSimilarMSExperiment(transaction, space, project, experimentIDs)
+                msSample = createSimilarMSSample(transaction, space, newExp, properties, parents)
+                newExp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+            else:
+                MSRawExperiment.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
+        if False: #converted_exists:
+            print "test, deleting "+mzml_dest
+        time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
+        createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
 
         for f in os.listdir(incomingPath):
             if ".testorig" in f:

@@ -64,9 +64,13 @@ def process(transaction):
         pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
         sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
         foundSamples = search_service.searchForSamples(sc)
-        space = foundSamples[0].getSpace()
-        parentSampleIdentifier = "/"+space+"/"+parentCode
-
+        if len(foundSamples) > 0:
+            space = foundSamples[0].getSpace()
+            parentSampleIdentifier = "/"+space+"/"+parentCode
+        else:
+            # no sample found in this project, they are probably not indexed yet. try parsing space from file name instead
+            space = name.split("_"+parentCode)[0]
+            parentSampleIdentifier = "/"+space+"/"+parentCode
     sa = transaction.getSampleForUpdate(parentSampleIdentifier)
 
     # register new experiment and sample
@@ -92,7 +96,7 @@ def process(transaction):
             if subFolders:
                 subFolder = subFolders[0]
             for f in files:
-                if f.endswith('.alleles'):
+                if f.endswith('.alleles') or f.endswith('alleles.txt'):
                     resultPath = os.path.join(root, f)
                     resultFile = open(resultPath, 'r')
     else:

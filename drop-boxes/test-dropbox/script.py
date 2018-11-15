@@ -34,6 +34,14 @@ def isExpected(identifier):
         except:
                 return False
 
+class TestError(Exception):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 def process(transaction):
         context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -47,52 +55,17 @@ def process(transaction):
         # Get the name of the incoming file 
         name = transaction.getIncoming().getName()
 
-        nameSplit = name.split("-")
-        space = nameSplit[0]
-        project = pPattern.findall(nameSplit[1])[0]
-        experiment_id = ePattern.findall(nameSplit[2])[0]
+        sampleID = "/DELETE_THIS_TEST/QTEST000XX"
 
-        #Register logs
-        wfSampleCode = nameSplit[-1]
-        if not experiment_id:
-                print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
-
-        ss = transaction.getSearchService()
-
-        sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, wfSampleCode))
-        foundSamples = ss.searchForSamples(sc)
-        samplehit = foundSamples[0]
-        wfSample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
+        raise TestError("Test if data was registered!")
         
-        experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
+        sample = transaction.getSampleForUpdate(sampleID)
 
-        experiment.setPropertyValue("Q_WF_STATUS", "FINISHED")
-        endpoint = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        experiment.setPropertyValue("Q_WF_FINISHED_AT", endpoint)
-        #wfSample.setExperiment(experiment)
+        if not sampleID:
+                sample = transaction.createNewSample(sampleID, "Q_TEST_SAMPLE")
 
-        dataSetLogs = transaction.createNewDataSet('Q_WF_MS_PEAKPICKING_LOGS')
-        dataSetLogs.setMeasuredData(False)
-        dataSetLogs.setSample(wfSample)
+        data = transaction.createNewDataSet('Q_TEST')
+        data.setMeasuredData(False)
+        data.setSample(sample)
 
-        logname = incomingPath+"/workflow_logs"
-        os.rename(incomingPath+"/logs", logname)
-        transaction.moveFile(logname, dataSetLogs)
-
-        #Register Results
-        results = os.path.join(incomingPath,"result")
-        for mzml in os.listdir(results):
-                mzmlPath = os.path.join(results,"centroided_"+mzml)
-                os.rename(os.path.join(results,mzml),mzmlPath)
-                code = pattern.findall(mzml)[0]
-                search_service = transaction.getSearchService()
-                sc = SearchCriteria()
-                sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MS"+code))
-                foundSamples = search_service.searchForSamples(sc)
-                sampleID = foundSamples[0].getSampleIdentifier()
-                space = foundSamples[0].getSpace()
-                sa = transaction.getSampleForUpdate(sampleID)
-                dataSetRes = transaction.createNewDataSet('Q_MS_MZML_DATA')
-                dataSetRes.setSample(sa)
-                transaction.moveFile(mzmlPath, dataSetRes)
+        transaction.moveFile(incomingPath, data)

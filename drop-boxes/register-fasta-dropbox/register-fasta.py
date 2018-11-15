@@ -51,7 +51,7 @@ def process(transaction):
         print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
  
     # create new dataset 
-    dataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
+    dataSet = transaction.createNewDataSet("Q_FASTA_DATA")
     dataSet.setMeasuredData(False)
 
     search_service = transaction.getSearchService()
@@ -75,11 +75,6 @@ def process(transaction):
         sa = transaction.getSampleForUpdate(parentSampleIdentifier)
         
         # register new experiment and sample
-        #numberOfExperiments = len(search_service.listExperiments("/" + space + "/" + project)) + 1
-        #newVariantCallingExperiment = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_NGS_VARIANT_CALLING")
-        #newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
-
-        # register new experiment and sample
         existingExperimentIDs = []
         existingExperiments = search_service.listExperiments("/" + space + "/" + project)
     
@@ -94,7 +89,7 @@ def process(transaction):
             numberOfExperiments += 1 
             newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
-        newVariantCallingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_VARIANT_CALLING")
+        newVariantCallingExperiment = transaction.createNewExperiment(newExpID, "Q_FASTA_INFO")
         newVariantCallingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
         search_service = transaction.getSearchService()
@@ -105,7 +100,7 @@ def process(transaction):
         foundSamples2 = search_service.searchForSamples(sc)
 
         vcNumber = 1
-        newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
+        newSampleID = '/' + space + '/' + 'FASTA' + str(vcNumber) + parentCode
         existingSampleIDs = []
 
         for samp in foundSamples2:
@@ -114,36 +109,27 @@ def process(transaction):
         # search in known ids, but also try to fetch the sample in case it wasn't indexed yet
         while newSampleID in existingSampleIDs or transaction.getSampleForUpdate(newSampleID):
             vcNumber += 1
-            newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
+            newSampleID = '/' + space + '/' + 'FASTA' + str(vcNumber) + parentCode
             
-        vcSample = transaction.createNewSample(newSampleID, "Q_NGS_VARIANT_CALLING")
+        vcSample = transaction.createNewSample(newSampleID, "Q_FASTA")
         vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
-        vcSample.setExperiment(newVariantCallingExperiment) 
+        vcSample.setExperiment(newVariantCallingExperiment)
 
-        cegat = False
-        sourceLabFile = open(os.path.join(incomingPath,'source_dropbox.txt'), 'r')
-        sourceLab = sourceLabFile.readline().strip()
-        sourceLabFile.close()
-
-        if sourceLab == 'dmcegat':
-            cegat = True
-        os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
+        resultsname = name.replace('.fasta', '').replace('.fsa', '')
+        new_folder = os.path.realpath(os.path.join(incomingPath, resultsname))
+        os.mkdir(new_folder)
 
         for f in os.listdir(incomingPath):
-            if f.endswith('origlabfilename') and cegat:
+            if f.endswith('origlabfilename'):
                 origName = open(os.path.join(incomingPath,f), 'r')
                 secondaryName = origName.readline().strip().split('_')[0]
                 origName.close()
-                #entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
                 sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-                os.remove(os.path.realpath(os.path.join(incomingPath,f)))   
-        
-            elif f.endswith('sha256sum') or f.endswith('vcf') or f.endswith('vcf.gz'):
-                pass
-                #transaction.moveFile(os.path.join(incomingPath,f), dataSet)
-            #else:
-                #os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+            elif f.endswith('sha256sum') or f.endswith('fasta') or f.endswith('fsa'):
+                os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(new_folder, f))
+            elif not os.path.isdir(os.path.join(incomingPath, f)):
+                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         dataSet.setSample(vcSample)
-        transaction.moveFile(incomingPath, dataSet)
+        transaction.moveFile(new_folder, dataSet)

@@ -40,7 +40,11 @@ def process(transaction):
 		if f == "metadata.txt":
 			metadata = open(os.path.join(incomingPath, f))
 			fileInfo = dict(line.strip().split('=') for line in metadata)
-			user = fileInfo["user"]
+			metadata.close()
+			try:
+				user = fileInfo["user"]
+			except:
+				user = None
 			secname = fileInfo["info"]
 			code = fileInfo["barcode"]
 			datasetType = fileInfo["type"]
@@ -52,11 +56,13 @@ def process(transaction):
 	if "Results" in datasetType:
 		type = "RESULT"
 
-	transaction.setUserId(user)
+	if user:
+		transaction.setUserId(user)
 
 	inputFile = os.path.join(incomingPath, name)
-	name = urllib.unquote(name)
-	dataFile = os.path.join(incomingPath, name)
+	newname = urllib.unquote(name)
+	dataFile = os.path.join(incomingPath, newname)
+	print "renaming "+inputFile+" to "+dataFile
 	os.rename(inputFile, dataFile)
 
 	search_service = transaction.getSearchService()

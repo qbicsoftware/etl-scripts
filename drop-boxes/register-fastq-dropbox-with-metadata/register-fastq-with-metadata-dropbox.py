@@ -4,6 +4,7 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 """
 import sys
 sys.path.append('/home-link/qeana10/bin/')
+sys.path.append('/home-link/qeana10/bin/simplejson-3.8.0/')
 
 import checksum
 import re
@@ -29,21 +30,23 @@ def isExpected(identifier):
             return False
 
 
-def find_meta_data_json(incoming_path, name):
+def find_meta_data_json(incoming_path):
     """
     Tries to find a json file and returns the JSON object.
     :param incoming_path: The dropbox path
     :param name: The dir name of the incoming data
     :return: The JSON object if successful, None else
     """
-    for f in os.listdir(os.path.join(incoming_path, name)):
+    for f in os.listdir(incoming_path):
         if f.endswith("metadata"):
             try:
-                with open(f, 'r') as fh:
-                    json = json.load(fh)
-                return json
+                with open(os.path.realpath(os.path.join(incoming_path, f)), 'r') as fh:
+                    print "Try to open " + os.path.realpath(os.path.join(incoming_path, f))
+                    json_object = json.load(fh)
+                print "metadata JSON loaded successfully"
+                return json_object
             except Exception as exc:
-                print Exception
+                print exc
                 return None
 
 
@@ -71,7 +74,7 @@ def process(transaction):
     name = transaction.getIncoming().getName()
 
     # Try to find a *.metadata file
-    metadata_json = find_meta_data_json(incomingPath, name)
+    metadata_json = find_meta_data_json(incomingPath)
 
     identifier = pattern.findall(name)[0]
     #identifier = name
@@ -125,7 +128,7 @@ def process(transaction):
                     '/' + project + 'E' + str(expNum)
             ngsExperiment = transaction.createNewExperiment(expID, expType)
             if metadata_json:
-                set_metadata(ngsExperiment)
+                set_meta_data(ngsExperiment, metadata_json)
             else:
                 ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
             newID = 'NGS'+identifier
