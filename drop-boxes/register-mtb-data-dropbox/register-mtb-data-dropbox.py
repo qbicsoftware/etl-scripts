@@ -179,7 +179,8 @@ def process(transaction):
         proc_fastq(fastqs_tumor, transaction)
         proc_fastq(fastqs_normal, transaction)
 
-    register_rnaseq(rna_seq_files, transaction)
+    if rna_seq_files:
+        register_rnaseq(rna_seq_files, transaction)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
