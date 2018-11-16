@@ -57,9 +57,8 @@ def register_wiff_pairs(transaction, wiff_pairs, qbic_id):
     """
     space, project = space_and_project(transaction, qbic_id)
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
-    exp_ids = [oid.getExperimentIdentifier() for oid in experiments]
+    exp_ids = [oid.getExperimentIdentifier() for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
     exp_ids.sort()
-    print(exp_ids)
     last_exp_id = int(re.search(r'\d', exp_ids[-1]).group(0))
 
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
@@ -115,13 +114,10 @@ def wiffpairs(files):
     :return: A list of pairs of wiff files and wiff scan files
     """
     pairs = []
-    print(files)
     wiff_files = [wiff for wiff in files if re.findall(WIFF_FILE, wiff)]
     assert wiff_files  # should not be empty
     wiff_scans = [scan for scan in files if re.findall(WIFF_SCAN_FILE, scan)]
     assert wiff_scans  # should not be empty
-    print(wiff_files)
-    print(wiff_scans)
     assert len(wiff_scans) == len(wiff_files)
     # Find the corresponding wiff scan file
     for wiff_file in wiff_files:
