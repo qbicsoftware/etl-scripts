@@ -50,7 +50,8 @@ ms_prefix_pattern = re.compile('MS[0-9]*')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
 DROPBOX_PATH = "/mnt/DSS1/openbis_dss/QBiC-convert-register-ms-vendor-format/"
-VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER','.wiff':'WIFF_SCIEX'}
+VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER'}#,'.wiff':'WIFF_SCIEX'}
+WATERS_FORMAT = "RAW_WATERS"
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -826,8 +827,19 @@ def process(transaction):
                           host=MSCONVERT_HOST,
                           timeout=CONVERSION_TIMEOUT,
                           user=MSCONVERT_USER)
-                mzml_path = os.path.join(tmpdir, stem + '.mzML')
-                raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                # not used atm
+                if openbis_format_code = "WIFF_SCIEX":
+                    mzml_path = os.path.join(tmpdir)
+                    raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                    for f in os.listdir(raw_path):
+                        print f
+                        
+                else:
+                    mzml_path = os.path.join(tmpdir, stem + '.mzML')
+                    raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                    # if the raw path is a folder, it's not a thermo file, but a waters raw folder
+                    if os.path.isdir(raw_path):
+                        openbis_format_code = WATERS_FORMAT;
                 convert(raw_path, mzml_path)
                 os.rename(mzml_path, mzml_dest)
             finally:
