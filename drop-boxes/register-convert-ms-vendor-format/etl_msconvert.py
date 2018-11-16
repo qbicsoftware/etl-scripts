@@ -828,7 +828,7 @@ def process(transaction):
                           timeout=CONVERSION_TIMEOUT,
                           user=MSCONVERT_USER)
                 # not used atm
-                if openbis_format_code = "WIFF_SCIEX":
+                if openbis_format_code == "WIFF_SCIEX":
                     mzml_path = os.path.join(tmpdir)
                     raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
                     for f in os.listdir(raw_path):
