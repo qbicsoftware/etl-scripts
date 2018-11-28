@@ -194,6 +194,13 @@ def process(transaction):
     print(mtbutils.log_stardate('Processing finished.'))
 
 
+def get_last_exp_id(experiments):
+    """Fetches the highest experiment number from a list of experiments and returns its number."""
+    exp_ids = [int(re.search(r'[E](\d*)$', oid.getExperimentIdentifier()).group(1)) for oid in experiments if re.search(r'[E](\d*)$', oid.getExperimentIdentifier())]
+    exp_ids.sort()
+    return exp_ids[-1]
+
+
 def getNextFreeBarcode(projectcode, numberOfBarcodes):
     letters = string.ascii_uppercase
     numberOfBarcodes += 1
@@ -265,9 +272,7 @@ def register_rnaseq(rna_seq_files, transaction):
 
     # We design a new experiment and sample identifier
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
-    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
-    exp_ids.sort()
-    last_exp_id = exp_ids[-1]
+    last_exp_id = get_last_exp_id(experiments)
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/NGS{barcode}'.format(
@@ -313,9 +318,7 @@ def register_vcf(in_file, transaction):
 
     # We design a new experiment and sample identifier
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
-    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
-    exp_ids.sort()
-    last_exp_id = exp_ids[-1]
+    last_exp_id = get_last_exp_id(experiments)
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/VC{barcode}'.format(
@@ -384,9 +387,7 @@ def proc_fastq(fastq_file, transaction):
 
     # Create new experiment id
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
-    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
-    exp_ids.sort()
-    last_exp_id = exp_ids[-1]
+    last_exp_id = get_last_exp_id(experiments)
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/NGS{barcode}'.format(
@@ -453,9 +454,7 @@ def registermtb(archive, transaction):
 
     # We design a new experiment and sample identifier
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
-    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
-    exp_ids.sort()
-    last_exp_id = exp_ids[-1]
+    last_exp_id = get_last_exp_id(experiments)
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/MTB{barcode}'.format(
