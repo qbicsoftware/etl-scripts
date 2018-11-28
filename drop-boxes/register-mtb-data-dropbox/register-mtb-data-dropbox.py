@@ -124,6 +124,8 @@ COUNTER = Counter()
 # The ETL logic starts here.
 #
 #############################################################################
+
+
 def process(transaction):
     """The main dropbox funtion.
     openBIS executes this function during an incoming file event.
@@ -224,7 +226,6 @@ def register_rnaseq(rna_seq_files, transaction):
     assert len(set(QCODE_REG.findall(file2))) == 1
     assert QCODE_REG.findall(file1)[0] == QCODE_REG.findall(file2)[0]
 
-
     # This is the tumor dna sample barcode (type: TEST_SAMPLE)
     dna_barcode = QCODE_REG.findall(file1)[0]
     # Find the corresponding space and project
@@ -249,8 +250,8 @@ def register_rnaseq(rna_seq_files, transaction):
     # Now we have to create a new TEST_SAMPLE with sample type RNA and attach it
     # to the tumor tissue sample
     new_rna_sample = transaction.createNewSample("/{space}/{barcode}".format(
-	space=space,
-	barcode=new_rna_sample_barcode), "Q_TEST_SAMPLE")
+        space=space,
+        barcode=new_rna_sample_barcode), "Q_TEST_SAMPLE")
     new_rna_sample.setExperiment(transaction.getSearchService().getExperiment(
         "/{space}/{project}/{project}E{number}".format(
             space=space,
@@ -264,8 +265,11 @@ def register_rnaseq(rna_seq_files, transaction):
 
     # We design a new experiment and sample identifier
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
+    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
+    exp_ids.sort()
+    last_exp_id = exp_ids[-1]
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments) + COUNTER.newId())
+        space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=new_rna_sample_barcode)
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, "Q_NGS_MEASUREMENT")
@@ -306,11 +310,14 @@ def register_vcf(in_file, transaction):
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(basename))
     space, project = space_and_project(barcode[0])
     search_service = transaction.getSearchService()
-    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
-    
+
     # We design a new experiment and sample identifier
+    experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
+    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
+    exp_ids.sort()
+    last_exp_id = exp_ids[-1]
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments) + COUNTER.newId())
+        space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/VC{barcode}'.format(
         space=space, project=project, barcode=barcode[0])
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
@@ -337,6 +344,7 @@ def register_vcf(in_file, transaction):
     # Attach the directory to the dataset
     transaction.moveFile(in_file, data_set)
 
+
 def find_pbmc(in_file, transaction):
     basename = os.path.basename(in_file)
     parent_dir = os.path.dirname(in_file)
@@ -352,6 +360,7 @@ def find_pbmc(in_file, transaction):
     os.rename(in_file, new_path)
 
     return new_path
+
 
 def proc_fastq(fastq_file, transaction):
     """Register fastq as dataset in openBIS"""
@@ -372,12 +381,14 @@ def proc_fastq(fastq_file, transaction):
 
     # Get space and project ids
     space, project = space_and_project(qbiccode_f1[0])
-    search_service = transaction.getSearchService()
-    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
-    
-    # We design a new experiment and sample identifier
+
+    # Create new experiment id
+    experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
+    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
+    exp_ids.sort()
+    last_exp_id = exp_ids[-1]
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments) + COUNTER.newId())
+        space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/NGS{barcode}'.format(
         space=space, project=project, barcode=qbiccode_f1[0])
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
@@ -404,6 +415,7 @@ def proc_fastq(fastq_file, transaction):
     # Attach the directory to the dataset
     transaction.moveFile(registration_dir, data_set)
 
+
 def space_and_project(qbiccode):
     """Determines the space and project of a given
     sample id.
@@ -424,6 +436,7 @@ def proc_mtb(zip_archive, transaction):
     # openBIS registration
     registermtb(zip_archive, transaction)
 
+
 def registermtb(archive, transaction):
     """Register the MTB zipfile as own experiment
     in openBIS"""
@@ -437,11 +450,14 @@ def registermtb(archive, transaction):
     # Get space and project ids
     space, project = space_and_project(qcode)
     search_service = transaction.getSearchService()
-    experiments = search_service.listExperiments('/{}/{}'.format(space, project))
 
     # We design a new experiment and sample identifier
+    experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
+    exp_ids = [int(re.search(r'\d.*', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'\d', oid.getExperimentIdentifier())]
+    exp_ids.sort()
+    last_exp_id = exp_ids[-1]
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
-        space=space, project=project, number=len(experiments) + COUNTER.newId())
+        space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/MTB{barcode}'.format(
         space=space, project=project, barcode=qcode)
     print(mtbutils.log_stardate('Preparing MTB sample and experiment creation for {sample} and {experiment}'
@@ -458,6 +474,7 @@ def registermtb(archive, transaction):
 
     # Attach the directory to the dataset
     transaction.moveFile(archive, data_set)
+
 
 def submit(archive, transaction):
     """Handles the archive parsing and submition
@@ -485,7 +502,6 @@ def submit(archive, transaction):
     export_path = os.path.join(os.getcwd(), export_fname)
 
     # Create arguments for mtbconverter
-    #args = ['push', '-t', export_path]
     args = ['push', '-t', export_path]
     exit_status = mtbutils.mtbconverter(args)
     if exit_status > 0:
@@ -493,6 +509,7 @@ def submit(archive, transaction):
             'Process quit with exit code {}'.format(exit_status))
 
     print(mtbutils.log_stardate('Successfully exported {} to CentraXX'.format(os.path.basename(archive))))
+
 
 def getfiles(path):
     """Retrieve all the absolute paths recursively from
@@ -507,6 +524,7 @@ def getfiles(path):
         for name in files:
             file_list.append(os.path.join(path, name))
     return file_list
+
 
 def getentityandpbmc(path, transcation):
     """Parses the QBiC barcode from the incoming file path
@@ -531,6 +549,7 @@ def getentityandpbmc(path, transcation):
 
     return (path, entity_id, pbmc_id)
 
+
 def getentity(qcode, transaction):
     """Find the corresponding patient id (Q_BIOLOGICAL_ENTITY)
     for a given tumor sample DNA (Q_TEST_SAMPLE)
@@ -553,6 +572,7 @@ def getentity(qcode, transaction):
     grandparent = grandparents_found[0][0]
     
     return(grandparent.split('/')[-1])
+
 
 def getpbmc(qcode_entity, transaction):
     """Searches for corresponding blood samples (type PBMC)
@@ -582,6 +602,7 @@ def getpbmc(qcode_entity, transaction):
         mtbutils.MTBdropboxerror("Could not access Q_TEST_SAMPLE code for PBMC in {}"
             .format(qcode_entity))    
     return pbmc_id
+
 
 def getallchildren(qcode):
     """Fetch all children samples of a given
@@ -626,6 +647,7 @@ def getsample(qcode, transaction):
         raise mtbutils.MTBdropboxerror('More than one sample found in openBIS for code {}.'.format(qcode))
     
     return result[0]
+
 
 def getsamplev3(qcode):
     """Get a sample object of a given identifier
