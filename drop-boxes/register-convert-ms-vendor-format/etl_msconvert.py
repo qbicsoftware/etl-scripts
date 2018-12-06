@@ -232,8 +232,7 @@ def parse_timestamp_easy(mzml_path):
     return time
 
 def parse_instrument_accession(mzml_path):
-    print ""
-    mzml = open(mzml_path)
+    with open(mzml_path, 'r') as fh: mzml = fh.readlines()
     accession = None
     out = True
     for line in mzml:
@@ -246,7 +245,6 @@ def parse_instrument_accession(mzml_path):
             for token in line:
                 if "accession=" in token:
                     accession = token.split('"')[1]
-            mzml.close()
             break
     print "accession for "+mzml_path+": "+accession
     return accession
@@ -538,12 +536,11 @@ def handleImmunoFiles(transaction):
         for f in files:
             stem, ext = os.path.splitext(f)
             if ext.lower()=='.tsv':
-                metadataFile = open(os.path.join(root, f), 'U')
+                with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
                 data_files.append(os.path.join(root, f))
     # Metadata file: this was registered by hand, metadata needs to be read
     if metadataFile:
-        line = metadataFile.readline()
 
         #info needed in the for loop
         search_service = transaction.getSearchService()
@@ -562,7 +559,7 @@ def handleImmunoFiles(transaction):
 
         # start at first ms run id not yet found. datasets might be registered more than once, if they arrive multiple times
         #run = 1
-        for line in metadataFile:
+        for line in metadataFile[1:]:  # Exclude the header from iteration
             splitted = line.split('\t')
             fileName = splitted[0]
             instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
