@@ -125,7 +125,7 @@ def gunzip(inpath, outpath):
     cmd = ["zcat", inpath]
     #p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     (stdout, stderr) = check_output(cmd, timeout = CONVERSION_TIMEOUT, write_stdout=True) #p.communicate()
-    with file(outpath, 'w') as fp:
+    with open(outpath, 'w') as fp:
         fp.write(stdout)
 
 def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
