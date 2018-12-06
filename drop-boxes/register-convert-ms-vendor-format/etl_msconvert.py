@@ -220,7 +220,7 @@ def extract_barcode(filename):
         return True
 
 def parse_timestamp_easy(mzml_path):
-    mzml = open(mzml_path)
+    with open(mzml_path, 'r') as fh: mzml = fh.readlines()
     time = None
     for line in mzml:
         if "<run id=" in line:
@@ -229,7 +229,6 @@ def parse_timestamp_easy(mzml_path):
                     xsdDateTime = token.split('"')[1]
                     time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
             break
-            mzml.close()
     return time
 
 def parse_instrument_accession(mzml_path):
