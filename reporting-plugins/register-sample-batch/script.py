@@ -18,8 +18,9 @@ class SampleAlreadyExistsError(Exception):
 def process(tr, params, tableBuilder):
   ignore_existing = "IGNORE EXISTING" in params
   if "testuser" in params:
-    print "testuser for sample ingestion"
     print params
+    tr.setUserId(params.get("testuser"))
+    params.remove("testuser")
   if "user" in params:
     print "user calling register-sample-batch:"
     print params.get("user")
