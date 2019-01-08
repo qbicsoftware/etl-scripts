@@ -220,34 +220,34 @@ def extract_barcode(filename):
         return True
 
 def parse_timestamp_easy(mzml_path):
-    with open(mzml_path, 'r') as fh: mzml = fh.readlines()
-    time = None
-    for line in mzml:
-        if "<run id=" in line:
-            for token in line.split(" "):
-                if "startTimeStamp=" in token:
-                    xsdDateTime = token.split('"')[1]
-                    time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
-            break
-    return time
+    with open(mzml_path, 'r') as mzml:
+        time = None
+        for line in mzml:
+            if "<run id=" in line:
+                for token in line.split(" "):
+                    if "startTimeStamp=" in token:
+                        xsdDateTime = token.split('"')[1]
+                        time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+                break
+        return time
 
 def parse_instrument_accession(mzml_path):
-    with open(mzml_path, 'r') as fh: mzml = fh.readlines()
-    accession = None
-    out = True
-    for line in mzml:
-        if "<instrumentConfigurationList" in line or 'id="CommonInstrumentParams">' in line:
-            out = False
-        if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
-            out = True
-        if not out and '<cvParam cvRef="MS"' in line:
-            line = line.split(" ")
-            for token in line:
-                if "accession=" in token:
-                    accession = token.split('"')[1]
-            break
-    print "accession for "+mzml_path+": "+accession
-    return accession
+    with open(mzml_path, 'r') as mzml:
+        accession = None
+        out = True
+        for line in mzml:
+            if "<instrumentConfigurationList" in line or 'id="CommonInstrumentParams">' in line:
+                out = False
+            if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
+                out = True
+            if not out and '<cvParam cvRef="MS"' in line:
+                line = line.split(" ")
+                for token in line:
+                    if "accession=" in token:
+                        accession = token.split('"')[1]
+                break
+        print "accession for "+mzml_path+": "+accession
+        return accession
 
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
