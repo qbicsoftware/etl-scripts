@@ -29,6 +29,10 @@ The incoming FASTQ file specification for CeGaT and human genetics for the MTB p
 <QBiC-Barcode>_tumor.1.fastq.gz
 <QBiC-Barcode>_tumor.2.fastq.gz
 
+for RNAseq data it is:
+<QBiC-Barcode>_tumor_rna.1.fastq.gz
+<QBiC-Barcode>_tumor_rna.2.fastq.gz
+
 
 2. MTB Archive (zip)
 Will be processed by qbicsoftware/qbic.mtbconverter (https://github.com/qbicsoftware/qbic.mtbconverter).
@@ -188,8 +192,6 @@ def process(transaction):
     if unknown_file_types:
         for file_name in unknown_file_types:
             print(mtbutils.log_stardate('Unknown file type: {}'.format(file_name)))
-       # raise mtbutils.MTBdropboxerror('We have found files that could not be processed!'
-       #     'Manual intervention needed.')
 
     print(mtbutils.log_stardate('Processing finished.'))
 
