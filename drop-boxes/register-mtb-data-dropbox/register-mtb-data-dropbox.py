@@ -165,7 +165,7 @@ def process(transaction):
             continue
         if RNASEQ_REG.findall(in_file):
             rna_seq_files.append(in_file)
-        if 'fastq' in in_file:
+        elif 'fastq' in in_file:
             if 'normal' in in_file:
                 fastqs_normal.append(find_pbmc(in_file, transaction))
             elif 'tumor' in in_file:

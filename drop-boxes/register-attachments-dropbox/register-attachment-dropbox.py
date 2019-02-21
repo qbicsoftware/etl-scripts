@@ -84,7 +84,10 @@ def process(transaction):
 	sa = transaction.getSampleForUpdate(sampleID)
 	space = sa.getSpace()
 	if not attachmentReady:
-		exp = transaction.createNewExperiment('/' + space + '/' + project + '/'+ project+'_INFO', "Q_PROJECT_DETAILS")
+		expID = '/' + space + '/' + project + '/'+ project+'_INFO'
+		exp = transaction.getExperimentForUpdate(expID)
+		if not exp:
+			exp = transaction.createNewExperiment(expID, "Q_PROJECT_DETAILS")
 		sa = transaction.createNewSample('/' + space + '/'+ code, "Q_ATTACHMENT_SAMPLE")
 		sa.setExperiment(exp)
 	info = None
