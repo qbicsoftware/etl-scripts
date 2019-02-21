@@ -51,6 +51,7 @@ import os
 import re
 import string
 import sys
+import time
 
 import ConfigParser
 import logging
@@ -392,8 +393,8 @@ def proc_fastq(fastq_file, transaction):
     last_exp_id = get_last_exp_id(experiments)
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
-    new_sample_id = '/{space}/NGS{barcode}'.format(
-        space=space, project=project, barcode=qbiccode_f1[0])
+    new_sample_id = '/{space}/NGS{barcode}-{timestamp}'.format(
+        space=space, barcode=qbiccode_f1[0], timestamp=int(time.time()))
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
