@@ -50,7 +50,8 @@ ms_prefix_pattern = re.compile('MS[0-9]*')
 MARKER = '.MARKER_is_finished_'
 MZML_TMP = "/mnt/DSS1/dropboxes/ms_convert_tmp/"
 DROPBOX_PATH = "/mnt/DSS1/openbis_dss/QBiC-convert-register-ms-vendor-format/"
-VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER','.wiff':'WIFF_SCIEX'}
+VENDOR_FORMAT_EXTENSIONS = {'.raw':'RAW_THERMO', '.d':'D_BRUKER'}#,'.wiff':'WIFF_SCIEX'}
+WATERS_FORMAT = "RAW_WATERS"
 MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
@@ -124,7 +125,7 @@ def gunzip(inpath, outpath):
     cmd = ["zcat", inpath]
     #p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     (stdout, stderr) = check_output(cmd, timeout = CONVERSION_TIMEOUT, write_stdout=True) #p.communicate()
-    with file(outpath, 'w') as fp:
+    with open(outpath, 'w') as fp:
         fp.write(stdout)
 
 def rsync(source, dest, source_host=None, dest_host=None, source_user=None,
@@ -219,37 +220,34 @@ def extract_barcode(filename):
         return True
 
 def parse_timestamp_easy(mzml_path):
-    mzml = open(mzml_path)
-    time = None
-    for line in mzml:
-        if "<run id=" in line:
-            for token in line.split(" "):
-                if "startTimeStamp=" in token:
-                    xsdDateTime = token.split('"')[1]
-                    time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
-            break
-            mzml.close()
-    return time
+    with open(mzml_path, 'r') as mzml:
+        time = None
+        for line in mzml:
+            if "<run id=" in line:
+                for token in line.split(" "):
+                    if "startTimeStamp=" in token:
+                        xsdDateTime = token.split('"')[1]
+                        time = datetime.datetime.strptime(xsdDateTime, '%Y-%m-%dT%H:%M:%SZ').strftime('%Y-%m-%d %H:%M:%S')
+                break
+        return time
 
 def parse_instrument_accession(mzml_path):
-    print ""
-    mzml = open(mzml_path)
-    accession = None
-    out = True
-    for line in mzml:
-        if "<instrumentConfigurationList" in line or 'id="CommonInstrumentParams">' in line:
-            out = False
-        if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
-            out = True
-        if not out and '<cvParam cvRef="MS"' in line:
-            line = line.split(" ")
-            for token in line:
-                if "accession=" in token:
-                    accession = token.split('"')[1]
-            mzml.close()
-            break
-    print "accession for "+mzml_path+": "+accession
-    return accession
+    with open(mzml_path, 'r') as mzml:
+        accession = None
+        out = True
+        for line in mzml:
+            if "<instrumentConfigurationList" in line or 'id="CommonInstrumentParams">' in line:
+                out = False
+            if "</referenceableParamGroup>" in line or "</instrumentConfiguration>" in line:
+                out = True
+            if not out and '<cvParam cvRef="MS"' in line:
+                line = line.split(" ")
+                for token in line:
+                    if "accession=" in token:
+                        accession = token.split('"')[1]
+                break
+        print "accession for "+mzml_path+": "+accession
+        return accession
 
 def parse_timestamp_from_mzml(mzml_path):
     schema = '{http://psi.hupo.org/ms/mzml}'
@@ -538,12 +536,11 @@ def handleImmunoFiles(transaction):
         for f in files:
             stem, ext = os.path.splitext(f)
             if ext.lower()=='.tsv':
-                metadataFile = open(os.path.join(root, f), 'U')
+                with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
                 data_files.append(os.path.join(root, f))
     # Metadata file: this was registered by hand, metadata needs to be read
     if metadataFile:
-        line = metadataFile.readline()
 
         #info needed in the for loop
         search_service = transaction.getSearchService()
@@ -562,7 +559,7 @@ def handleImmunoFiles(transaction):
 
         # start at first ms run id not yet found. datasets might be registered more than once, if they arrive multiple times
         #run = 1
-        for line in metadataFile:
+        for line in metadataFile[1:]:  # Exclude the header from iteration
             splitted = line.split('\t')
             fileName = splitted[0]
             instr = splitted[1] # Q_MS_DEVICE (controlled vocabulary)
@@ -826,8 +823,19 @@ def process(transaction):
                           host=MSCONVERT_HOST,
                           timeout=CONVERSION_TIMEOUT,
                           user=MSCONVERT_USER)
-                mzml_path = os.path.join(tmpdir, stem + '.mzML')
-                raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                # not used atm
+                if openbis_format_code == "WIFF_SCIEX":
+                    mzml_path = os.path.join(tmpdir)
+                    raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                    for f in os.listdir(raw_path):
+                        print f
+                        
+                else:
+                    mzml_path = os.path.join(tmpdir, stem + '.mzML')
+                    raw_path = os.path.join(incomingPath, name) #raw file has the same name as the incoming folder, this is the path to this file!
+                    # if the raw path is a folder, it's not a thermo file, but a waters raw folder
+                    if os.path.isdir(raw_path):
+                        openbis_format_code = WATERS_FORMAT;
                 convert(raw_path, mzml_path)
                 os.rename(mzml_path, mzml_dest)
             finally:
