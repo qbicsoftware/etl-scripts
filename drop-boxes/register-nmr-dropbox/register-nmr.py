@@ -110,7 +110,7 @@ def process(transaction):
                 exp = e
         sa = createSmallMoleculeSample(transaction, space, project, exp, sa.getSampleIdentifier())
 
-    newSample = transaction.createNewSample('/' + space + '/' + 'NMR'+ parentCode, "Q_NMR_SAMPLE_RUN")
+    newSample = transaction.createNewSample('/' + space + '/' + 'NMR'+ sa.getSampleCode(), "Q_NMR_SAMPLE_RUN")
     newSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
     newSample.setExperiment(exp) 
     # create new dataset 
