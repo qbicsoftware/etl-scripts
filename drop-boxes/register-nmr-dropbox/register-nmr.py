@@ -108,7 +108,7 @@ def process(transaction):
             if eType == "Q_SAMPLE_PREPARATION":
                 # we assign a random experiment of the correct type for our small molecule sample...
                 exp = e
-        sa = createSmallMoleculeSample(transaction, space, project, exp, sa.getSampleIdentifier)
+        sa = createSmallMoleculeSample(transaction, space, project, exp, sa.getSampleIdentifier())
 
     newSample = transaction.createNewSample('/' + space + '/' + 'NMR'+ parentCode, "Q_NMR_SAMPLE_RUN")
     newSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
