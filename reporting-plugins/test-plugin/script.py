@@ -18,5 +18,5 @@ def process(tr, parameters, tableBuilder):
 		datasets = search.searchForDataSets(sc)
 		for d in datasets:
 			print d
-			dataset = tr.getDataSetForUpdate(d.getCode())
+			dataset = tr.getDataSetForUpdate(d.getDataSetCode())
 			dataset.setPropertyValue("Q_ADDITIONAL_INFO", info)
