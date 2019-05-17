@@ -15,7 +15,7 @@ def process(tr, parameters, tableBuilder):
 		pc = SearchCriteria()
 		pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code));
 		sc.addSubCriteria(SearchSubCriteria.createSampleCriteria(pc))
-		datasets = search.searchForDatasets(sc)
+		datasets = search.searchForDataSets(sc)
 		for d in datasets:
 			print d
 			dataset = tr.getDataSetForUpdate(d.getCode())
