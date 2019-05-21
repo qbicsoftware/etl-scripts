@@ -172,7 +172,7 @@ def process(transaction):
                 fastqs_tumor.append(in_file)
             else:
                 unknown_file_types.append(in_file)
-        elif in_file.endswith('vcf.gz'):
+        elif in_file.endswith('vcf.gz') or in_file.endswith('vcf'):
             vcf_files.append(in_file)
         elif in_file.endswith('.zip'):
             proc_mtb(in_file, transaction)
