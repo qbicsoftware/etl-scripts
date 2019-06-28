@@ -193,6 +193,9 @@ def process(transaction):
     if unknown_file_types:
         for file_name in unknown_file_types:
             print(mtbutils.log_stardate('Unknown file type: {}'.format(file_name)))
+            if file_name.endswith('fastq') or file_name.endswith('fastq.gz'):
+                raise mtbutils.MTBdropboxerror("Unassigned fastq file found: " + file_name)
+                
 
     print(mtbutils.log_stardate('Processing finished.'))
 
