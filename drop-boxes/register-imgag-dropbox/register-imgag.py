@@ -403,7 +403,7 @@ def find_and_register_ngs(transaction, jsonContent):
         newNGSMeasurementExp = transaction.createNewExperiment(newExpID, "Q_NGS_MEASUREMENT")
         newNGSMeasurementExp.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
         newNGSMeasurementExp.setPropertyValue('Q_SEQUENCING_MODE', 'PAIRED_END')
-        newNGSMeasurementExp.setPropertyValue('Q_SEQUENCER_DEVICE', 'IMGAG_ILLUMINA_HISEQ_2500')
+        newNGSMeasurementExp.setPropertyValue('Q_SEQUENCER_DEVICE', 'UNSPECIFIED_SEQUENCER')
         newNGSMeasurementExp.setPropertyValue('Q_ADDITIONAL_INFO', system)
         newNGSMeasurementExp.setPropertyValue('Q_SEQUENCING_TYPE', typesDict[expType])
         newNGSID = '/' + space + '/' + 'NGS'+ idGenetics.split('_')[-1] + testSampleCode
@@ -492,7 +492,7 @@ def find_and_register_ngs_without_metadata(transaction):
                 expID = '/' + space + '/' + project + \
                     '/' + project + 'E' + str(expNum)
             ngsExperiment = transaction.createNewExperiment(expID, expType)
-            ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
+            ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_SEQUENCER") #change this
             newID = 'NGS'+identifier
             ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
             ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
