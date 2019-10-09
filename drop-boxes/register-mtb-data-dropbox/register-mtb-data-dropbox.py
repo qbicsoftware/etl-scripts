@@ -185,6 +185,8 @@ def process(transaction):
     if fastqs_normal and fastqs_tumor:
         proc_fastq(fastqs_tumor, transaction)
         proc_fastq(fastqs_normal, transaction)
+    if len(fastqs_tumor) != 2 or len(fastqs_normal) != 2:
+        raise mtbutils.MTBdropboxerror("Tumor/normal fastq dataset was not complete. Please check.")
 
     if rna_seq_files:
         register_rnaseq(rna_seq_files, transaction)
