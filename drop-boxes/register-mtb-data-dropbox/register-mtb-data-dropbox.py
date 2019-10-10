@@ -182,7 +182,7 @@ def process(transaction):
     if vcf_files:
         execute_vcf_registration(vcf_files, transaction)
     if fastqs_normal or fastqs_tumor:
-        execute_fastq_registration(fastqs_normal, fastqs_turmor, transaction)
+        execute_fastq_registration(fastqs_normal, fastqs_tumor, transaction)
     if rna_seq_files:
         execute_rnaseq_registration(rna_seq_files, transaction)
 
