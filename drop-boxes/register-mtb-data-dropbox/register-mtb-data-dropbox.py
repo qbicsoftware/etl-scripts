@@ -204,7 +204,7 @@ def execute_vcf_registration(vcf_files, transaction):
 def execute_fastq_registration(fastqs_normal, fastqs_turmor, transaction):
    if len(fastqs_tumor) != 2 or len(fastqs_normal) != 2:
         raise mtbutils.MTBdropboxerror("Tumor/normal fastq dataset was not complete. Please check.")
-    else:
+   else:
         proc_fastq(fastqs_tumor, transaction)
         proc_fastq(fastqs_normal, transaction)
 
