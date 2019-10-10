@@ -178,8 +178,8 @@ def process(transaction):
             proc_mtb(in_file, transaction)
         else:
             unknown_file_types.append(in_file)
-            
-    if vfc_files:
+    
+    if vcf_files:
         execute_vcf_registration(vcf_files, transaction)
     if fastqs_normal or fastqs_tumor:
         execute_fastq_registration(fastqs_normal, fastqs_turmor, transaction)
