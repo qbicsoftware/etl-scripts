@@ -71,7 +71,7 @@ def process(transaction):
         # Get the name of the incoming file 
         name = transaction.getIncoming().getName()
 
-        sampleID = "/CHICKEN_FARM/QTEST099HH"
+        sampleID = "QTEST099HH"
         # Update Sample Location
         sampleTracker.updateSampleLocationToCurrentLocation(sampleID)
 
