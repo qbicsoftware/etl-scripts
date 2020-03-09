@@ -1,6 +1,6 @@
 '''
 
-Note: 
+Note:
 print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 '''
 import sys
@@ -20,17 +20,20 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
 ######## Sample Tracking related import
-import life.qbic.sampletracking
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
 import sample_tracking_helper_qbic as tracking_helper
 
 #### Setup Sample Tracking service
-serviceCredentials = sampletracking.ServiceCredentials()
+serviceCredentials = ServiceCredentials()
 serviceCredentials.user = tracking_helper.get_service_user()
 serviceCredentials.password = tracking_helper.get_service_password()
 serviceUrl = URL(tracking_helper.get_service_reg_url())
 qbicLocation = tracking_helper.get_qbic_location_json()
 
-sampleTracker = sampleTracking.SampleTracker.getQBiCSampleTracker(serviceUrl, serviceCredentials, qbicLocation)
+sampleTracker = SampleTracker.createQBiCSampleTracker(serviceUrl, serviceCredentials, qbicLocation)
 
 # Data import and registration
 # expected:
@@ -85,4 +88,3 @@ def process(transaction):
 
         # Update Sample Location
         sampleTracker.updateSampleLocationToCurrentLocation(code)
-
