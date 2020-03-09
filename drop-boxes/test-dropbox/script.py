@@ -19,6 +19,19 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
+######## Sample Tracking related import
+import life.qbic.sampletracking
+import sample_tracking_helper_qbic as tracking_helper
+
+#### Setup Sample Tracking service
+serviceCredentials = sampletracking.ServiceCredentials()
+serviceCredentials.user = tracking_helper.get_service_user()
+serviceCredentials.password = tracking_helper.get_service_password()
+serviceUrl = URL(tracking_helper.get_service_reg_url())
+qbicLocation = tracking_helper.get_qbic_location_json()
+
+sampleTracker = sampleTracking.SampleTracker.getQBiCSampleTracker(serviceUrl, serviceCredentials, qbicLocation)
+
 # Data import and registration
 # expected:
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
@@ -55,7 +68,7 @@ def process(transaction):
         # Get the name of the incoming file 
         name = transaction.getIncoming().getName()
 
-        sampleID = "/DELETE_THIS_TEST/QTEST000XX"
+        sampleID = "/CHICKEN_FARM/QTEST099HH"
 
         raise TestError("Test if data was registered!")
         
@@ -69,3 +82,7 @@ def process(transaction):
         data.setSample(sample)
 
         transaction.moveFile(incomingPath, data)
+
+        # Update Sample Location
+        sampleTracker.updateSampleLocationToCurrentLocation(code)
+
