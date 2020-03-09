@@ -72,6 +72,8 @@ def process(transaction):
         name = transaction.getIncoming().getName()
 
         sampleID = "/CHICKEN_FARM/QTEST099HH"
+        # Update Sample Location
+        sampleTracker.updateSampleLocationToCurrentLocation(sampleID)
 
         raise TestError("Test if data was registered!")
         
@@ -85,6 +87,3 @@ def process(transaction):
         data.setSample(sample)
 
         transaction.moveFile(incomingPath, data)
-
-        # Update Sample Location
-        sampleTracker.updateSampleLocationToCurrentLocation(code)
