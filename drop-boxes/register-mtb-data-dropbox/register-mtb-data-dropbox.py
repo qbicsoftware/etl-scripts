@@ -70,6 +70,13 @@ from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchC
 import mtbutils
 from mtbutils import Counter
 
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+
 #############################################################################
 #
 # The ETL environment setup.
@@ -98,6 +105,17 @@ MTB_SAMPLE_TYPE = 'Q_NGS_MTB_DIAGNOSIS_RUN'
 MTB_EXP_TYPE = 'Q_NGS_MTB_DIAGNOSIS'
 MTB_RAW_DATA = 'Q_NGS_MTB_DATA'
 NGS_VARIANT_CALL = 'Q_NGS_VARIANT_CALLING'
+
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
+
 
 # Experiment ID counter
 EXPERIMENT_ID = 0
@@ -129,6 +147,12 @@ COUNTER = Counter()
 # The ETL logic starts here.
 #
 #############################################################################
+
+def update_sample_location_to_qbic(sampleId):
+   """Calls the sample status service and updates the
+   location to QBiC and the status 'DATA AT QBiC'.
+   """
+
 
 
 def process(transaction):
@@ -301,8 +325,12 @@ def register_rnaseq(rna_seq_files, transaction):
         old_base = os.path.basename(raw_data)
         new_base = old_base.replace(dna_barcode, new_rna_sample_barcode)
         os.rename(raw_data, os.path.join(registration_dir, os.path.basename(new_base)))
+
     # Attach the directory to the dataset
     transaction.moveFile(registration_dir, data_set)
+
+    # Update sample location
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(new_rna_sample_barcode)
 
 
 def register_vcf(in_file, transaction):
@@ -349,6 +377,9 @@ def register_vcf(in_file, transaction):
 
     # Attach the directory to the dataset
     transaction.moveFile(in_file, data_set)
+
+    # Update sample location
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(barcode[0])
 
 
 def find_pbmc(in_file, transaction):
@@ -419,6 +450,9 @@ def proc_fastq(fastq_file, transaction):
     # Attach the directory to the dataset
     transaction.moveFile(registration_dir, data_set)
 
+    # Update sample location
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qbiccode_f1[0])
+
 
 def space_and_project(qbiccode):
     """Determines the space and project of a given
@@ -476,6 +510,9 @@ def registermtb(archive, transaction):
 
     # Attach the directory to the dataset
     transaction.moveFile(archive, data_set)
+
+    # Update sample location
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qcode)
 
 
 def submit(archive, transaction):
