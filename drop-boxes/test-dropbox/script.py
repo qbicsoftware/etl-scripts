@@ -72,6 +72,10 @@ def process(transaction):
         name = transaction.getIncoming().getName()
 
         sampleID = "QHPVT077A3"
+
+        # Log the qbic location object details for debugging
+        print qbicLocation
+
         # Update Sample Location
         sampleTracker.updateSampleLocationToCurrentLocation(sampleID)
 
