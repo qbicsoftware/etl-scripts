@@ -152,7 +152,8 @@ def update_sample_location_to_qbic(sampleId):
    """Calls the sample status service and updates the
    location to QBiC and the status 'DATA AT QBiC'.
    """
-
+   # Update sample location
+   SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(sampleId)
 
 
 def process(transaction):
@@ -330,7 +331,7 @@ def register_rnaseq(rna_seq_files, transaction):
     transaction.moveFile(registration_dir, data_set)
 
     # Update sample location
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(new_rna_sample_barcode)
+    update_sample_location_to_qbic(new_rna_sample_barcode)
 
 
 def register_vcf(in_file, transaction):
@@ -379,7 +380,7 @@ def register_vcf(in_file, transaction):
     transaction.moveFile(in_file, data_set)
 
     # Update sample location
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(barcode[0])
+    update_sample_location_to_qbic(barcode[0])
 
 
 def find_pbmc(in_file, transaction):
@@ -451,7 +452,7 @@ def proc_fastq(fastq_file, transaction):
     transaction.moveFile(registration_dir, data_set)
 
     # Update sample location
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qbiccode_f1[0])
+    update_sample_location_to_qbic(qbiccode_f1[0])
 
 
 def space_and_project(qbiccode):
@@ -512,7 +513,7 @@ def registermtb(archive, transaction):
     transaction.moveFile(archive, data_set)
 
     # Update sample location
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qcode)
+    update_sample_location_to_qbic(qcode)
 
 
 def submit(archive, transaction):
