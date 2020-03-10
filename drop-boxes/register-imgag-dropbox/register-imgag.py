@@ -7,6 +7,9 @@ import sys
 sys.path.append('/home-link/qeana10/bin/')
 sys.path.append('/home-link/qeana10/bin/simplejson-3.8.0/')
 
+from life.qbic import TrackingHelper
+from life.qbic import SampleNotFoundException
+import sample_tracking_helper_qbic as thelper
 import re
 import os
 import checksum
@@ -289,6 +292,18 @@ def createNewBarcode(project, tr):
             offset += 1
 
     return newBarcode
+
+def handleSampleTracking(barcode):
+    service_url = thelper.get_service_reg_url()
+    service_user = thelper.get_service_user()
+    service_pass = thelper.get_service_password()
+    tracking = TrackingHelper(service_url, service_user, service_pass)
+    try:
+        tracking.sampleExists(barcode)
+    except SampleNotFoundException as err:
+        print barcode+" not found in tracking db, adding"
+    location = thelper.get_qbic_location_json()
+    tracking.tryUpdateSample(barcode,location)
 
 def find_and_register_ngs(transaction, jsonContent):
     if "qc" in jsonContent["sample1"]:
@@ -614,7 +629,6 @@ def process(transaction):
             copyfile(metadataPath, os.path.join(fastqFolder,metadatafilename))
 
             transaction.moveFile(fastqFolder, fastqDataSet)
-            #transaction.moveFile(folder, fastqDataSet)
         for vc in vcfs:
             ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','').replace('_adme', '').replace('_old', '') #example: GS130715_03-GS130717_03
             print ident
@@ -636,7 +650,7 @@ def process(transaction):
 
             metadatafilename = metadataPath.split('/')[-1]
             copyfile(metadataPath, os.path.join(vcfFolder,metadatafilename))
-            #transaction.moveFile(folder, vcfDataSet)
+
             transaction.moveFile(vcfFolder, vcfDataSet)
     else:
             find_and_register_ngs_without_metadata(transaction)

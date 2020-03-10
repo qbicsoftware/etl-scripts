@@ -14,6 +14,21 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
 # ETL script for registration of VCF files
 # expected:
@@ -96,32 +111,10 @@ def process(transaction):
 
         rmaSample = transaction.createNewSample('/' + space + '/' + 'RMA' + parentCode, SAMPLE_TYPE)
         rmaSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
+
         rmaSample.setExperiment(newRMAExperiment) 
+    dataSet.setSample(rmaSample)
+    transaction.moveFile(incomingPath, dataSet)
 
-        #cegat = False
-        #sourceLabFile = open(os.path.join(incomingPath,'source_dropbox.txt'), 'r')
-        #sourceLab = sourceLabFile.readline().strip()
-        #sourceLabFile.close()
-
-        #if sourceLab == 'dmcegat':
-        #    cegat = True
-        #os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
-
-        #for f in os.listdir(incomingPath):
-        #    if f.endswith('origlabfilename') and cegat:
-        #        origName = open(os.path.join(incomingPath,f), 'r')
-        #        secondaryName = origName.readline().strip().split('_')[0]
-        #        origName.close()
-                #entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
-        #        sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-        #        os.remove(os.path.realpath(os.path.join(incomingPath,f)))   
-        
-        #    elif f.endswith('sha256sum') or f.endswith('vcf'):
-        #        pass
-                #transaction.moveFile(os.path.join(incomingPath,f), dataSet)
-        #    else:
-        #        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        dataSet.setSample(rmaSample)
-        transaction.moveFile(incomingPath, dataSet)
+    #sample tracking section
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentCode)
