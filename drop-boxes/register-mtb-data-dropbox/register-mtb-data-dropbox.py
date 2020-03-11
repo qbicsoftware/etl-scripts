@@ -392,9 +392,10 @@ def find_pbmc(in_file, transaction):
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(in_file))
     if len(set(barcode)) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
-    _, _, pbmc = getentityandpbmc(barcode[0], transaction)
+    tumor_dna_sample_id = barcode[0]
+    _, _, pbmc_sample_id = getentityandpbmc(tumor_dna_sample_id, transaction)
 
-    new_name = basename.replace(barcode[0], pbmc)
+    new_name = basename.replace(tumor_dna_sample_id, pbmc_sample_id)
     new_path = os.path.join(parent_dir, new_name)
     os.rename(in_file, new_path)
 
