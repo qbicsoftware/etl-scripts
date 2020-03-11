@@ -345,7 +345,8 @@ def register_vcf(in_file, transaction):
         raise mtbutils.MTBdropboxerror('No QBiC Barcode found in {}'.format(basename))
     if len(set(barcode)) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(basename))
-    space, project = space_and_project(barcode[0])
+    tumor_dna_sample_id = barcode[0]
+    space, project = space_and_project(tumor_dna_sample_id)
     search_service = transaction.getSearchService()
 
     # We design a new experiment and sample identifier
@@ -354,19 +355,19 @@ def register_vcf(in_file, transaction):
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/VC{barcode}'.format(
-        space=space, project=project, barcode=barcode[0])
+        space=space, project=project, barcode=tumor_dna_sample_id)
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_VARIANT_CALL)
     new_ngs_experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_VARIANT_CALL)
-    new_ngs_sample.setParentSampleIdentifiers([barcode[0]])
+    new_ngs_sample.setParentSampleIdentifiers([tumor_dna_sample_id])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
     if not barcode[0] in basename:
         parent_dir_path = os.path.dirname(in_file)
         print(parent_dir_path)
-        new_path = os.path.join(parent_dir_path, '{}_{}'.format(barcode[0], basename))
+        new_path = os.path.join(parent_dir_path, '{}_{}'.format(tumor_dna_sample_id, basename))
         print(new_path)
         os.rename(in_file, new_path)
         in_file = new_path
@@ -380,7 +381,7 @@ def register_vcf(in_file, transaction):
     transaction.moveFile(in_file, data_set)
 
     # Update sample location
-    update_sample_location_to_qbic(barcode[0])
+    update_sample_location_to_qbic(tumor_dna_sample_id)
 
 
 def find_pbmc(in_file, transaction):
@@ -392,7 +393,7 @@ def find_pbmc(in_file, transaction):
     if len(set(barcode)) > 1:
         raise mtbutils.MTBdropboxerror('More than one QBiC Barcode found in {}'.format(in_file))
     _, _, pbmc = getentityandpbmc(barcode[0], transaction)
-    
+
     new_name = basename.replace(barcode[0], pbmc)
     new_path = os.path.join(parent_dir, new_name)
     os.rename(in_file, new_path)
@@ -417,8 +418,9 @@ def proc_fastq(fastq_file, transaction):
         raise mtbutils.MTBdropboxerror('Found two different barcodes for read pair: {}<->{}'
             .format(qbiccode_f1[0], qbiccode_f2[0]))
 
+    tumor_dna_sample_id = qbiccode_f1[0]
     # Get space and project ids
-    space, project = space_and_project(qbiccode_f1[0])
+    space, project = space_and_project(tumor_dna_sample_id)
 
     # Create new experiment id
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
@@ -426,13 +428,13 @@ def proc_fastq(fastq_file, transaction):
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/NGS{barcode}-{timestamp}'.format(
-        space=space, barcode=qbiccode_f1[0], timestamp=int(time.time()))
+        space=space, barcode=tumor_dna_sample_id, timestamp=int(time.time()))
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_EXP_TYPE)
     new_ngs_experiment.setPropertyValue('Q_SEQUENCER_DEVICE', 'UNSPECIFIED_ILLUMINA_HISEQ_2500')
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_SAMPLE_TYPE)
-    new_ngs_sample.setParentSampleIdentifiers([qbiccode_f1[0]])
+    new_ngs_sample.setParentSampleIdentifiers([tumor_dna_sample_id])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
     # Create a data-set attached to the NGS sample
@@ -442,7 +444,7 @@ def proc_fastq(fastq_file, transaction):
 
     # Put the files in one directory
     base_path = os.path.dirname(transaction.getIncoming().getAbsolutePath())
-    registration_dir = os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(qbiccode_f1[0]))
+    registration_dir = os.path.join(base_path, '{}_pairend_end_sequencing_reads'.format(tumor_dna_sample_id))
     os.mkdir(registration_dir)
     
     for raw_data in fastq_file:
@@ -452,7 +454,7 @@ def proc_fastq(fastq_file, transaction):
     transaction.moveFile(registration_dir, data_set)
 
     # Update sample location
-    update_sample_location_to_qbic(qbiccode_f1[0])
+    update_sample_location_to_qbic(tumor_dna_sample_id)
 
 
 def space_and_project(qbiccode):
@@ -484,7 +486,7 @@ def registermtb(archive, transaction):
         raise mtbutils.MTBdropboxerror('Could not find a barcode in {}.'.format(archive))
     if len(qbiccode_found) > 1:
         raise mtbutils.MTBdropboxerror('More than one barcode found barcode in {}.'.format(archive))
-    qcode = qbiccode_found[0]
+    tumor_dna_sample_id = qbiccode_found[0]
 
     # Get space and project ids
     space, project = space_and_project(qcode)
@@ -496,12 +498,12 @@ def registermtb(archive, transaction):
     new_exp_id = '/{space}/{project}/{project}E{number}'.format(
         space=space, project=project, number=last_exp_id + COUNTER.newId())
     new_sample_id = '/{space}/MTB{barcode}'.format(
-        space=space, project=project, barcode=qcode)
+        space=space, project=project, barcode=tumor_dna_sample_id)
     print(mtbutils.log_stardate('Preparing MTB sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, MTB_EXP_TYPE)
     new_ngs_sample = transaction.createNewSample(new_sample_id, MTB_SAMPLE_TYPE)
-    new_ngs_sample.setParentSampleIdentifiers([qcode])
+    new_ngs_sample.setParentSampleIdentifiers([tumor_dna_sample_id])
     new_ngs_sample.setExperiment(new_ngs_experiment)
 
     # Create a data-set attached to the NGS sample
@@ -513,7 +515,7 @@ def registermtb(archive, transaction):
     transaction.moveFile(archive, data_set)
 
     # Update sample location
-    update_sample_location_to_qbic(qcode)
+    update_sample_location_to_qbic(tumor_dna_sample_id)
 
 
 def submit(archive, transaction):
