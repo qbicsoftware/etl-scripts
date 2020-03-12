@@ -541,7 +541,6 @@ def handleImmunoFiles(transaction):
                 data_files.append(os.path.join(root, f))
     # Metadata file: this was registered by hand, metadata needs to be read
     if metadataFile:
-
         #info needed in the for loop
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
@@ -772,6 +771,12 @@ def handle_QC_Run(transaction):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
 
+def has_batch_prefix(name):
+    prefixes = ms_prefix_pattern.findall(name)
+    if prefixes:
+        return True
+    return False
+
 def process(transaction):
     """Ask Andreas"""
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -786,7 +791,7 @@ def process(transaction):
         if "source_dropbox.txt" in f:
             source_file = open(os.path.join(incomingPath, f))
             source = source_file.readline()
-            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source:
+            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source or has_batch_prefix(name):
                 immuno = True
                 handleImmunoFiles(transaction)
     if not immuno and qc_run:

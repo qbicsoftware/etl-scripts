@@ -197,29 +197,45 @@ def process(transaction):
                 fastqs_tumor.append(in_file)
             else:
                 unknown_file_types.append(in_file)
-        elif in_file.endswith('vcf.gz'):
+        elif in_file.endswith('vcf.gz') or in_file.endswith('vcf'):
             vcf_files.append(in_file)
         elif in_file.endswith('.zip'):
             proc_mtb(in_file, transaction)
         else:
             unknown_file_types.append(in_file)
-
-    for vcf in vcf_files:
-        register_vcf(vcf, transaction)
     
-    if fastqs_normal and fastqs_tumor:
-        proc_fastq(fastqs_tumor, transaction)
-        proc_fastq(fastqs_normal, transaction)
-
+    if vcf_files:
+        execute_vcf_registration(vcf_files, transaction)
+    if fastqs_normal or fastqs_tumor:
+        execute_fastq_registration(fastqs_normal, fastqs_tumor, transaction)
     if rna_seq_files:
-        register_rnaseq(rna_seq_files, transaction)
+        execute_rnaseq_registration(rna_seq_files, transaction)
 
     # Check, if there are files of unknown type left
     if unknown_file_types:
         for file_name in unknown_file_types:
             print(mtbutils.log_stardate('Unknown file type: {}'.format(file_name)))
-
+            if file_name.endswith('fastq') or file_name.endswith('fastq.gz'):
+                raise mtbutils.MTBdropboxerror("Unassigned fastq file found: " + file_name)
+               
     print(mtbutils.log_stardate('Processing finished.'))
+
+
+def execute_vcf_registration(vcf_files, transaction):
+    for vcf in vcf_files:
+        register_vcf(vcf, transaction)
+
+
+def execute_fastq_registration(fastqs_normal, fastqs_tumor, transaction):
+   if len(fastqs_tumor) != 2 or len(fastqs_normal) != 2:
+        raise mtbutils.MTBdropboxerror("Tumor/normal fastq dataset was not complete. Please check.")
+   else:
+        proc_fastq(fastqs_tumor, transaction)
+        proc_fastq(fastqs_normal, transaction)
+
+
+def execute_rnaseq_registration(rna_seq_files, transaction):
+    register_rnaseq(rna_seq_files, transaction)
 
 
 def get_last_exp_id(experiments):
