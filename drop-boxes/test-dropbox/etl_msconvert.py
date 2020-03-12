@@ -30,6 +30,21 @@ import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import (
     SearchCriteria, SearchSubCriteria
 )
+
+######## Sample Tracking related import
+import life.qbic.sampletracking
+import sample_tracking_helper_qbic as tracking_helper
+
+#### Setup Sample Tracking service
+serviceCredentials = sampletracking.ServiceCredentials()
+serviceCredentials.user = tracking_helper.get_service_user()
+serviceCredentials.password = tracking_helper.get_service_password()
+serviceUrl = URL(tracking_helper.get_service_reg_url())
+qbicLocation = tracking_helper.get_qbic_location_json()
+
+sampleTracker = sampleTracking.SampleTracker.getQBiCSampleTracker(serviceUrl, serviceCredentials, qbicLocation)
+
+
 try:
     import shlex
     quote = shlex.quote
@@ -48,6 +63,9 @@ MSCONVERT_HOST = "qmsconvert.am10.uni-tuebingen.de"
 MSCONVERT_USER = "qbic"
 REMOTE_BASE = "/cygdrive/d/etl-convert"
 CONVERSION_TIMEOUT = 7200
+
+
+
 
 try:
     TimeoutError
@@ -464,3 +482,6 @@ def process(transaction):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
     transaction.moveFile(incomingPath, dataSet)
+
+    # Update Sample Status
+    sampleTracker.updateSampleLocationToCurrentLocation(code)
