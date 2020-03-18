@@ -165,16 +165,21 @@ def process(transaction):
 			if ext.lower()=='.tsv':
 				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
 	offset = 0
-	for line in metadataFile[1:]:  # Exclude the header from iteration
+	# go through the metadatafile containing all pre-specified imaging metadata
+	for line in metadataFile[1:]:  # (Exclude header)
+		# TODO Get modality and other metadata from tsv here for one sample
+		modality = "CT-BIOPSY"
 		filePath = getFileFromLine(line)
 		print filePath
 		list_of_omero_ids = callOmeroWithFilePath(filePath, code)
+		# TODO decide if new experiment is needed based on some pre-defined criteria.
+		# Normally, the most important criterium is collision of experiment type properties
+		# between samples. E.g. two different imaging modalities need two experiments.
+		if(True):
+			exp = createNewImagingExperiment(transaction, space, project, modality)
 		createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)
+		# increment id offset for next sample in this loop
 		offset+=1
-		# TODO Get modality and other metadata from tsv here
-		modality = "CT-BIOPSY"
-		#decide if new experiment is needed
-		exp = createNewImagingExperiment(transaction, space, project, modality)
 
 
 
