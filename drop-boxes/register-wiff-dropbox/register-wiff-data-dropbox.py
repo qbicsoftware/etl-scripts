@@ -25,6 +25,23 @@ WIFF_SCAN_FILE = re.compile(r'(\w*\.wiff.scan)\b')
 # Path to the openBIS properties file
 PROPERTIES = '/etc/openbis.properties'
 
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
+
 #############################################################################
 #
 # The ETL logic starts here.
@@ -88,6 +105,9 @@ def register_wiff_pairs(transaction, wiff_pairs, qbic_id):
 
     # Attach the directory to the dataset
     transaction.moveFile(registration_dir, data_set)
+
+    # Update sample location
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qbic_id)
 
 
 def space_and_project(transaction, qbiccode):
