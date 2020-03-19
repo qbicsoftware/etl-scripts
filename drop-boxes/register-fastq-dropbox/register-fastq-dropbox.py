@@ -88,7 +88,7 @@ def process(transaction):
                 i = 0
                 while expID in experimentIDs:
                     i += 1
-                    expNum = len(experiments) + i
+                    expNum = len(experiments) + i#TODO
                     expID = '/' + space + '/' + project + \
                         '/' + project + 'E' + str(expNum)
                 ngsExperiment = transaction.createNewExperiment(expID, expType)
