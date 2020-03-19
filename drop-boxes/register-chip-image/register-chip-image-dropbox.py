@@ -50,7 +50,6 @@ def process(transaction):
                 sc = SearchCriteria()
                 sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MA"+code))
                 foundSamples = search_service.searchForSamples(sc)
-                #parentCodes.append(code)
                 sampleIdentifier = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
