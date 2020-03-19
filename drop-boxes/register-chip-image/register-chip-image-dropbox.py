@@ -53,6 +53,7 @@ def process(transaction):
         key = context.get("RETRY_COUNT")
         if (key == None):
                 key = 1
+        parentCodes = []
         for name in os.listdir(incomingPath):
                 code = None
                 searchID = pattern.findall(name)
@@ -64,7 +65,7 @@ def process(transaction):
                 sc = SearchCriteria()
                 sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MA"+code))
                 foundSamples = search_service.searchForSamples(sc)
-
+                parentCodes.append(code)
                 sampleIdentifier = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
@@ -76,6 +77,6 @@ def process(transaction):
 
                 image = os.path.realpath(os.path.join(incomingPath,name))
                 transaction.moveFile(image, dataSet)
-
+        for code in parentCodes:
                 #sample tracking section
                 SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(code)

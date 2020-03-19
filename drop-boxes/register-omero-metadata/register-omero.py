@@ -5,6 +5,9 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 import sys
 sys.path.append('/home-link/qeana10/bin/')
 
+from life.qbic import TrackingHelper
+from life.qbic import SampleNotFoundException
+import sample_tracking_helper_qbic as thelper
 import checksum
 import re
 import os
@@ -111,6 +114,14 @@ def createNewImagingRun(tr, base_sample, exp, omero_link, run_offset):
 	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, omero_link)
 	return img_run
 
+#TODO Luis
+def callOmeroWithFilePath(file_path, sample_barcode):
+	list_of_omero_ids = ["1","2","3"]
+	return list_of_omero_ids
+
+def getFileFromLine(line):
+	return line.split("\t")[0]
+
 def process(transaction):
 	context = transaction.getRegistrationContext().getPersistentMap()
 
@@ -147,13 +158,34 @@ def process(transaction):
 	sa = transaction.getSampleForUpdate(sampleID)
 	space = sa.getSpace()
 
-	# Get modality from metadata here
-	modality = "CT-BIOPSY"
-	exp = createNewImagingExperiment(transaction, space, project, modality)
-	# Get Omero id(s) from Omero before creating sample(s) in openBIS
+	metadataFile = None
+	for root, subFolders, files in os.walk(incomingPath):
+		for f in files:
+			stem, ext = os.path.splitext(f)
+			if ext.lower()=='.tsv':
+				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
 	offset = 0
-	for f in omero_image:
-		omero_id = "omero-test-id"
-		createNewImagingRun(transaction, sa, exp, omero_id, offset)
+	# go through the metadatafile containing all pre-specified imaging metadata
+	for line in metadataFile[1:]:  # (Exclude header)
+		# TODO Get modality and other metadata from tsv here for one sample
+		modality = "CT-BIOPSY"
+		filePath = getFileFromLine(line)
+		print filePath
+		list_of_omero_ids = callOmeroWithFilePath(filePath, code)
+		# TODO decide if new experiment is needed based on some pre-defined criteria.
+		# Normally, the most important criterium is collision of experiment type properties
+		# between samples. E.g. two different imaging modalities need two experiments.
+		if(True):
+			exp = createNewImagingExperiment(transaction, space, project, modality)
+		createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)
+		# increment id offset for next sample in this loop
 		offset+=1
-	# done?
+
+
+
+
+
+
+
+
+
