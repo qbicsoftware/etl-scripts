@@ -38,7 +38,6 @@ def process(transaction):
         key = context.get("RETRY_COUNT")
         if (key == None):
                 key = 1
-        #parentCodes = []
         for name in os.listdir(incomingPath):
                 code = None
                 searchID = pattern.findall(name)
