@@ -96,32 +96,7 @@ def process(transaction):
 
         rmaSample = transaction.createNewSample('/' + space + '/' + 'RMA' + parentCode, SAMPLE_TYPE)
         rmaSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
+
         rmaSample.setExperiment(newRMAExperiment) 
-
-        #cegat = False
-        #sourceLabFile = open(os.path.join(incomingPath,'source_dropbox.txt'), 'r')
-        #sourceLab = sourceLabFile.readline().strip()
-        #sourceLabFile.close()
-
-        #if sourceLab == 'dmcegat':
-        #    cegat = True
-        #os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
-
-        #for f in os.listdir(incomingPath):
-        #    if f.endswith('origlabfilename') and cegat:
-        #        origName = open(os.path.join(incomingPath,f), 'r')
-        #        secondaryName = origName.readline().strip().split('_')[0]
-        #        origName.close()
-                #entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
-        #        sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-        #        os.remove(os.path.realpath(os.path.join(incomingPath,f)))   
-        
-        #    elif f.endswith('sha256sum') or f.endswith('vcf'):
-        #        pass
-                #transaction.moveFile(os.path.join(incomingPath,f), dataSet)
-        #    else:
-        #        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-
-        dataSet.setSample(rmaSample)
-        transaction.moveFile(incomingPath, dataSet)
+    dataSet.setSample(rmaSample)
+    transaction.moveFile(incomingPath, dataSet)

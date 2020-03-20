@@ -39,17 +39,16 @@ def process(transaction):
         if (key == None):
                 key = 1
         for name in os.listdir(incomingPath):
-                identifier = None
+                code = None
                 searchID = pattern.findall(name)
                 if isExpected(searchID[0]):
-                        identifier = searchID[0]
-                        project = identifier[:5]
+                        code = searchID[0]
+                        project = code[:5]
                 else:
-                        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+                        print "The code "+code+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
                 sc = SearchCriteria()
-                sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MA"+identifier))
+                sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MA"+code))
                 foundSamples = search_service.searchForSamples(sc)
-
                 sampleIdentifier = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
                 sa = transaction.getSampleForUpdate(sampleIdentifier)

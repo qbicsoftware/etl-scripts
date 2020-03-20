@@ -14,6 +14,21 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
 # ETL script for registration of VCF files
 # expected:
@@ -38,7 +53,6 @@ def process(transaction):
         if (key == None):
                 key = 1
 
-
         # Get the name of the incoming file
         name = transaction.getIncoming().getName()
         
@@ -58,19 +72,18 @@ def process(transaction):
         space = foundSamples[0].getSpace()
         sa = transaction.getSampleForUpdate(parentSampleIdentifier)
         # register new experiment and sample
-	experiments = search_service.listExperiments("/" + space + "/" + project)
-	exp = None
-	for e in experiments:
-		if e.getExperimentType() == "Q_EXT_MS_QUALITYCONTROL":
-			exp = e
-	if not exp:
-		numberOfExperiments = len(experiments) + 1
-		exp = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_EXT_MS_QUALITYCONTROL")
+        experiments = search_service.listExperiments("/" + space + "/" + project)
+        exp = None
+        for e in experiments:
+                if e.getExperimentType() == "Q_EXT_MS_QUALITYCONTROL":
+                        exp = e
+        if not exp:
+                numberOfExperiments = len(experiments) + 1
+                exp = transaction.createNewExperiment('/' + space + '/' + project + '/' + project + 'E' + str(numberOfExperiments), "Q_EXT_MS_QUALITYCONTROL")
 
         newSample = transaction.createNewSample('/' + space + '/' + 'MSQC'+ parentCode, "Q_EXT_MS_QUALITYCONTROL_RUN")
         newSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
-	newSample.setExperiment(exp) 
+        newSample.setExperiment(exp) 
         # create new dataset 
         dataSet = transaction.createNewDataSet("Q_EXT_MS_QUALITYCONTROL_RESULTS")
         dataSet.setMeasuredData(False)
@@ -86,10 +99,9 @@ def process(transaction):
         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         for f in os.listdir(incomingPath):
-               	if ".origlabfilename" in f:
-                       	os.remove(os.path.realpath(os.path.join(incomingPath,f)))
-                #elif f.endswith('vcf') and cegat:
-                       	#secondaryName = f.split('_')[0]
-                       	#entitySample = transaction.getSampleForUpdate('/%s/%s' % (space,parentCode))
-                        #sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
+                if ".origlabfilename" in f:
+                        os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         transaction.moveFile(incomingPath, dataSet)
+
+        #sample tracking section
+        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentCode)
