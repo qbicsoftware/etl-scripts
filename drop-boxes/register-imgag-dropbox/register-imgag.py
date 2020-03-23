@@ -29,6 +29,7 @@ from life.qbic.sampletracking import SampleTracker
 from life.qbic.sampletracking import ServiceCredentials
 from java.net import URL
 
+import sample_tracking_helper_qbic as tracking_helper
 #### Setup Sample Tracking service
 SERVICE_CREDENTIALS = ServiceCredentials()
 SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
