@@ -18,6 +18,7 @@ The stdout of this file is redirected to
 
 import tempfile
 import sys
+sys.path.append('/home-link/qeana10/bin/')
 import os
 import time
 import re
