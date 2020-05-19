@@ -1,0 +1,80 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://qbic.life/v1/upload-metadata.schema.json",
+    "title": "Upload metadata for data registration at QBiC",
+    "description": "A full description of mandatory and optional metadata properties that need to/can be included for data registration via QBiC dropboxes.",
+    "type": "object",
+    "definitions": {
+        "qc": {
+            "type": "object",
+            "properties": {
+                "qcml_id": {
+                    "type": "string",
+                    "pattern": "QC:.*"
+                }, 
+                "name": {
+                    "type": "string",
+                    "description": "Name of the quality control",
+                    "examples": ["read count", "target region read depth", "Q20 read percentage"]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "sample": {
+            "type": "object",
+            "properties": {
+                "genome": {
+                    "type": "string",
+                    "examples": ["GRCh37"]
+                },
+                "id_genetics": {
+                    "type": "string",
+                    "examples": ["GS000000_01"]
+                },
+                "id_qbic": {
+                    "type": "string",
+                    "pattern": "Q\\w{4}\\d{3}[A-X][A-X0-9]",
+                    "examples": ["QTEST001AE"]
+                },
+                "processing_system": {
+                    "type": "string",
+                    "examples": ["SureSelectXT Human All Exon v5"]
+                },
+                "qc": {
+                    "type": "array",
+                    "items": {
+                        "allOf": [
+                            {
+                                "$ref": "#/definitions/qc"
+                            }
+                        ]
+                    }
+                }, 
+                "tumor": {
+                    "type": "string",
+                    "enum": ["yes", "no"]
+                }
+            }
+        }
+    },
+    "properties": {
+        "files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+        },
+        "type": {
+            "type": "string",
+            "enum": ["dna_seq", "rna_seq", "dna_seq_somatic"]
+        },
+        "sample1": { "$ref": "#/definitions/sample" }, 
+        "sample2": { "$ref": "#/definitions/sample" }
+    },
+    "required": [
+        "files", 
+        "type",
+        "sample1"
+    ] 
+}
