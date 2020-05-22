@@ -9,15 +9,17 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
+import shutil
+from datetime import datetime
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-# Parsing related imports
-from life.qbic import NanoporeParser
-from life.qbic import NanoporeObject
+# Parsing related imports - TODO rename
+from life.qbic.utils import NanoporeParser
+import life.qbic.datamodel.datasets
 
 ######## Sample Tracking related import
 from life.qbic.sampletracking import SampleTracker
@@ -53,101 +55,147 @@ NANOPORE_SAMPLE_PREFIX = "NGS"
 usedSampleIdentifiers = set()
 usedExperimentIdentifiers = set()
 
-#TODO
-def createNewSample(transaction, parentSampleCode):
-    # 1. get parent sample
-    # 2. i = 0
-    # 3. increment i in PREFIX+i+parentSampleCode and create sample identifier
-    # 4. if sample identifier exist in openbis or usedSampleIdentifiers go to 3
-    # 5. usedSampleIdentifiers.append(identifier)
-    # 6. create and return sample using identifier
+def createNewSample(transaction, space, parentSampleCode):
+    run = 0
+    sampleExists = True
+    newSampleID = None
+    while sampleExists:
+        run += 1
+        newSampleID = '/' + space + '/' + NANOPORE_SAMPLE_PREFIX + str(run) + parentSampleCode
+        sampleExists = transaction.getSampleForUpdate(newSampleID) or newSampleID in usedSampleIdentifiers
+    usedSampleIdentifiers.append(newSampleID)
+    return transaction.createNewSample(newSampleID, NANOPORE_SAMPLE_TYPE_CODE)
 
-#TODO
-def createNewExperiment(transaction, projectCode):
-    # 1. get experiments in this project
-    # 2. i = len(experiments)
-    # 3. increment i in projectCode+E+i and create experiment identifier
-    # 4. if experiment identifier exist in openbis or usedExperimentIdentifiers go to 3
-    # 5. usedExperimentidentifiers.append(identifier)
-    # 6. create and return experiment using identifier
+def createNewExperiment(transaction, space, project):
+    search_service = transaction.getSearchService()
+    existingExperiments = search_service.listExperiments("/" + space + "/" + project)
+    for eexp in existingExperiments:
+        usedExperimentIdentifiers.append(eexp.getExperimentIdentifier())
+    run = len(usedExperimentIdentifiers)
+    expExists = True
+    newExpID = None
+    while expExists:
+        run += 1
+        newExpID = '/' + space + '/' +project+ '/' + project+str(run)
+        expExists = newExpID in usedExperimentIdentifiers
+    usedExperimentIdentifiers.append(newExpID)
+    return transaction.createNewExperiment(newExpID, NANOPORE_EXP_TYPE_CODE)
 
 # return first line of file
 def getDatahandlerMetadata(incomingPath, fileName):
-        path = os.path.realpath(os.path.join(incomingPath,file_name))
-        with open(path) as f:
-            return f.readline()
+    path = os.path.realpath(os.path.join(incomingPath,file_name))
+    with open(path) as f:
+        return f.readline()
 
-def handleMeasurement(transaction, measurement, origin, projectCode):
-        #reminder: incoming path is of the absolute path of the folder created by the datahandler.
-        #joining this path with any relative path returned by the nanopore object will give the absolute path of that file/folder.
-        incomingPath = transaction.getIncoming().getAbsolutePath()
+def getTimeStamp():
+    now = datetime.now()
+    ts = str(now.minute)+str(now.second)+str(now.microsecond)
+    return ts
 
-        # handle log files
-        newLogFolder = os.path.join(measurement.getRelativePath(), "logs")
-        os.mkdir(newLogFolder)
-        for logFile in measurement.getLogFiles():
-            logFilePath = os.path.join(incomingPath, logFile.getRelativePath())
-            os.rename(logFilePath, os.path.join(newLogFolder, logFile.getFileName()))
-        logDataSet = transaction.createNewDataSet(NANOPORE_LOG_CODE)
-        # either create log sample type or add this to every sample
-        logDataSet.setSample(logSampleToBeCreated?)
+# return absolute path of copied folder containing all log files. used to add log files to each involved sample
+def copyLogs(parentPath, fileList):
+    ts = getTimeStamp()
+    newLogFolder = os.path.join(parentPath, ts+"/logs")
+    os.mkdir(newLogFolder)
+    for logFile in fileList:
+        src = os.path.join(parentPath, logFile):
+        shutil.copy2(src, newLogFolder)
+    return newLogFolder
 
-        transaction.moveFile(newLogFolder, logDataSet)
+def handleMeasurement(transaction, space, project, measurement, origin, rawDataPerSample):
+    #reminder: incoming path is of the absolute path of the folder created by the datahandler.
+    #joining this path with any relative path returned by the nanopore object will give the absolute path of that file/folder.
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+    currentPath = os.path.join(incomingPath, measurement.getRelativePath())
+    # handle metadata of experiment level
+    runExperiment = createNewExperiment(transaction, space, project)
 
-        # handle metadata of experiment level
-        runExperiment = createNewExperiment(transaction, projectCode)
+    #do we get these automatically? from where?
+    runExperiment.setPropertyValue("Q_ASIC_TEMPERATURE", measurement.getAsicTemp())
+    runExperiment.setPropertyValue("Q_NGS_BASE_CALLER", measurement.getBaseCaller()+ " " +measurement.getBaseCallerVersion())
+    runExperiment.setPropertyValue("Q_SEQUENCER_DEVICE", measurement.getDeviceType())
+    runExperiment.setPropertyValue("Q_FLOWCELL_BARCODE", measurement.getFlowcellId())
+    runExperiment.setPropertyValue("Q_FLOWCELL_POSITION", measurement.getFlowCellPosition())
+    runExperiment.setPropertyValue("Q_FLOWCELL_TYPE", measurement.getFlowCellType())
+    runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT", measurement.getLibraryPreparationKit())
+    runExperiment.setPropertyValue("Q_NGS_NANOPORE_HOSTNAME", measurement.getMachineHost())
+    runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
+    runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", measurement.getStartDate())
+    # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
+    # handle measured samples
+    for (barcode, datamap) in rawDataPerSample:
+        newLogFolder = copyLogs(currentPath, measuremnt.getLogFiles())
+        handleSingleSample(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
-        #do we get these automatically? from where?
-        runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT)", TBD)
-        runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", measurement.getStartTime())
-        runExperiment.setPropertyValue("Q_FLOWCELL_POSITION",) # parse from folder name or parse from log file? next token after time, example: "1-E3-H3"
-        runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
-        runExperiment.setPropertyValue("Q_FLOWCELL_BARCODE", ) # parse from folder name or log file? next token after position, example: "PAE26974"
-        runExperiment.setPropertyValue("Q_SEQUENCER_DEVICE",) # ID in summary file, but no name of the sequencer --> need additional property?
-        # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
-        # handle measured samples
-        for sample in measurement.getMeasuredSamples():
-            handleSingleSample(transaction, sample, runExperiment)
+def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+    incomingPath = transaction.getIncoming().getAbsolutePath()
 
-def handleSingleSample(transaction, sampleWithDataFolders, openbisExperiment):
-        incomingPath = transaction.getIncoming().getAbsolutePath()
+    sample = createNewSample(transaction, space, parentSampleCode)
+    sample.setExperiment(openbisExperiment)
+    #sample.setPropertyValue("Q_EXTERNALDB_ID",) this should already be set for the parent. where do we get it on this level, if it's needed?
+    # maybe we need to get the object and then the path?
 
-        parentSampleCode = sampleWithDataFolders.getBarcode()
-        sample = createNewSample(transaction, parentSampleCode)
-        sample.setExperiment(openbisExperiment)
-        sample.setPropertyValue("Q_EXTERNALDB_ID",) # this should already be set for the parent. where do we get it on this level, if it's needed?
-        # maybe we need to get the object and then the path
-        fast5PathForSample = sampleWithDataFolders.getFast5Folder()
-        fastQPathForSample = sampleWithDataFolders.getFastQPath() # careful, this could be one fastq.gz or a folder
+    topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
+    os.mkdir(topFolderFastq)
+    folder = mapWithDataForSample.get("fastqfail");
+    src = os.path.join(currentPath, folder.getRelativePath())
+    os.rename(src, topFolderFastq+'/'+)
 
-        fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
-        fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
-        fast5DataSet.setSample(sample)
-        fastQDataSet.setSample(sample)
-        transaction.moveFile(os.path.join(incomingPath, fast5PathForSample), fast5DataSet)
-        transaction.moveFile(os.path.join(incomingPath, fastQPathForSample), fastQDataSet)
+    folder = mapWithDataForSample.get("fastqpass");
+    src = os.path.join(currentPath, folder.getRelativePath())
+    os.rename(src, topFolderFastq+'/'+)
 
-        # Updates the sample location of the measured sample
-        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
+    os.mkdir(topFolderFast5)
+    folder = mapWithDataForSample.get("fast5pass");
+    src = os.path.join(currentPath, folder.getRelativePath())
+    os.rename(src, topFolderFast5+'/'+)
+
+    folder = mapWithDataForSample.get("fast5fail");
+    src = os.path.join(currentPath, folder.getRelativePath())
+    os.rename(src, topFolderFast5+'/'+)
+
+    fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
+    fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
+    fast5DataSet.setSample(sample)
+    fastQDataSet.setSample(sample)
+    transaction.moveFile(os.path.join(incomingPath, topFolderFast5), fast5DataSet)
+    transaction.moveFile(os.path.join(incomingPath, topFolderFastq), fastQDataSet)
+
+    logDataSet = transaction.createNewDataSet(NANOPORE_LOG_CODE)
+    logDataSet.setSample(sample)
+    transaction.moveFile(absLogPath, logDataSet)
+
+    # Updates the sample location of the measured sample
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
-        context = transaction.getRegistrationContext().getPersistentMap()
+    context = transaction.getRegistrationContext().getPersistentMap()
 
-        # Get the incoming path of the transaction
-        incomingPath = transaction.getIncoming().getAbsolutePath()
+    # Get the incoming path of the transaction
+    incomingPath = transaction.getIncoming().getAbsolutePath()
 
-        key = context.get("RETRY_COUNT")
-        if (key == None):
-            key = 1
+    key = context.get("RETRY_COUNT")
+    if (key == None):
+        key = 1
 
-        # Get metadata from datahandler as well as the original facility object
-        for f in os.listdir(incomingPath):
-            if f.startswith('Q'):
-                nanoporeFolder = os.path.realpath(os.path.join(incomingPath,f))
+    # Get metadata from datahandler as well as the original facility object
+    for f in os.listdir(incomingPath):
+        if f.startswith('Q'):
+            nanoporeFolder = os.path.realpath(os.path.join(incomingPath,f))
 
-        origin = getDatahandlerMetadata(incomingPath, "source_dropbox.txt")
-        # Use file structure parser to create structure object
-        nanoporeObject = NanoporeParser.parseFileStructure(nanoporeFolder)
+    origin = getDatahandlerMetadata(incomingPath, "source_dropbox.txt")
+    # Use file structure parser to create structure object
+    nanoporeObject = NanoporeParser.parseFileStructure(nanoporeFolder)
+    sampleCode = nanoporeObject.getSampleCode()
 
-        for measurement in nanoporeObject.getMeasurements():
-            handleMeasurement(transaction, measurement, origin)
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
+    found_samples = search_service.searchForSamples(sc)
+    sample = found_samples[0]
+    space = sample.getSpace()
+    projectCode = sampleCode[:5]
+    rawData = measurement.getRawDataPerSample(nanoporeObject)
+    for measurement in nanoporeObject.getMeasurements():
+        handleMeasurement(transaction, space, projectCode, measurement, origin, rawData)
