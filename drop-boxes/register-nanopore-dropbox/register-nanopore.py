@@ -28,6 +28,9 @@ from java.net import URL
 
 import sample_tracking_helper_qbic as tracking_helper
 
+######## imports for fastq/5 file validation
+#import subprocess
+
 #### Setup Sample Tracking service
 SERVICE_CREDENTIALS = ServiceCredentials()
 SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
@@ -98,7 +101,7 @@ def copyLogs(parentPath, fileList):
     newLogFolder = os.path.join(parentPath, ts+"/logs")
     os.mkdir(newLogFolder)
     for logFile in fileList:
-        src = os.path.join(parentPath, logFile):
+        src = os.path.join(parentPath, logFile)
         shutil.copy2(src, newLogFolder)
     return newLogFolder
 
@@ -139,21 +142,21 @@ def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSampl
     os.mkdir(topFolderFastq)
     folder = mapWithDataForSample.get("fastqfail");
     src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFastq+'/'+)
+    os.rename(src, topFolderFastq+'/')
 
     folder = mapWithDataForSample.get("fastqpass");
     src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFastq+'/'+)
+    os.rename(src, topFolderFastq+'/')
 
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.mkdir(topFolderFast5)
     folder = mapWithDataForSample.get("fast5pass");
     src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFast5+'/'+)
+    os.rename(src, topFolderFast5+'/')
 
     folder = mapWithDataForSample.get("fast5fail");
     src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFast5+'/'+)
+    os.rename(src, topFolderFast5+'/')
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
@@ -199,3 +202,80 @@ def process(transaction):
     rawData = measurement.getRawDataPerSample(nanoporeObject)
     for measurement in nanoporeObject.getMeasurements():
         handleMeasurement(transaction, space, projectCode, measurement, origin, rawData)
+
+def validateFastq(filePath):
+    """
+    This function validates fastq files using the 'fastq_info' tool
+    of the set of utilities 'fastq_utils'
+    (https://github.com/nunofonseca/fastq_utils).
+
+    This function assumes 'fastq_utils' is installed
+
+    Example:
+        validateFastq('10xv1a_I1.fastq.gz')
+
+    Args:
+        filePath (string): the path to the fastq file to validate
+
+    Returns:
+        Boolean: True if 'fastq_info' exited succesfully (i.e. exit code 0),
+                False otherwise.
+    """
+
+    import subprocess
+
+    success_flag = False
+
+    cmd = "fastq_info " + filePath
+
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=True,
+                            universal_newlines=True)
+
+    std_out, std_err = proc.communicate()
+
+    if int(proc.returncode) == 0:
+        success_flag = True
+
+    return success_flag
+
+
+def validateFast5(filePath, schemaPath='fast5_test_data/schema.yml'):
+    """
+    This function validates fast5 files using the 'H5 Validator' tool
+    (https://github.com/nanoporetech/ont_h5_validator).
+
+    This function assumes 'H5 Validator' is installed
+
+    Example:
+        validateFast5('fast5_test_data/test.fast5', 'fast5_test_data/schema.yml')
+
+    Args:
+        filePath (string): the path to the fast5 file to validate
+        schemaPath (string): path to the file schema maintained by Oxford Nanopore Technologies
+
+    Returns:
+        Boolean: True if the 'H5 Validator' exited succesfully (i.e. exit code 0),
+                False otherwise.
+    """
+
+    import subprocess
+
+    success_flag = False
+
+    cmd = "h5_validate " + schemaPath + ' ' + filePath + ' -v'
+
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=True,
+                            universal_newlines=True)
+
+    std_out, std_err = proc.communicate()
+
+    if int(proc.returncode) == 0:
+        success_flag = True
+
+    return success_flag
