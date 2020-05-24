@@ -1,6 +1,6 @@
 '''
 
-Note: 
+Note:
 print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 '''
 import sys
@@ -18,6 +18,22 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+
+#### Setup Sample Tracking service
+serviceCredentials = ServiceCredentials()
+serviceCredentials.user = tracking_helper.get_service_user()
+serviceCredentials.password = tracking_helper.get_service_password()
+serviceUrl = URL(tracking_helper.get_service_reg_url())
+qbicLocation = tracking_helper.get_qbic_location_json()
+
+sampleTracker = SampleTracker.createQBiCSampleTracker(serviceUrl, serviceCredentials, qbicLocation)
 
 # Data import and registration
 # expected:
@@ -55,7 +71,13 @@ def process(transaction):
         # Get the name of the incoming file 
         name = transaction.getIncoming().getName()
 
-        sampleID = "/DELETE_THIS_TEST/QTEST000XX"
+        sampleID = "QHPVT077A3"
+
+        # Log the qbic location object details for debugging
+        print qbicLocation
+
+        # Update Sample Location
+        sampleTracker.updateSampleLocationToCurrentLocation(sampleID)
 
         raise TestError("Test if data was registered!")
         

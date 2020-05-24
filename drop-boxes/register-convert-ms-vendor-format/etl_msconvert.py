@@ -14,7 +14,6 @@ with rsync.
 
 The stdout of this file is redirected to
 `~openbis/servers/datastore_server/log/startup_log.txt`
-TODO why there?? - it's tradition!
 """
 
 import tempfile
@@ -39,6 +38,21 @@ try:
 except AttributeError:
     import pipes
     quote = pipes.quote
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -468,6 +482,10 @@ class SampleNotFoundError(Exception):
     def __str__(self):
         return self.value
 
+def handleSampleTracking(barcode):
+    #sample tracking section
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(barcode)
+
 def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
     rawDataSet.setPropertyValue("Q_MS_RAW_VENDOR_TYPE", format)
@@ -541,7 +559,6 @@ def handleImmunoFiles(transaction):
                 data_files.append(os.path.join(root, f))
     # Metadata file: this was registered by hand, metadata needs to be read
     if metadataFile:
-
         #info needed in the for loop
         search_service = transaction.getSearchService()
         sc = SearchCriteria()
@@ -640,7 +657,8 @@ def handleImmunoFiles(transaction):
             if False: #converted_exists:
                 print "test, deleting "+mzml_dest
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
-            
+        # samples have the same parent, so only one iteration is needed, IF all datasets were successfully created
+        handleSampleTracking(parentCode)
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
@@ -698,6 +716,7 @@ def handleImmunoFiles(transaction):
                     exp.setPropertyValue('Q_ONTOLOGY_INSTRUMENT_ID', instrument_accession)
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, ms_samp)
         createRawDataSet(transaction, raw_path, ms_samp, openbis_format_code, time_stamp)
+        handleSampleTracking(parentCode)
 
 
 def handle_QC_Run(transaction):
@@ -767,10 +786,18 @@ def handle_QC_Run(transaction):
 
     time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
     createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
+    # no tracking update needed here, it's always the same QC code (for now)
+    #handleSampleTracking(---)
     
     for f in os.listdir(incomingPath):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath, f)))
+
+def has_batch_prefix(name):
+    prefixes = ms_prefix_pattern.findall(name)
+    if prefixes:
+        return True
+    return False
 
 def process(transaction):
     """Ask Andreas"""
@@ -786,7 +813,7 @@ def process(transaction):
         if "source_dropbox.txt" in f:
             source_file = open(os.path.join(incomingPath, f))
             source = source_file.readline()
-            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source:
+            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source or has_batch_prefix(name):
                 immuno = True
                 handleImmunoFiles(transaction)
     if not immuno and qc_run:
@@ -927,6 +954,8 @@ def process(transaction):
             print "test, deleting "+mzml_dest
         time_stamp = GZipAndMoveMZMLDataSet(transaction, mzml_dest, msSample)
         createRawDataSet(transaction, raw_path, msSample, openbis_format_code, time_stamp)
+        # only one file, either with MS prefix or without and wash runs or normal peptide/protein samples. in any case we use the basic barcode without prefix for sample tracking:
+        handleSampleTracking(code)
 
         for f in os.listdir(incomingPath):
             if ".testorig" in f:
