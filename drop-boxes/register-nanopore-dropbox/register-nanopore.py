@@ -105,7 +105,7 @@ def copyLogs(parentPath, fileList):
         shutil.copy2(src, newLogFolder)
     return newLogFolder
 
-def handleMeasurement(transaction, space, project, measurement, origin, rawDataPerSample):
+def createExperimentFromMeasurement(transaction, space, project, measurement, origin, rawDataPerSample):
     #reminder: incoming path is of the absolute path of the folder created by the datahandler.
     #joining this path with any relative path returned by the nanopore object will give the absolute path of that file/folder.
     incomingPath = transaction.getIncoming().getAbsolutePath()
