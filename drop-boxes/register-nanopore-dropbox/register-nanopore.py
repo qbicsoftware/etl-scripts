@@ -127,7 +127,7 @@ def createExperimentFromMeasurement(transaction, space, project, measurement, or
     # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
     # handle measured samples
     for (barcode, datamap) in rawDataPerSample:
-        newLogFolder = copyLogs(currentPath, measuremnt.getLogFiles())
+        newLogFolder = copyLogs(currentPath, measurement.getLogFiles())
         handleSingleSample(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
 def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
