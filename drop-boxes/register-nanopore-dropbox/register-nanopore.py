@@ -5,8 +5,6 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 '''
 import sys
 sys.path.append('/home-link/qeana10/bin/')
-#sys.path.append('/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-nanopore-dropbox/lib/data-model-lib-1.8.0.jar')
-#sys.path.append('/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-nanopore-dropbox/lib/core-utils-lib-1.4.0.jar')
 
 import checksum
 import re
@@ -25,24 +23,24 @@ from life.qbic.datamodel.datasets import OxfordNanoporeExperiment
 from life.qbic.utils import NanoporeParser
 
 ######## Sample Tracking related import
-#from life.qbic.sampletracking import SampleTracker
-#from life.qbic.sampletracking import ServiceCredentials
-#from java.net import URL
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
 
-#import sample_tracking_helper_qbic as tracking_helper
+import sample_tracking_helper_qbic as tracking_helper
 
 ######## imports for fastq/5 file validation
 #import subprocess
 
 #### Setup Sample Tracking service
-#SERVICE_CREDENTIALS = ServiceCredentials()
-#SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
-#SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
-#SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-#QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
 
 ### We need this object to update the sample location later
-#SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
 # ETL script for registration of VCF files
 # expected:
@@ -103,14 +101,18 @@ def getTimeStamp():
     ts = str(now.minute)+str(now.second)+str(now.microsecond)
     return ts
 
-# return absolute path of copied folder containing all log files. used to add log files to each involved sample
-def copyLogs(parentPath, fileList):
+def copyLogFilesTo(logFiles, filePath, targetFolderPath):
+    for logFile in logFiles:
+        src = os.path.join(filePath, logFile)
+        shutil.copy2(src, targetFolderPath)
+    copiedContent = os.listdir(targetFolderPath)
+    if len(copiedContent) != len(logFiles):
+        raise AssertionError("Not all log files have been copied successfully to target log folder.")
+
+def createLogFolder(targetPath):
     ts = getTimeStamp()
-    newLogFolder = os.path.join(parentPath, ts+"/logs")
+    newLogFolder = os.path.join(targetPath, os.path.join(ts, "logs"))
     os.makedirs(newLogFolder)
-    for logFile in fileList:
-        src = os.path.join(parentPath, logFile.getName())
-        shutil.copy2(src, newLogFolder)
     return newLogFolder
 
 def createExperimentFromMeasurement(transaction, currentPath, space, project, measurement, origin, rawDataPerSample):
@@ -136,7 +138,8 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     # handle measured samples
     for barcode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(barcode)
-        newLogFolder = copyLogs(currentPath, measurement.getLogFiles())
+        newLogFolder = createLogFolder(currentPath)
+        copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
         createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
@@ -180,7 +183,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     transaction.moveFile(absLogPath, logDataSet)
 
     # Updates the sample location of the measured sample
-    #SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
