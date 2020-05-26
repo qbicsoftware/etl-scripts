@@ -17,7 +17,8 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-# Parsing related imports - TODO rename
+# Parsing related imports
+from java.nio.file import Paths
 from life.qbic.utils import NanoporeParser
 import life.qbic.datamodel.datasets
 
@@ -66,14 +67,14 @@ def createNewSample(transaction, space, parentSampleCode):
         run += 1
         newSampleID = '/' + space + '/' + NANOPORE_SAMPLE_PREFIX + str(run) + parentSampleCode
         sampleExists = transaction.getSampleForUpdate(newSampleID) or newSampleID in usedSampleIdentifiers
-    usedSampleIdentifiers.append(newSampleID)
+    usedSampleIdentifiers.add(newSampleID)
     return transaction.createNewSample(newSampleID, NANOPORE_SAMPLE_TYPE_CODE)
 
 def createNewExperiment(transaction, space, project):
     search_service = transaction.getSearchService()
     existingExperiments = search_service.listExperiments("/" + space + "/" + project)
     for eexp in existingExperiments:
-        usedExperimentIdentifiers.append(eexp.getExperimentIdentifier())
+        usedExperimentIdentifiers.add(eexp.getExperimentIdentifier())
     run = len(usedExperimentIdentifiers)
     expExists = True
     newExpID = None
@@ -81,12 +82,12 @@ def createNewExperiment(transaction, space, project):
         run += 1
         newExpID = '/' + space + '/' +project+ '/' + project+str(run)
         expExists = newExpID in usedExperimentIdentifiers
-    usedExperimentIdentifiers.append(newExpID)
+    usedExperimentIdentifiers.add(newExpID)
     return transaction.createNewExperiment(newExpID, NANOPORE_EXP_TYPE_CODE)
 
 # return first line of file
 def getDatahandlerMetadata(incomingPath, fileName):
-    path = os.path.realpath(os.path.join(incomingPath,file_name))
+    path = os.path.realpath(os.path.join(incomingPath,fileName))
     with open(path) as f:
         return f.readline()
 
@@ -99,7 +100,7 @@ def getTimeStamp():
 def copyLogs(parentPath, fileList):
     ts = getTimeStamp()
     newLogFolder = os.path.join(parentPath, ts+"/logs")
-    os.mkdir(newLogFolder)
+    os.makedirs(newLogFolder, exist_ok=True)
     for logFile in fileList:
         src = os.path.join(parentPath, logFile)
         shutil.copy2(src, newLogFolder)
@@ -136,34 +137,39 @@ def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSampl
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
     #sample.setPropertyValue("Q_EXTERNALDB_ID",) this should already be set for the parent. where do we get it on this level, if it's needed?
-    # maybe we need to get the object and then the path?
 
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
-    os.mkdir(topFolderFastq)
-    folder = mapWithDataForSample.get("fastqfail");
-    src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFastq+'/')
+    os.makedirs(topFolderFastq)
 
-    folder = mapWithDataForSample.get("fastqpass");
-    src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFastq+'/')
+    folder = mapWithDataForSample.get("fastqfail");
+    name = folder.getName()
+    src = os.path.join(currentPath, name)
+    os.rename(src, os.path.join(topFolderFastq,name))
+
+    folder = mapWithDataForSample.get("fastqpass")
+    name = folder.getName()
+    src = os.path.join(currentPath, name)
+    os.rename(src, os.path.join(topFolderFastq,name))
 
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
-    os.mkdir(topFolderFast5)
-    folder = mapWithDataForSample.get("fast5pass");
-    src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFast5+'/')
+    os.makedirs(topFolderFast5)
 
-    folder = mapWithDataForSample.get("fast5fail");
-    src = os.path.join(currentPath, folder.getRelativePath())
-    os.rename(src, topFolderFast5+'/')
+    folder = mapWithDataForSample.get("fast5pass")
+    name = folder.getName()
+    src = os.path.join(currentPath, name)
+    os.rename(src, os.path.join(topFolderFast5, name))
+
+    folder = mapWithDataForSample.get("fast5fail")
+    name = folder.getName()
+    src = os.path.join(currentPath, name)
+    os.rename(src, os.path.join(topFolderFast5, name))
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
     fast5DataSet.setSample(sample)
     fastQDataSet.setSample(sample)
-    transaction.moveFile(os.path.join(incomingPath, topFolderFast5), fast5DataSet)
-    transaction.moveFile(os.path.join(incomingPath, topFolderFastq), fastQDataSet)
+    transaction.moveFile(topFolderFast5, fast5DataSet)
+    transaction.moveFile(topFolderFastq, fastQDataSet)
 
     logDataSet = transaction.createNewDataSet(NANOPORE_LOG_CODE)
     logDataSet.setSample(sample)
@@ -183,8 +189,9 @@ def process(transaction):
         key = 1
 
     # Get metadata from datahandler as well as the original facility object
+    nanoporeFolder = None
     for f in os.listdir(incomingPath):
-        if f.startswith('Q'):
+        if os.path.isdir(f):
             nanoporeFolder = os.path.realpath(os.path.join(incomingPath,f))
 
     origin = getDatahandlerMetadata(incomingPath, "source_dropbox.txt")
@@ -199,83 +206,6 @@ def process(transaction):
     sample = found_samples[0]
     space = sample.getSpace()
     projectCode = sampleCode[:5]
-    rawData = measurement.getRawDataPerSample(nanoporeObject)
     for measurement in nanoporeObject.getMeasurements():
+        rawData = measurement.getRawDataPerSample(nanoporeObject)
         handleMeasurement(transaction, space, projectCode, measurement, origin, rawData)
-
-def validateFastq(filePath):
-    """
-    This function validates fastq files using the 'fastq_info' tool
-    of the set of utilities 'fastq_utils'
-    (https://github.com/nunofonseca/fastq_utils).
-
-    This function assumes 'fastq_utils' is installed
-
-    Example:
-        validateFastq('10xv1a_I1.fastq.gz')
-
-    Args:
-        filePath (string): the path to the fastq file to validate
-
-    Returns:
-        Boolean: True if 'fastq_info' exited succesfully (i.e. exit code 0),
-                False otherwise.
-    """
-
-    import subprocess
-
-    success_flag = False
-
-    cmd = "fastq_info " + filePath
-
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True,
-                            universal_newlines=True)
-
-    std_out, std_err = proc.communicate()
-
-    if int(proc.returncode) == 0:
-        success_flag = True
-
-    return success_flag
-
-
-def validateFast5(filePath, schemaPath='fast5_test_data/schema.yml'):
-    """
-    This function validates fast5 files using the 'H5 Validator' tool
-    (https://github.com/nanoporetech/ont_h5_validator).
-
-    This function assumes 'H5 Validator' is installed
-
-    Example:
-        validateFast5('fast5_test_data/test.fast5', 'fast5_test_data/schema.yml')
-
-    Args:
-        filePath (string): the path to the fast5 file to validate
-        schemaPath (string): path to the file schema maintained by Oxford Nanopore Technologies
-
-    Returns:
-        Boolean: True if the 'H5 Validator' exited succesfully (i.e. exit code 0),
-                False otherwise.
-    """
-
-    import subprocess
-
-    success_flag = False
-
-    cmd = "h5_validate " + schemaPath + ' ' + filePath + ' -v'
-
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True,
-                            universal_newlines=True)
-
-    std_out, std_err = proc.communicate()
-
-    if int(proc.returncode) == 0:
-        success_flag = True
-
-    return success_flag
