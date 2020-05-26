@@ -130,7 +130,7 @@ def createExperimentFromMeasurement(transaction, space, project, measurement, or
         newLogFolder = copyLogs(currentPath, measurement.getLogFiles())
         handleSingleSample(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
-def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     incomingPath = transaction.getIncoming().getAbsolutePath()
 
     sample = createNewSample(transaction, space, parentSampleCode)
