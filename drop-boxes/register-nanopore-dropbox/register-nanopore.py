@@ -106,7 +106,7 @@ def copyLogs(parentPath, fileList):
         shutil.copy2(src, newLogFolder)
     return newLogFolder
 
-def handleMeasurement(transaction, space, project, measurement, origin, rawDataPerSample):
+def createExperimentFromMeasurement(transaction, space, project, measurement, origin, rawDataPerSample):
     #reminder: incoming path is of the absolute path of the folder created by the datahandler.
     #joining this path with any relative path returned by the nanopore object will give the absolute path of that file/folder.
     incomingPath = transaction.getIncoming().getAbsolutePath()
@@ -128,10 +128,10 @@ def handleMeasurement(transaction, space, project, measurement, origin, rawDataP
     # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
     # handle measured samples
     for (barcode, datamap) in rawDataPerSample:
-        newLogFolder = copyLogs(currentPath, measuremnt.getLogFiles())
+        newLogFolder = copyLogs(currentPath, measurement.getLogFiles())
         handleSingleSample(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
-def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     incomingPath = transaction.getIncoming().getAbsolutePath()
 
     sample = createNewSample(transaction, space, parentSampleCode)
