@@ -21,7 +21,6 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
 # Parsing related imports
 from java.nio.file import Paths
-from life.qbic.utils import NanoporeParser
 from life.qbic.datamodel.datasets import OxfordNanoporeExperiment
 from life.qbic.utils import NanoporeParser
 
@@ -94,6 +93,11 @@ def getDatahandlerMetadata(incomingPath, fileName):
     with open(path) as f:
         return f.readline()
 
+def convertTime(input):
+    input = input.split("+")[0] # time zone parsing does not work correctly in the jython version used here
+    objDate = datetime.strptime(input, '%Y-%m-%dT%H:%M:%S.%f')
+    return datetime.strftime(objDate,'%Y-%m-%d %H:%M:%S')
+
 def getTimeStamp():
     now = datetime.now()
     ts = str(now.minute)+str(now.second)+str(now.microsecond)
@@ -105,54 +109,46 @@ def copyLogs(parentPath, fileList):
     newLogFolder = os.path.join(parentPath, ts+"/logs")
     os.makedirs(newLogFolder)
     for logFile in fileList:
-        src = os.path.join(parentPath, logFile)
+        src = os.path.join(parentPath, logFile.getName())
         shutil.copy2(src, newLogFolder)
     return newLogFolder
 
-def handleMeasurement(transaction, space, project, measurement, origin, rawDataPerSample):
-    #reminder: incoming path is of the absolute path of the folder created by the datahandler.
-    #joining this path with any relative path returned by the nanopore object will give the absolute path of that file/folder.
-    incomingPath = transaction.getIncoming().getAbsolutePath()
-    currentPath = os.path.join(incomingPath, measurement.getRelativePath())
+def createExperimentFromMeasurement(transaction, currentPath, space, project, measurement, origin, rawDataPerSample):
+    os.listdir(currentPath)
     # handle metadata of experiment level
     runExperiment = createNewExperiment(transaction, space, project)
 
     #do we get these automatically? from where?
     runExperiment.setPropertyValue("Q_ASIC_TEMPERATURE", measurement.getAsicTemp())
-    runExperiment.setPropertyValue("Q_NGS_BASE_CALLER", measurement.getBaseCaller()+ " " +measurement.getBaseCallerVersion())
+    runExperiment.setPropertyValue("Q_NGS_BASE_CALLER", measurement.getBaseCaller())
+    runExperiment.setPropertyValue("Q_NGS_BASE_CALLER_VERSION", measurement.getBaseCallerVersion())
     runExperiment.setPropertyValue("Q_SEQUENCER_DEVICE", measurement.getDeviceType())
     runExperiment.setPropertyValue("Q_FLOWCELL_BARCODE", measurement.getFlowcellId())
     runExperiment.setPropertyValue("Q_FLOWCELL_POSITION", measurement.getFlowCellPosition())
     runExperiment.setPropertyValue("Q_FLOWCELL_TYPE", measurement.getFlowCellType())
     runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT", measurement.getLibraryPreparationKit())
-    runExperiment.setPropertyValue("Q_NGS_NANOPORE_HOSTNAME", measurement.getMachineHost())
+    runExperiment.setPropertyValue("Q_NANOPORE_HOSTNAME", measurement.getMachineHost())
     runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
-    runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", measurement.getStartDate())
+    runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", convertTime(measurement.getStartDate()))
+    #if measurement.getAdapter():
+    #    runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
     # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
     # handle measured samples
     for barcode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(barcode)
-        print measurement.getLogFiles()
         newLogFolder = copyLogs(currentPath, measurement.getLogFiles())
-        handleSingleSample(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
+        createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
-def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
     #sample.setPropertyValue("Q_EXTERNALDB_ID",) this should already be set for the parent. where do we get it on this level, if it's needed?
 
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
-    print currentPath
-    print os.path.exists(currentPath)
-    print os.listdir(currentPath)
     os.makedirs(topFolderFastq)
     folder = mapWithDataForSample.get("fastqfail")
     name = folder.getName()
     src = os.path.join(currentPath, name)
-    print src
-    print os.path.exists(src)
-    #print topFolderFastq
-    #print os.path.exists(topFolderFastq)
     os.rename(src, topFolderFastq+'/'+name)
 
     folder = mapWithDataForSample.get("fastqpass")
@@ -184,7 +180,7 @@ def handleSingleSample(transaction, space, parentSampleCode, mapWithDataForSampl
     transaction.moveFile(absLogPath, logDataSet)
 
     # Updates the sample location of the measured sample
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    #SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
@@ -217,81 +213,5 @@ def process(transaction):
     projectCode = sampleCode[:5]
     for measurement in nanoporeObject.getMeasurements():
         rawData = measurement.getRawDataPerSample(nanoporeObject)
-        handleMeasurement(transaction, space, projectCode, measurement, origin, rawData)
-
-def validateFastq(filePath):
-    """
-    This function validates fastq files using the 'fastq_info' tool
-    of the set of utilities 'fastq_utils'
-    (https://github.com/nunofonseca/fastq_utils).
-
-    This function assumes 'fastq_utils' is installed
-
-    Example:
-        validateFastq('10xv1a_I1.fastq.gz')
-
-    Args:
-        filePath (string): the path to the fastq file to validate
-
-    Returns:
-        Boolean: True if 'fastq_info' exited succesfully (i.e. exit code 0),
-                False otherwise.
-    """
-
-    import subprocess
-
-    success_flag = False
-
-    cmd = "fastq_info " + filePath
-
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True,
-                            universal_newlines=True)
-
-    std_out, std_err = proc.communicate()
-
-    if int(proc.returncode) == 0:
-        success_flag = True
-
-    return success_flag
-
-
-def validateFast5(filePath, schemaPath='fast5_test_data/schema.yml'):
-    """
-    This function validates fast5 files using the 'H5 Validator' tool
-    (https://github.com/nanoporetech/ont_h5_validator).
-
-    This function assumes 'H5 Validator' is installed
-
-    Example:
-        validateFast5('fast5_test_data/test.fast5', 'fast5_test_data/schema.yml')
-
-    Args:
-        filePath (string): the path to the fast5 file to validate
-        schemaPath (string): path to the file schema maintained by Oxford Nanopore Technologies
-
-    Returns:
-        Boolean: True if the 'H5 Validator' exited succesfully (i.e. exit code 0),
-                False otherwise.
-    """
-
-    import subprocess
-
-    success_flag = False
-
-    cmd = "h5_validate " + schemaPath + ' ' + filePath + ' -v'
-
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True,
-                            universal_newlines=True)
-
-    std_out, std_err = proc.communicate()
-
-    if int(proc.returncode) == 0:
-        success_flag = True
-
-    return success_flag
+        currentPath = os.path.join(nanoporeFolder, measurement.getRelativePath())
+        createExperimentFromMeasurement(transaction, currentPath, space, projectCode, measurement, origin, rawData)
