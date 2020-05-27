@@ -120,7 +120,7 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     # handle metadata of experiment level
     runExperiment = createNewExperiment(transaction, space, project)
 
-    #do we get these automatically? from where?
+    # 2.) Enrich it with metadata about the sequencing run (base caller, adapter, library kit, etc.)
     runExperiment.setPropertyValue("Q_ASIC_TEMPERATURE", measurement.getAsicTemp())
     runExperiment.setPropertyValue("Q_NGS_BASE_CALLER", measurement.getBaseCaller())
     runExperiment.setPropertyValue("Q_NGS_BASE_CALLER_VERSION", measurement.getBaseCallerVersion())
