@@ -167,7 +167,6 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
-    #sample.setPropertyValue("Q_EXTERNALDB_ID",) this should already be set for the parent. where do we get it on this level, if it's needed?
 
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
