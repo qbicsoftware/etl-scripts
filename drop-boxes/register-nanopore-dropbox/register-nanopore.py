@@ -165,6 +165,16 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         createSampleWithData(transaction, space, sampleCode, datamap, runExperiment, currentPath, newLogFolder)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+    """ Aggregates all measurement related files and registers them in openBIS.
+    
+    The Map mapWithDataForSample contains all DataFolders created for one sample code:
+     [
+        "fast5fail": DataFolder,
+        "fast5pass": DataFolder,
+        "fastqfail": DataFolder,
+        "fastqpass": DataFolder
+     ]   
+    """
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
 
