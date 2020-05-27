@@ -139,7 +139,7 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
          ...
     ]
     """
-    # handle metadata of experiment level
+    # 1.) Create a new experiment in openBIS
     runExperiment = createNewExperiment(transaction, space, project)
 
     # 2.) Enrich it with metadata about the sequencing run (base caller, adapter, library kit, etc.)
