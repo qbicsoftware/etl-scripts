@@ -154,10 +154,6 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     runExperiment.setPropertyValue("Q_NANOPORE_HOSTNAME", measurement.getMachineHost())
     runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
     runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", convertTime(measurement.getStartDate()))
-    #if measurement.getAdapter():
-    #    runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
-    # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
-    # handle measured samples
     for sampleCode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(sampleCode)
         newLogFolder = createLogFolder(currentPath)
