@@ -178,6 +178,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
 
+    # Aggregate the folders fastqfail and fastqpass under a common folder "<sample code>_fastq"
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
     folder = mapWithDataForSample.get("fastqfail")
