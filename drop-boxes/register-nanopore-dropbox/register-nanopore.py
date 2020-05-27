@@ -136,11 +136,11 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     #    runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
     # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
     # handle measured samples
-    for barcode in rawDataPerSample.keySet():
-        datamap = rawDataPerSample.get(barcode)
+    for sampleCode in rawDataPerSample.keySet():
+        datamap = rawDataPerSample.get(sampleCode)
         newLogFolder = createLogFolder(currentPath)
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
-        createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
+        createSampleWithData(transaction, space, sampleCode, datamap, runExperiment, currentPath, newLogFolder)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     sample = createNewSample(transaction, space, parentSampleCode)
