@@ -116,7 +116,29 @@ def createLogFolder(targetPath):
     return newLogFolder
 
 def createExperimentFromMeasurement(transaction, currentPath, space, project, measurement, origin, rawDataPerSample):
-    os.listdir(currentPath)
+    """ Register the experiment with samples in openBIS.
+    In order to register the Nanopore experiment with its measurements in openBIS, 
+    we need to perform the following steps:
+    
+    1.) Create a new experiment in openBIS
+    2.) Enrich it with metadata about the sequencing run (base caller, adapter, library kit, etc.)
+    3.) Aggregate all log files into an own log folder per measurement
+    4.) Create a new sample for every measurement
+    
+    The Map rawDataPerSample contains all DataFolders per sample code:
+    
+    [
+       "QBiC sample id":
+           [
+            "fast5fail": DataFolder,
+            "fast5pass": DataFolder,
+            "fastqfail": DataFolder,
+            "fastqpass": DataFolder
+           ],
+      "Other sample id":   // In case of pooled samples
+         ...
+    ]
+    """
     # handle metadata of experiment level
     runExperiment = createNewExperiment(transaction, space, project)
 
