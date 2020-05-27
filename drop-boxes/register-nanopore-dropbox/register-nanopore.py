@@ -191,6 +191,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     src = os.path.join(currentPath, folder.getName())
     os.rename(src, topFolderFastq+'/'+name)
 
+    # Aggregate the folders fast5fail and fast5pass under a common folder "<sample code>_fast5"
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
     folder = mapWithDataForSample.get("fast5pass")
