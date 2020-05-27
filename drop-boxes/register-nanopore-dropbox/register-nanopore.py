@@ -220,6 +220,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
+    """Main ETL routine entry point"""
     context = transaction.getRegistrationContext().getPersistentMap()
 
     # Get the incoming path of the transaction
