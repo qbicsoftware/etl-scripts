@@ -161,6 +161,7 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     for sampleCode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(sampleCode)
         newLogFolder = createLogFolder(currentPath)
+        # 3.) Aggregate all log files into an own log folder per measurement
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
         createSampleWithData(transaction, space, sampleCode, datamap, runExperiment, currentPath, newLogFolder)
 
