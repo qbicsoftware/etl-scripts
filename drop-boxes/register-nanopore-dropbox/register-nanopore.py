@@ -217,7 +217,7 @@ def process(transaction):
     if (key == None):
         key = 1
 
-    # Get metadata from datahandler as well as the original facility object
+    # Get metadata from dropboxhandler as well as the original sequencing facility object
     nanoporeFolder = None
     for f in os.listdir(incomingPath):
         currentPath = os.path.realpath(os.path.join(incomingPath,f))
