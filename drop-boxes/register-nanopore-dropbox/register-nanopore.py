@@ -80,7 +80,7 @@ def createNewExperiment(transaction, space, project):
     newExpID = None
     while expExists:
         run += 1
-        newExpID = '/' + space + '/' +project+ '/' + project+str(run)
+        newExpID = '/' + space + '/' +project+ '/' + project+'E'+str(run)
         expExists = newExpID in usedExperimentIdentifiers
     usedExperimentIdentifiers.add(newExpID)
     return transaction.createNewExperiment(newExpID, NANOPORE_EXP_TYPE_CODE)
@@ -103,7 +103,7 @@ def getTimeStamp():
 
 def copyLogFilesTo(logFiles, filePath, targetFolderPath):
     for logFile in logFiles:
-        src = os.path.join(filePath, logFile)
+        src = os.path.join(filePath, logFile.getName())
         shutil.copy2(src, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
     if len(copiedContent) != len(logFiles):
@@ -172,8 +172,15 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
         "fastqpass": DataFolder
      ]   
     """
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentSampleCode))
+    foundSamples = search_service.searchForSamples(sc)
+    parentID = foundSamples[0].getSampleIdentifier()
+
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
+    sample.setParentSampleIdentifiers([parentID])
 
     # Aggregate the folders fastqfail and fastqpass under a common folder "<sample code>_fastq"
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
