@@ -10,6 +10,7 @@
             "properties": {
                 "qcml_id": {
                     "type": "string",
+                    "description": "A qcml id following the qzml specification",
                     "pattern": "^QC:[0-9]{7}$"
                 }, 
                 "name": {
@@ -18,7 +19,8 @@
                     "examples": ["read count", "target region read depth", "Q20 read percentage"]
                 },
                 "value": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The actual qc value"
                 }
             }
         },
@@ -31,11 +33,13 @@
                 },
                 "id_genetics": {
                     "type": "string",
+                    "description": "A sample URI provided by the human genetics department",
                     "examples": ["GS000000_01"]
                 },
                 "id_qbic": {
                     "type": "string",
                     "pattern": "Q\\w{4}\\d{3}[A-X][A-X0-9]",
+                    "description": "QBIC sample code of the analysed biological specimen",
                     "examples": ["QTEST001AE"]
                 },
                 "processing_system": {
