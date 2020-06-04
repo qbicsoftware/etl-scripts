@@ -10,7 +10,7 @@
             "properties": {
                 "qcml_id": {
                     "type": "string",
-                    "pattern": "QC:.*"
+                    "pattern": "^QC:[0-9]{7}$"
                 }, 
                 "name": {
                     "type": "string",
