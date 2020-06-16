@@ -81,7 +81,7 @@ def createNewExperiment(transaction, space, project):
     newExpID = None
     while expExists:
         run += 1
-        newExpID = '/' + space + '/' +project+ '/E' + project+str(run)
+        newExpID = '/' + space + '/' +project+ '/' + project+'E'+str(run)
         expExists = newExpID in usedExperimentIdentifiers
     usedExperimentIdentifiers.add(newExpID)
     return transaction.createNewExperiment(newExpID, NANOPORE_EXP_TYPE_CODE)
