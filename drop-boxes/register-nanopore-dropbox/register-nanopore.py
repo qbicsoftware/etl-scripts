@@ -58,6 +58,7 @@ NANOPORE_SAMPLE_PREFIX = "NGS"
 # needed for pooled samples with multiple measurements
 usedSampleIdentifiers = set()
 usedExperimentIdentifiers = set()
+checksumMap = {}
 
 def createNewSample(transaction, space, parentSampleCode):
     run = 0
@@ -80,7 +81,7 @@ def createNewExperiment(transaction, space, project):
     newExpID = None
     while expExists:
         run += 1
-        newExpID = '/' + space + '/' +project+ '/' + project+str(run)
+        newExpID = '/' + space + '/' +project+ '/E' + project+str(run)
         expExists = newExpID in usedExperimentIdentifiers
     usedExperimentIdentifiers.add(newExpID)
     return transaction.createNewExperiment(newExpID, NANOPORE_EXP_TYPE_CODE)
@@ -116,7 +117,6 @@ def createLogFolder(targetPath):
     return newLogFolder
 
 def createExperimentFromMeasurement(transaction, currentPath, space, project, measurement, origin, rawDataPerSample):
-    os.listdir(currentPath)
     # handle metadata of experiment level
     runExperiment = createNewExperiment(transaction, space, project)
 
@@ -142,34 +142,57 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
         createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
+# fills the global dictionary containing all checksums for paths from the global checksum file
+# 20886d8be5b6e899c707292f942ccb2edb3dd5dd69df757ed029d9f3200fa95a *20200304185641_QNANO038AT_E19D023c02_PAE34304/20200219_1107_2-A3-D3_PAE34304_6351def9/fastq_fail/PAE34...
+def fillChecksumMap(checksumFilePath):
+    checksumMap = {}
+    with open(checksumFilePath, 'r') as chf:
+        tokens = chf.readline().split(" *")
+        print tokens
+        checksumMap[tokens[1]] = tokens[0]
+
+# creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
+def createChecksumFileForFolder(incomingPath, folderPath):
+    relativePath = os.path.relpath(incomingPath, folderPath)
+    print incomingPath
+    print folderPath
+    print relativePath
+
+    pathEnd = os.path.basename(os.path.normpath(folderPath))
+    checksumFile = os.path.join(folderPath, pathEnd+'.sha256sum')
+    with open(checksumFile, 'w') as f:
+        for key, value in dataMap.items():
+            if key.startswith(relativePath):
+                f.write(value+' *'+key)
+
+def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject):
+    name = dataObject.getName()
+    src = os.path.join(currentPath, name)
+    createChecksumFileForFolder(incomingPath, src)
+    os.rename(src, targetPath+'/'+name)
+
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+    # needed to create relative path used in checksums file
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
-    #sample.setPropertyValue("Q_EXTERNALDB_ID",) this should already be set for the parent. where do we get it on this level, if it's needed?
 
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
-    folder = mapWithDataForSample.get("fastqfail")
-    name = folder.getName()
-    src = os.path.join(currentPath, name)
-    os.rename(src, topFolderFastq+'/'+name)
 
-    folder = mapWithDataForSample.get("fastqpass")
-    name = folder.getName()
-    src = os.path.join(currentPath, folder.getName())
-    os.rename(src, topFolderFastq+'/'+name)
+    fastqFail = mapWithDataForSample.get("fastqfail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail)
+    fastqPass = mapWithDataForSample.get("fastqpass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass)
 
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
-    folder = mapWithDataForSample.get("fast5pass")
-    name = folder.getName()
-    src = os.path.join(currentPath, folder.getName())
-    os.rename(src, topFolderFast5+'/'+name)
 
-    folder = mapWithDataForSample.get("fast5fail")
-    name = folder.getName()
-    src = os.path.join(currentPath, folder.getName())
-    os.rename(src, topFolderFast5+'/'+name)
+    fast5Fail = mapWithDataForSample.get("fast5fail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail)
+    fast5Pass = mapWithDataForSample.get("fast5pass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass)
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
@@ -201,6 +224,8 @@ def process(transaction):
         currentPath = os.path.realpath(os.path.join(incomingPath,f))
         if os.path.isdir(currentPath):
             nanoporeFolder = currentPath
+        if currentPath.endswith('.sha256sum'):
+            fillChecksumMap(currentPath)
 
     origin = getDatahandlerMetadata(incomingPath, "source_dropbox.txt")
     # Use file structure parser to create structure object
