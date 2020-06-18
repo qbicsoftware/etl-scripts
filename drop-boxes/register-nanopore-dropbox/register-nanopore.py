@@ -104,7 +104,7 @@ def getTimeStamp():
 
 def copyLogFilesTo(logFiles, filePath, targetFolderPath):
     for logFile in logFiles:
-        src = os.path.join(filePath, logFile)
+        src = os.path.join(filePath, logFile.getName())
         shutil.copy2(src, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
     if len(copiedContent) != len(logFiles):
@@ -153,7 +153,7 @@ def fillChecksumMap(checksumFilePath):
 
 # creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
 def createChecksumFileForFolder(incomingPath, folderPath):
-    relativePath = os.path.relpath(incomingPath, folderPath)
+    relativePath = os.path.relpath(folderPath, folderPath)
     print incomingPath
     print folderPath
     print relativePath
@@ -161,7 +161,7 @@ def createChecksumFileForFolder(incomingPath, folderPath):
     pathEnd = os.path.basename(os.path.normpath(folderPath))
     checksumFile = os.path.join(folderPath, pathEnd+'.sha256sum')
     with open(checksumFile, 'w') as f:
-        for key, value in dataMap.items():
+        for key, value in checksumMap.items():
             if key.startswith(relativePath):
                 f.write(value+' *'+key)
 
