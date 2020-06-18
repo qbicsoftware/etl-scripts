@@ -30,7 +30,7 @@ from java.net import URL
 import sample_tracking_helper_qbic as tracking_helper
 
 ######## imports for fastq/5 file validation
-#import subprocess
+import subprocess
 
 #### Setup Sample Tracking service
 SERVICE_CREDENTIALS = ServiceCredentials()
@@ -81,7 +81,7 @@ def createNewExperiment(transaction, space, project):
     newExpID = None
     while expExists:
         run += 1
-        newExpID = '/' + space + '/' +project+ '/E' + project+str(run)
+        newExpID = '/' + space + '/' +project+ '/' + project+'E'+str(run)
         expExists = newExpID in usedExperimentIdentifiers
     usedExperimentIdentifiers.add(newExpID)
     return transaction.createNewExperiment(newExpID, NANOPORE_EXP_TYPE_CODE)
@@ -132,11 +132,11 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     runExperiment.setPropertyValue("Q_NANOPORE_HOSTNAME", measurement.getMachineHost())
     runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
     runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", convertTime(measurement.getStartDate()))
-    #if measurement.getAdapter():
-    #    runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
-    # runExperiment.setPropertyValue("Q_EXTERNALDB_ID",) best skip and parse sample information at sample level, no experiment-wide ID from what I can tell
+    if measurement.getAdapter():
+        runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
     # handle measured samples
     for barcode in rawDataPerSample.keySet():
+        print "handling barcode: "+barcode
         datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
@@ -153,28 +153,28 @@ def fillChecksumMap(checksumFilePath):
 
 # creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
 def createChecksumFileForFolder(incomingPath, folderPath):
-    relativePath = os.path.relpath(folderPath, folderPath)
-    print incomingPath
-    print folderPath
-    print relativePath
+
+    relativePath = os.path.relpath(folderPath, incomingPath)
 
     pathEnd = os.path.basename(os.path.normpath(folderPath))
     checksumFile = os.path.join(folderPath, pathEnd+'.sha256sum')
+
     with open(checksumFile, 'w') as f:
         for key, value in checksumMap.items():
             if key.startswith(relativePath):
                 f.write(value+' *'+key)
 
-def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject):
+def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix):
     name = dataObject.getName()
-    src = os.path.join(currentPath, name)
+    rel = dataObject.getRelativePath()
+    src = os.path.join(os.path.dirname(currentPath), rel)
     createChecksumFileForFolder(incomingPath, src)
-    os.rename(src, targetPath+'/'+name)
+    target = os.path.join(targetPath, name+"_"+suffix)
+    os.rename(src, target)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     # needed to create relative path used in checksums file
     incomingPath = transaction.getIncoming().getAbsolutePath()
-
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
 
@@ -182,17 +182,17 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     os.makedirs(topFolderFastq)
 
     fastqFail = mapWithDataForSample.get("fastqfail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail)
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, "fail")
     fastqPass = mapWithDataForSample.get("fastqpass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass)
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, "pass")
 
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
 
     fast5Fail = mapWithDataForSample.get("fast5fail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail)
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, "fail")
     fast5Pass = mapWithDataForSample.get("fast5pass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass)
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, "pass")
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
@@ -206,7 +206,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     transaction.moveFile(absLogPath, logDataSet)
 
     # Updates the sample location of the measured sample
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    #SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
