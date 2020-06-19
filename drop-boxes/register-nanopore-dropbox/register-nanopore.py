@@ -29,9 +29,6 @@ from java.net import URL
 
 import sample_tracking_helper_qbic as tracking_helper
 
-######## imports for fastq/5 file validation
-import subprocess
-
 #### Setup Sample Tracking service
 SERVICE_CREDENTIALS = ServiceCredentials()
 SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
@@ -206,7 +203,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     transaction.moveFile(absLogPath, logDataSet)
 
     # Updates the sample location of the measured sample
-    #SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
     context = transaction.getRegistrationContext().getPersistentMap()
