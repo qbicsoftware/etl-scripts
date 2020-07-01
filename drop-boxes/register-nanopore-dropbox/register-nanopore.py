@@ -142,11 +142,11 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
 # fills the global dictionary containing all checksums for paths from the global checksum file
 # 20886d8be5b6e899c707292f942ccb2edb3dd5dd69df757ed029d9f3200fa95a *20200304185641_QNANO038AT_E19D023c02_PAE34304/20200219_1107_2-A3-D3_PAE34304_6351def9/fastq_fail/PAE34...
 def fillChecksumMap(checksumFilePath):
-    checksumMap = {}
     with open(checksumFilePath, 'r') as chf:
-        tokens = chf.readline().split(" *")
-        print tokens
-        checksumMap[tokens[1]] = tokens[0]
+        for line in chf:
+            tokens = line.strip().split(" *")
+            print tokens
+            checksumMap[tokens[1]] = tokens[0]
 
 # creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
 def createChecksumFileForFolder(incomingPath, folderPath):
@@ -159,7 +159,7 @@ def createChecksumFileForFolder(incomingPath, folderPath):
     with open(checksumFile, 'w') as f:
         for key, value in checksumMap.items():
             if key.startswith(relativePath):
-                f.write(value+' *'+key)
+                f.write(value+' *'+key+'\n')
 
 def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix):
     name = dataObject.getName()
@@ -172,8 +172,16 @@ def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix)
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     # needed to create relative path used in checksums file
     incomingPath = transaction.getIncoming().getAbsolutePath()
+
+    search_service = transaction.getSearchService()
+    sc = SearchCriteria()
+    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentSampleCode))
+    foundSamples = search_service.searchForSamples(sc)
+    parentID = foundSamples[0].getSampleIdentifier()
+
     sample = createNewSample(transaction, space, parentSampleCode)
     sample.setExperiment(openbisExperiment)
+    sample.setParentSampleIdentifiers([parentID])
 
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
