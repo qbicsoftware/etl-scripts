@@ -139,7 +139,6 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
 
 # fills the global dictionary containing all checksums for paths from the global checksum file
-# 20886d8be5b6e899c707292f942ccb2edb3dd5dd69df757ed029d9f3200fa95a *20200304185641_QNANO038AT_E19D023c02_PAE34304/20200219_1107_2-A3-D3_PAE34304_6351def9/fastq_fail/PAE34...
 def fillChecksumMap(checksumFilePath):
     with open(checksumFilePath, 'r') as chf:
         for line in chf:
