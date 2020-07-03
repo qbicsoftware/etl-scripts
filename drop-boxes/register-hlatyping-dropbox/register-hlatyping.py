@@ -98,6 +98,7 @@ def process(transaction):
             for f in files:
                 if f.endswith('.alleles') or f.endswith('alleles.txt'):
                     resultPath = os.path.join(root, f)
+                    # TODO the resultFile is overwritten and creates dangling file handlers
                     resultFile = open(resultPath, 'r')
     else:
         resultPath = incomingPath

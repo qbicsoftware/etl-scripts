@@ -30,11 +30,9 @@ pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 typesDict = {'dna_seq': 'DNA', 'rna_seq': 'RNA', 'dna_seq_somatic': 'DNA'}
 
 def parse_metadata_file(filePath):
-    jsonFile = open(filePath, 'r')
-    data = json.load(jsonFile)
-    jsonFile.close()
-
-    return data
+    with open(filePath, 'r') as jsonFile:
+      data = json.load(jsonFile)
+      return data
 
 def isExpected(identifier):
     #try:
@@ -509,9 +507,8 @@ def find_and_register_ngs_without_metadata(transaction):
         if "source_dropbox.txt" in f:
             os.remove(os.path.realpath(fPath))
         if ".origlabfilename" in f:
-            nameFile = open(fPath)
-            origName = nameFile.readline().strip()
-            nameFile.close()
+            with open(fPath) as nameFile:
+              origName = nameFile.readline().strip()
             os.remove(os.path.realpath(fPath))
         if ".sha256sum" in f:
             os.rename(fPath, os.path.join(datafolder, f))

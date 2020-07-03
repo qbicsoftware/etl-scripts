@@ -27,9 +27,8 @@ pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 typesDict = {'dna_seq': 'DNA'}
 
 def parse_metadata_file(filePath):
-	jsonFile = open(filePath, 'r')
-	data = json.load(jsonFile)
-	jsonFile.close()
+	with open(filePath, 'r') as jsonFile:
+	  data = json.load(jsonFile)
 
 	return data
 

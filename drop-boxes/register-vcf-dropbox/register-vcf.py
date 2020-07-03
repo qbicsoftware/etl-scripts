@@ -122,13 +122,13 @@ def process(transaction):
         vcSample.setExperiment(newVariantCallingExperiment) 
 
         cegat = False
-        sourceLabFile = open(os.path.join(incomingPath,'source_dropbox.txt'), 'r')
-        sourceLab = sourceLabFile.readline().strip()
-        sourceLabFile.close()
+        with open(os.path.join(incomingPath,'source_dropbox.txt'), 'r') as sourceLabFile:
+          sourceLab = sourceLabFile.readline().strip()
+          sourceLabFile.close()
 
-        if sourceLab == 'dmcegat':
-            cegat = True
-        os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
+          if sourceLab == 'dmcegat':
+              cegat = True
+         os.remove(os.path.realpath(os.path.join(incomingPath,'source_dropbox.txt')))
 
         for f in os.listdir(incomingPath):
             if f.endswith('origlabfilename') and cegat:

@@ -82,12 +82,12 @@ def create_barcode(projectCode, firstFreeBarcodeId, classChar):
 # compute sha256sum on huge files (need to do it chunk-wise)
 def computeSha256Sum(fileFullPath, chunkSize = 8*4096):
     sumObject = hashlib.sha256()
-    infile = open(fileFullPath, 'rb')
-    fileChunk = infile.read(chunkSize)
-    while fileChunk:
-        sumObject.update(fileChunk)
-        fileChunk = infile.read(chunkSize)
-    return sumObject.hexdigest()
+    with open(fileFullPath, 'rb') as infile:
+      fileChunk = infile.read(chunkSize)
+      while fileChunk:
+          sumObject.update(fileChunk)
+          fileChunk = infile.read(chunkSize)
+      return sumObject.hexdigest()
 
 
 def isExpected(identifier):
@@ -147,26 +147,23 @@ def findExperimentByID(expIdentifier, transaction):
     return results
 
 def grepPanelNameFromVCF(fileName):
-    vcffile = open(fileName, 'r')
-
-    panelName = ''
-    for line in vcffile:
-        if line.startswith('##parametersName='):
-            panelName = line.strip().split('=')[1].strip('\"')
-            break
-
-    return panelName
+    with open(fileName, 'r') as vcffile:
+      panelName = ''
+      for line in vcffile:
+          if line.startswith('##parametersName='):
+              panelName = line.strip().split('=')[1].strip('\"')
+              break
+      return panelName
 
 def grepTimeStampFromVCF(fileName):
-    vcffile = open(fileName, 'r')
+    with open(fileName, 'r') as vcffile:
+      timeString = ''
+      for line in vcffile:
+          if line.startswith('##fileUTCtime='):
+              timeString = line.strip().split('=')[1].strip('\"')
+              break
 
-    timeString = ''
-    for line in vcffile:
-        if line.startswith('##fileUTCtime='):
-            timeString = line.strip().split('=')[1].strip('\"')
-            break
-
-    return timeString
+      return timeString
 
 def extractPGMID(fileName):
     pgmPattern = re.compile('PGM[_-]*\d*')
@@ -181,25 +178,22 @@ def extractPGMID(fileName):
     return extractedString
 
 def parsePGMIdentifierMapping(filepath):
-
-    jsonfile = open(filepath, 'rb')
-    jsondict = json.load(jsonfile)
-
-    return jsondict
+    with open(filepath, 'rb') as jsonfile:
+        jsondict = json.load(jsonfile)
+        return jsondict
 
 def extractSampleID(xlsFilepath):
-    xlsFile = open(xlsFilepath, 'rb')
-    csvreader = csv.DictReader(xlsFile, delimiter='\t')
+    with open(xlsFilepath, 'rb') as xlsFile:
+      csvreader = csv.DictReader(xlsFile, delimiter='\t')
 
-    sampleID = None
-    barcode = None
+      sampleID = None
+      barcode = None
 
-    for row in csvreader:
-        sampleID = row['Sample Name']
-        barcode = row['Barcode']
+      for row in csvreader:
+          sampleID = row['Sample Name']
+          barcode = row['Barcode']
 
-
-    return (sampleID, barcode)
+      return (sampleID, barcode)
 
 
 def process(transaction):
@@ -332,9 +326,8 @@ def process(transaction):
         if not os.path.exists(annfile):
             snpEffCommand = ['java', '-Xmx4g', '-jar', snpEffJarPath, 'hg19', vcffile]
             printInfosToStdOut('Starting snpEff of ' + vcffile)
-            annfile_out = open(annfile, 'w')
-            p = subprocess.call(snpEffCommand, stdout=annfile_out)
-            annfile_out.close()
+            with open(annfile, 'w') as annfile_out:
+              p = subprocess.call(snpEffCommand, stdout=annfile_out)
 
     annVCFPaths = glob.glob(annBaseDir + '/*_ann.vcf')
 
@@ -488,19 +481,16 @@ def process(transaction):
 
         cxxExportFileName = newPatientID + '-' + newNGSsampleID + '-variants.tsv'
         cxxExportFilePath = os.path.join(cxxExportDir, cxxExportFileName)
-        cxxExportFile = open(cxxExportFilePath, 'w')
+        with open(cxxExportFilePath, 'w') as cxxExportFile:
+          for variant in significantVariants:
+              cxxExportFile.write(variant[0] + '\t' + variant[2] + '\n')
 
-        for variant in significantVariants:
-            cxxExportFile.write(variant[0] + '\t' + variant[2] + '\n')
+              if analyzedGenes.has_key(variant[0]):
+                  del analyzedGenes[variant[0]]
 
-            if analyzedGenes.has_key(variant[0]):
-                del analyzedGenes[variant[0]]
-
-        # all remaining genes were analyzed but no variant was detected for them
-        for gene in analyzedGenes.keys():
-            cxxExportFile.write(gene + '\tVARIANTABSENT\n')
-
-        cxxExportFile.close()
+          # all remaining genes were analyzed but no variant was detected for them
+          for gene in analyzedGenes.keys():
+              cxxExportFile.write(gene + '\tVARIANTABSENT\n')
 
         vcfCreationDate = grepTimeStampFromVCF(annVCFPaths[i])
 

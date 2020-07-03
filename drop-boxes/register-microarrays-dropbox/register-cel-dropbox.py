@@ -33,7 +33,6 @@ def isExpected(identifier):
 def parseMetadata(file):
         os.system("pdftotext "+file)
         txt = ".".join(file.split(".")[:-1])+".txt"
-        info = open(txt)
         orderFlag = False
         rinFlag = False
         numFlag = False
@@ -41,27 +40,27 @@ def parseMetadata(file):
         rinMap = {}
         date = re.compile("[A-Z][a-z]{5,9}, [0-9]{1,2}. [A-Z][a-z]{2,8} 2[0-9]{3}")#sorry, people living in the year 3000+
         order = None
-        for line in info:
-                line = line.strip()
-                if orderFlag and line.startswith("I"):
-                        auftragFlag = False
-                        auftrag = line
-                elif len(date.findall(line)) > 0:
-                        print line
-                elif rinFlag:
-                        search = pattern.findall(line)
-                        if len(search) > 0:
-                                id = search[0]
-                                code = id[:10]
-                                numFlag = True
-                        elif numFlag and line.replace(',','',1).isdigit():
-                                numFlag = False
-                                rinMap[code] = line.replace(',','.')
-                elif "Auftragsnummer" in line:
-                        orderFlag = True
-                elif "RIN Nummer" in line:
-                        rinFlag = True
-        info.close()
+        with open(txt) as info:
+          for line in info:
+                  line = line.strip()
+                  if orderFlag and line.startswith("I"):
+                          auftragFlag = False
+                          auftrag = line
+                  elif len(date.findall(line)) > 0:
+                          print line
+                  elif rinFlag:
+                          search = pattern.findall(line)
+                          if len(search) > 0:
+                                  id = search[0]
+                                  code = id[:10]
+                                  numFlag = True
+                          elif numFlag and line.replace(',','',1).isdigit():
+                                  numFlag = False
+                                  rinMap[code] = line.replace(',','.')
+                  elif "Auftragsnummer" in line:
+                          orderFlag = True
+                  elif "RIN Nummer" in line:
+                          rinFlag = True
         return [auftrag, rinMap]
 
 def process(transaction):

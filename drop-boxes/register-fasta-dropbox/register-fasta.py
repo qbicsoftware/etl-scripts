@@ -9,9 +9,6 @@ sys.path.append('/home-link/qeana10/bin/')
 import checksum
 import re
 import os
-import ch.systemsx.cisd.etlserver.registrator.api.v2
-from java.io import File
-from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
@@ -65,7 +62,7 @@ def process(transaction):
         project = identifier[:5]
         parentCode = identifier[:10]
     else:
-        print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
+        print("The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum")
  
     # create new dataset 
     dataSet = transaction.createNewDataSet("Q_FASTA_DATA")
@@ -138,11 +135,10 @@ def process(transaction):
 
         for f in os.listdir(incomingPath):
             if f.endswith('origlabfilename'):
-                origName = open(os.path.join(incomingPath,f), 'r')
-                secondaryName = origName.readline().strip().split('_')[0]
-                origName.close()
-                sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
-                os.remove(os.path.realpath(os.path.join(incomingPath,f)))
+                with open(os.path.join(incomingPath,f), 'r') as origName:
+                  secondaryName = origName.readline().strip().split('_')[0]
+                  sa.setPropertyValue('Q_SECONDARY_NAME', secondaryName)
+                  os.remove(os.path.realpath(os.path.join(incomingPath,f)))
             elif f.endswith('sha256sum') or f.endswith('fasta') or f.endswith('fsa'):
                 os.rename(os.path.realpath(os.path.join(incomingPath, f)), os.path.join(new_folder, f))
             elif not os.path.isdir(os.path.join(incomingPath, f)):

@@ -48,9 +48,6 @@ def loadVariantsWhitelistFile(filename):
 
 
 def loadGeneVariantsFromFile(filename):
-    #vcf_reader = vcf.Reader(open(filename, 'r'))
-    varFile = open(filename, 'r')
-
     aaMapping = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N',
                  'Asp': 'D', 'Cys': 'C', 'Glu': 'E',
                  'Gln': 'Q', 'Gly': 'G', 'His': 'H',
@@ -65,39 +62,38 @@ def loadGeneVariantsFromFile(filename):
 
     regex_splitAA = re.compile("([a-zA-Z\*\?]+)([0-9]+)([a-zA-Z\*\?]+)")
 
-    for line in varFile:
-        linesplit = line.split('\t')
+    with open(filename, 'r') as varFile
+      for line in varFile:
+          linesplit = line.split('\t')
 
-        # extract annotated genename
-        genename = linesplit[0].strip()
-        mutation = linesplit[1].strip()
+          # extract annotated genename
+          genename = linesplit[0].strip()
+          mutation = linesplit[1].strip()
 
-        #print(genename, " ", mutation, record.FILTER)
-        #firstAA = mutation[0:3]
-        #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
-        # print(mutation_short)
+          #print(genename, " ", mutation, record.FILTER)
+          #firstAA = mutation[0:3]
+          #mutation_short = mutation.replace(firstAA, aaMapping[firstAA])
+          # print(mutation_short)
 
-        if mutation == 'VARIANTABSENT':
-            tmpLoadedGeneVars[genename].append(mutation)
-        else:
-            mutation_str = mutation[2:].strip()
-            mutation_split = re.match(regex_splitAA, mutation_str).groups()
+          if mutation == 'VARIANTABSENT':
+              tmpLoadedGeneVars[genename].append(mutation)
+          else:
+              mutation_str = mutation[2:].strip()
+              mutation_split = re.match(regex_splitAA, mutation_str).groups()
 
-            # check if we have three substring, otherwise the regex split was
-            # not successful
-            if (len(mutation_split) < 3):
-                print(
-                    "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
-                continue
+              # check if we have three substring, otherwise the regex split was
+              # not successful
+              if (len(mutation_split) < 3):
+                  print(
+                      "[LOAD_VCF] WARNING: Could not split AA mutation string correctly.")
+                  continue
 
-            firstAA = mutation_split[0]
-            secAA = mutation_split[2]
-            mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
-            mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
+              firstAA = mutation_split[0]
+              secAA = mutation_split[2]
+              mutation_short = mutation_str.replace(firstAA, aaMapping[firstAA])
+              mutation_short = mutation_short.replace(secAA, aaMapping[secAA])
 
-            tmpLoadedGeneVars[genename].append(mutation_short)
-
-        #print(mutation_str + ": " + mutation_short)
+              tmpLoadedGeneVars[genename].append(mutation_short)
 
     return(tmpLoadedGeneVars)
 

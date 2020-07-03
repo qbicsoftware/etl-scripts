@@ -86,19 +86,15 @@ def process(transaction):
 	if subFolders:
 		subFolder = subFolders[0]
 	for f in files:
-                    if 'result.tsv' in f:
-                            resultFile = open(os.path.join(root, f), 'r')
+    if 'result.tsv' in f:
+      with open(os.path.join(root, f), 'r') as resultFile:
+        resultFile.readline()
+        resultLine = resultFile.readline().split('\t')[1:-2]
+        formattedResult = '\n'.join(resultLine)
+        sample.setPropertyValue("Q_HLA_TYPING", formattedResult)
 
-    resultFile.readline()
-    resultLine = resultFile.readline().split('\t')[1:-2]
-
-    formattedResult = '\n'.join(resultLine)
-    sample.setPropertyValue("Q_HLA_TYPING", formattedResult)
-
-    newResultFile = open(os.path.join(os.path.join(incomingPath, "result/" + subFolder), sampleCode + "_alleles.alleles"), 'w')
-    newResultFile.write(formattedResult)
-
-    newResultFile.close()
+    with open(os.path.join(os.path.join(incomingPath, "result/" + subFolder), sampleCode + "_alleles.alleles"), 'w') as newResultFile:
+      newResultFile.write(formattedResult)
 
     #Register files
     dataSetRes = transaction.createNewDataSet('Q_WF_NGS_HLATYPING_RESULTS')

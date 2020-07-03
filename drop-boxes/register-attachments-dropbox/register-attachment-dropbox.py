@@ -38,16 +38,16 @@ def process(transaction):
 	#read in the metadata file
 	for f in os.listdir(incomingPath):
 		if f == "metadata.txt":
-			metadata = open(os.path.join(incomingPath, f))
-			fileInfo = dict(line.strip().split('=') for line in metadata)
-			metadata.close()
-			try:
-				user = fileInfo["user"]
-			except:
-				user = None
-			secname = fileInfo["info"]
-			code = fileInfo["barcode"]
-			datasetType = fileInfo["type"]
+			with open(os.path.join(incomingPath, f)) as metadata
+        fileInfo = dict(line.strip().split('=') for line in metadata)
+        metadata.close()
+        try:
+          user = fileInfo["user"]
+        except:
+          user = None
+        secname = fileInfo["info"]
+        code = fileInfo["barcode"]
+        datasetType = fileInfo["type"]
 		else:
 			name = f
 

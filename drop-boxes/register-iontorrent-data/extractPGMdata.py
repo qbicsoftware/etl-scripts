@@ -11,8 +11,8 @@ from collections import defaultdict
 
 
 def extractXLSdata(xlsFilename):
-    xlsFile = open(xlsFilename, 'r')
-    csvreader = csv.DictReader(xlsFile, delimiter='\t')
+    with open(xlsFilename, 'r') as xlsFile:
+      csvreader = csv.DictReader(xlsFile, delimiter='\t')
 
     resultsDict = defaultdict(list)
 
@@ -70,9 +70,9 @@ class DummyVCFRecord:
 # super-rudimentary vcf file reader... since pyvcf module does not work
 def extractVCFdata(vcfFilename):
     vcfDict = {}
-    vcfFile = open(vcfFilename, 'r')
-    #vcfreader = csv.DictReader(vcfFile, delimiter='\t', quotechar='#')
-    vcflines = vcfFile.readlines()
+    with open(vcfFilename, 'r') as vcfFile:
+      #vcfreader = csv.DictReader(vcfFile, delimiter='\t', quotechar='#')
+      vcflines = vcfFile.readlines()
 
     for row in vcflines:
         if row.startswith('#'):
@@ -95,9 +95,9 @@ def extractVCFdata(vcfFilename):
     return vcfDict
 
 def extractVCFGenes(vcfFilename):
-    vcfFile = open(vcfFilename, 'r')
-    #vcfreader = csv.DictReader(vcfFile, delimiter='\t', quotechar='#')
-    vcflines = vcfFile.readlines()
+    with open(vcfFilename, 'r') as vcfFile:
+      #vcfreader = csv.DictReader(vcfFile, delimiter='\t', quotechar='#')
+      vcflines = vcfFile.readlines()
 
     geneDict = defaultdict(int)
     for row in vcflines:

@@ -71,11 +71,10 @@ def process(transaction):
 
        	#cegat = False
         f = "source_dropbox.txt"
-        sourceLabFile = open(os.path.join(incomingPath,f))
-       	sourceLab = sourceLabFile.readline().strip() 
-        sourceLabFile.close()
-        #if sourceLab == 'dmcegat':
-                #cegat = True
+        with open(os.path.join(incomingPath,f)) as sourceLabFile:
+       	  sourceLab = sourceLabFile.readline().strip()
+          #if sourceLab == 'dmcegat':
+                  #cegat = True
         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
 
         for f in os.listdir(incomingPath):

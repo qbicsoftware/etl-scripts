@@ -330,11 +330,8 @@ class DropboxhandlerFile(object):
             self._meta = {}
             meta_fn = os.path.join(self.path, 'meta.json')
             if os.path.exists(meta_fn):
-                meta_file = open(meta_fn)
-                try:
-                    self._meta.update(json.load(meta_file))
-                finally:
-                    meta_file.close()
+                with open(meta_fn) as meta_file:
+                      self._meta.update(json.load(meta_file))
         return self._meta
 
 
@@ -784,11 +781,11 @@ def process(transaction):
     qc_run = len(bsa_run_pattern.findall(name)+blank_run_pattern.findall(name)) > 0
     for f in os.listdir(incomingPath):
         if "source_dropbox.txt" in f:
-            source_file = open(os.path.join(incomingPath, f))
-            source = source_file.readline()
-            if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source:
-                immuno = True
-                handleImmunoFiles(transaction)
+            with open(os.path.join(incomingPath, f)) as source_file
+              source = source_file.readline()
+              if "cloud-immuno" in source or "qeana18-immuno" in source or "lbichmann" in source:
+                  immuno = True
+                  handleImmunoFiles(transaction)
     if not immuno and qc_run:
         handle_QC_Run(transaction)
     if not immuno and not qc_run:

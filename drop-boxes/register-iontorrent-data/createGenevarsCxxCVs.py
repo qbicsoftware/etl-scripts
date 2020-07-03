@@ -304,16 +304,13 @@ output3 = writeMeasurementProfileDef(geneVariantPanel)
 
 #print(output)
 
-xmloutfile = open('QBiCGeneProfile-params-v2.xml', 'w')
-xmloutfile.write(output2)
-xmloutfile.close()
+with open('QBiCGeneProfile-params-v2.xml', 'w') as xmloutfile:
+  xmloutfile.write(output2)
 
-xmloutfile = open('QBiCGeneProfile-catalog-v2.xml', 'w')
-xmloutfile.write(output)
-xmloutfile.close()
-xmloutfile = open('QBiCGeneProfile-profile-v2.xml', 'w')
-xmloutfile.write(output3)
-xmloutfile.close()
+with open('QBiCGeneProfile-catalog-v2.xml', 'w') as xmloutfile#:
+  xmloutfile.write(output)
+with open('QBiCGeneProfile-profile-v2.xml', 'w') as xmloutfile:
+  xmloutfile.write(output3)
 
 
 

@@ -145,7 +145,6 @@ def process(transaction):
         if ".testorig" in f:
             os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         if ".origlabfilename" in f:
-            nameFile = open(os.path.join(incomingPath,f))
-            origName = nameFile.readline().strip()
-            nameFile.close()
+            with open(os.path.join(incomingPath,f)) as nameFile:
+              origName = nameFile.readline().strip()
     transaction.moveFile(incomingPath, dataSet)
