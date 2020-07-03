@@ -143,7 +143,6 @@ def fillChecksumMap(checksumFilePath):
     with open(checksumFilePath, 'r') as chf:
         for line in chf:
             tokens = line.strip().split(" *")
-            print tokens
             checksumMap[tokens[1]] = tokens[0]
 
 # creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
