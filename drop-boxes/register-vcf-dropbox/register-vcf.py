@@ -14,6 +14,21 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
 # ETL script for registration of VCF files
 # expected:
@@ -38,7 +53,6 @@ def process(transaction):
     if (key == None):
         key = 1
 
-
     # Get the name of the incoming file
     name = transaction.getIncoming().getName()
     
@@ -49,7 +63,7 @@ def process(transaction):
         parentCode = identifier[:10]
     else:
         print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
- 
+
     # create new dataset 
     dataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
     dataSet.setMeasuredData(False)
@@ -82,7 +96,7 @@ def process(transaction):
         # register new experiment and sample
         existingExperimentIDs = []
         existingExperiments = search_service.listExperiments("/" + space + "/" + project)
-    
+
         numberOfExperiments = len(existingExperiments) + 1
 
         for eexp in existingExperiments:
@@ -115,10 +129,10 @@ def process(transaction):
         while newSampleID in existingSampleIDs or transaction.getSampleForUpdate(newSampleID):
             vcNumber += 1
             newSampleID = '/' + space + '/' + 'VC' + str(vcNumber) + parentCode
-            
+
         vcSample = transaction.createNewSample(newSampleID, "Q_NGS_VARIANT_CALLING")
         vcSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-      
+
         vcSample.setExperiment(newVariantCallingExperiment) 
 
         cegat = False
@@ -147,3 +161,6 @@ def process(transaction):
 
         dataSet.setSample(vcSample)
         transaction.moveFile(incomingPath, dataSet)
+
+        #sample tracking section
+        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentCode)
