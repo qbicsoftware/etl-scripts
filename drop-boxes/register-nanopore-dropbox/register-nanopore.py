@@ -142,8 +142,11 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
 def fillChecksumMap(checksumFilePath):
     with open(checksumFilePath, 'r') as chf:
         for line in chf:
+            # remove asterisk from paths, so they can be compared later on
             tokens = line.strip().split(" *")
-            checksumMap[tokens[1]] = tokens[0]
+            path = tokens[1]
+            checksum = tokens[0]
+            checksumMap[path] = checksum
 
 # creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
 def createChecksumFileForFolder(incomingPath, folderPath):
@@ -155,14 +158,18 @@ def createChecksumFileForFolder(incomingPath, folderPath):
 
     with open(checksumFile, 'w') as f:
         for key, value in checksumMap.items():
+            # for each file in our dictionary that starts with the currently handled path, we add the known checksums and the paths, along with the asterisk we removed earlier
             if key.startswith(relativePath):
                 f.write(value+' *'+key+'\n')
 
+# moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
 def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix):
     name = dataObject.getName()
     relative_path = dataObject.getRelativePath()
-    src = os.path.join(os.path.dirname(currentPath), rel)
+    # the source path of the currently handled data object (e.g. fast5_fail folder)
+    src = os.path.join(os.path.dirname(currentPath), relative_path)
     createChecksumFileForFolder(incomingPath, src)
+    # target path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
     target = os.path.join(targetPath, name + "_" + suffix)
     os.rename(src, target)
 
