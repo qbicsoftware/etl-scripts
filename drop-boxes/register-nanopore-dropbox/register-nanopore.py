@@ -133,7 +133,6 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
     # handle measured samples
     for barcode in rawDataPerSample.keySet():
-        print "handling barcode: "+barcode
         datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
