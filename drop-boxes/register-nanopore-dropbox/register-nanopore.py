@@ -160,7 +160,7 @@ def createChecksumFileForFolder(incomingPath, folderPath):
 
 def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix):
     name = dataObject.getName()
-    rel = dataObject.getRelativePath()
+    relative_path = dataObject.getRelativePath()
     src = os.path.join(os.path.dirname(currentPath), rel)
     createChecksumFileForFolder(incomingPath, src)
     target = os.path.join(targetPath, name+"_"+suffix)
