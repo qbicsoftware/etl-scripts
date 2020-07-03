@@ -163,7 +163,7 @@ def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix)
     relative_path = dataObject.getRelativePath()
     src = os.path.join(os.path.dirname(currentPath), rel)
     createChecksumFileForFolder(incomingPath, src)
-    target = os.path.join(targetPath, name+"_"+suffix)
+    target = os.path.join(targetPath, name + "_" + suffix)
     os.rename(src, target)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
