@@ -99,6 +99,7 @@ def getTimeStamp():
     ts = str(now.minute)+str(now.second)+str(now.microsecond)
     return ts
 
+# copies log files from a folder that may contain other files to another path
 def copyLogFilesTo(logFiles, filePath, targetFolderPath):
     for logFile in logFiles:
         src = os.path.join(filePath, logFile.getName())
@@ -132,11 +133,12 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     if measurement.getAdapter():
         runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
     # handle measured samples
+    unclassifiedMap = measurement.getUnclassifiedData()
     for barcode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
-        createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
+        createSampleWithData(transaction, space, barcode, datamap, unclassifiedMap, runExperiment, currentPath, newLogFolder)
 
 # fills the global dictionary containing all checksums for paths from the global checksum file
 def fillChecksumMap(checksumFilePath):
@@ -154,26 +156,40 @@ def createChecksumFileForFolder(incomingPath, folderPath):
     relativePath = os.path.relpath(folderPath, incomingPath)
 
     pathEnd = os.path.basename(os.path.normpath(folderPath))
-    checksumFile = os.path.join(folderPath, pathEnd+'.sha256sum')
-
-    with open(checksumFile, 'w') as f:
-        for key, value in checksumMap.items():
-            # for each file in our dictionary that starts with the currently handled path, we add the known checksums and the paths, along with the asterisk we removed earlier
-            if key.startswith(relativePath):
-                f.write(value+' *'+key+'\n')
+    checksumFilePath = os.path.join(folderPath, pathEnd+'.sha256sum')
+    if not os.path.isfile(checksumFilePath):
+        with open(checksumFilePath, 'w') as f:
+            for key, value in checksumMap.items():
+                # for each file in our dictionary that starts with the currently handled path, we add the known checksums and the paths, along with the asterisk we removed earlier
+                if key.startswith(relativePath):
+                    f.write(value+' *'+key+'\n')
+    return checksumFilePath
 
 # moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
-def prepareDataFolder(incomingPath, currentPath, targetPath, dataObject, suffix):
+def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, unclassifiedDataObject, suffix):
     name = dataObject.getName()
-    relative_path = dataObject.getRelativePath()
+    relativePath = dataObject.getRelativePath()
     # the source path of the currently handled data object (e.g. fast5_fail folder)
-    src = os.path.join(os.path.dirname(currentPath), relative_path)
-    createChecksumFileForFolder(incomingPath, src)
-    # target path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
-    target = os.path.join(targetPath, name + "_" + suffix)
-    os.rename(src, target)
+    src = os.path.join(os.path.dirname(currentPath), relativePath)
+    checksumFile = createChecksumFileForFolder(incomingPath, src)
+    # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
+    destination = os.path.join(destinationPath, name + "_" + suffix)
+    os.rename(src, destination)
+    # if unclassified data exists, create relevant checksums and add them with the data to the expected (barcoded) data folder
+    print unclassifiedDataObject
+    if unclassifiedDataObject:
+        relativePath = unclassifiedDataObject.getRelativePath()
+        # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
+        unclassifiedSrc = os.path.join(os.path.dirname(currentPath), relativePath)
+        unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSrc)
+        # append checksums to existing checksum file
+        #with open(checksumFile, 'a') as chk:
+        #    with open(unclassifiedChecksumFile) as uncchk:
+        #        chk.write(uncchk.read())
+        # copy unclassified data to already known destination path:
+        shutil.copytree(unclassifiedSrc, os.path.join(destination,"unclassified"))
 
-def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, unclassifiedDataMap, openbisExperiment, currentPath, absLogPath):
     # needed to create relative path used in checksums file
     incomingPath = transaction.getIncoming().getAbsolutePath()
 
@@ -190,18 +206,23 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
 
+    unclassifiedFastqFail = unclassifiedDataMap.get("fastqfail")
+    unclassifiedFastqPass = unclassifiedDataMap.get("fastqpass")
+    unclassifiedFast5Fail = unclassifiedDataMap.get("fast5fail")
+    unclassifiedFast5Pass = unclassifiedDataMap.get("fast5pass")
+
     fastqFail = mapWithDataForSample.get("fastqfail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, "fail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, unclassifiedFastqFail, "fail")
     fastqPass = mapWithDataForSample.get("fastqpass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, "pass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, unclassifiedFastqPass, "pass")
 
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
 
     fast5Fail = mapWithDataForSample.get("fast5fail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, "fail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, unclassifiedFast5Fail, "fail")
     fast5Pass = mapWithDataForSample.get("fast5pass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, "pass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, unclassifiedFast5Pass, "pass")
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
