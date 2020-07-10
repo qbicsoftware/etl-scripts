@@ -115,10 +115,32 @@ def createLogFolder(targetPath):
     return newLogFolder
 
 def createExperimentFromMeasurement(transaction, currentPath, space, project, measurement, origin, rawDataPerSample):
-    # handle metadata of experiment level
+    """ Register the experiment with samples in openBIS.
+    In order to register the Nanopore experiment with its measurements in openBIS, 
+    we need to perform the following steps:
+    
+    1.) Create a new experiment in openBIS
+    2.) Enrich it with metadata about the sequencing run (base caller, adapter, library kit, etc.)
+    3.) Aggregate all log files into an own log folder per measurement
+    4.) Create a new sample for every measurement
+    
+    The Map rawDataPerSample contains all DataFolders per sample code:
+    
+    [
+       "QBiC sample id":
+           [
+            "fast5fail": DataFolder,
+            "fast5pass": DataFolder,
+            "fastqfail": DataFolder,
+            "fastqpass": DataFolder
+           ],
+      "Other sample id":   // In case of pooled samples
+         ...
+    ]
+    """
     runExperiment = createNewExperiment(transaction, space, project)
 
-    #do we get these automatically? from where?
+    # 2.) Enrich it with metadata about the sequencing run (base caller, adapter, library kit, etc.)
     runExperiment.setPropertyValue("Q_ASIC_TEMPERATURE", measurement.getAsicTemp())
     runExperiment.setPropertyValue("Q_NGS_BASE_CALLER", measurement.getBaseCaller())
     runExperiment.setPropertyValue("Q_NGS_BASE_CALLER_VERSION", measurement.getBaseCallerVersion())
@@ -137,6 +159,7 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     for barcode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
+        # 3.) Aggregate all log files into an own log folder per measurement
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
         createSampleWithData(transaction, space, barcode, datamap, unclassifiedMap, runExperiment, currentPath, newLogFolder)
 
@@ -184,6 +207,16 @@ def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, un
         shutil.copytree(unclassifiedSourcePath, os.path.join(destination,"unclassified"))
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, unclassifiedDataMap, openbisExperiment, currentPath, absLogPath):
+    """ Aggregates all measurement related files and registers them in openBIS.
+    
+    The Map mapWithDataForSample contains all DataFolders created for one sample code:
+     [
+        "fast5fail": DataFolder,
+        "fast5pass": DataFolder,
+        "fastqfail": DataFolder,
+        "fastqpass": DataFolder
+     ]   
+    """
     # needed to create relative path used in checksums file
     incomingPath = transaction.getIncoming().getAbsolutePath()
 
@@ -197,6 +230,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     sample.setExperiment(openbisExperiment)
     sample.setParentSampleIdentifiers([parentID])
 
+    # Aggregate the folders fastqfail and fastqpass under a common folder "<sample code>_fastq"
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
 
@@ -210,6 +244,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     fastqPass = mapWithDataForSample.get("fastqpass")
     prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, unclassifiedFastqPass, "pass")
 
+    # Aggregate the folders fast5fail and fast5pass under a common folder "<sample code>_fast5"
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
 
@@ -233,6 +268,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
 
 def process(transaction):
+    """Main ETL routine entry point"""
     context = transaction.getRegistrationContext().getPersistentMap()
 
     # Get the incoming path of the transaction
@@ -242,7 +278,7 @@ def process(transaction):
     if (key == None):
         key = 1
 
-    # Get metadata from datahandler as well as the original facility object
+    # Get metadata from dropboxhandler as well as the original sequencing facility object
     nanoporeFolder = None
     for f in os.listdir(incomingPath):
         currentPath = os.path.realpath(os.path.join(incomingPath,f))
