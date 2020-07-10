@@ -176,7 +176,6 @@ def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, un
     destination = os.path.join(destinationPath, name + "_" + suffix)
     os.rename(src, destination)
     # if unclassified data exists, create relevant checksums and add them with the data to the expected (barcoded) data folder
-    print unclassifiedDataObject
     if unclassifiedDataObject:
         relativePath = unclassifiedDataObject.getRelativePath()
         # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
