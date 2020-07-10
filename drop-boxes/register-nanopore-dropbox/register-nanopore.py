@@ -102,8 +102,8 @@ def getTimeStamp():
 # copies log files from a folder that may contain other files to another path
 def copyLogFilesTo(logFiles, filePath, targetFolderPath):
     for logFile in logFiles:
-        src = os.path.join(filePath, logFile.getName())
-        shutil.copy2(src, targetFolderPath)
+        sourcePath = os.path.join(filePath, logFile.getName())
+        shutil.copy2(sourcePath, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
     if len(copiedContent) != len(logFiles):
         raise AssertionError("Not all log files have been copied successfully to target log folder.")
@@ -170,18 +170,18 @@ def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, un
     name = dataObject.getName()
     relativePath = dataObject.getRelativePath()
     # the source path of the currently handled data object (e.g. fast5_fail folder)
-    src = os.path.join(os.path.dirname(currentPath), relativePath)
-    checksumFile = createChecksumFileForFolder(incomingPath, src)
+    sourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
+    checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
     # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
     destination = os.path.join(destinationPath, name + "_" + suffix)
-    os.rename(src, destination)
+    os.rename(sourcePath, destination)
     # if unclassified data exists, create relevant checksums and add them with the data to the expected (barcoded) data folder
     if unclassifiedDataObject:
         relativePath = unclassifiedDataObject.getRelativePath()
         # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
-        unclassifiedSrc = os.path.join(os.path.dirname(currentPath), relativePath)
-        unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSrc)
-        shutil.copytree(unclassifiedSrc, os.path.join(destination,"unclassified"))
+        unclassifiedSourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
+        unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSourcePath)
+        shutil.copytree(unclassifiedSourcePath, os.path.join(destination,"unclassified"))
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, unclassifiedDataMap, openbisExperiment, currentPath, absLogPath):
     # needed to create relative path used in checksums file
