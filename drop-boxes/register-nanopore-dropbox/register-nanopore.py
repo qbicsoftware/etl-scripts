@@ -181,11 +181,6 @@ def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, un
         # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
         unclassifiedSrc = os.path.join(os.path.dirname(currentPath), relativePath)
         unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSrc)
-        # append checksums to existing checksum file
-        #with open(checksumFile, 'a') as chk:
-        #    with open(unclassifiedChecksumFile) as uncchk:
-        #        chk.write(uncchk.read())
-        # copy unclassified data to already known destination path:
         shutil.copytree(unclassifiedSrc, os.path.join(destination,"unclassified"))
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, unclassifiedDataMap, openbisExperiment, currentPath, absLogPath):
