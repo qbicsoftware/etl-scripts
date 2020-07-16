@@ -521,7 +521,7 @@ def registermtb(archive, transaction):
     tumor_dna_sample_id = qbiccode_found[0]
 
     # Get space and project ids
-    space, project = space_and_project(qcode)
+    space, project = space_and_project(tumor_dna_sample_id)
     search_service = transaction.getSearchService()
 
     # We design a new experiment and sample identifier

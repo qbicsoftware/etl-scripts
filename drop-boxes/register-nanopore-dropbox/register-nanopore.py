@@ -104,6 +104,8 @@ def copyLogFilesTo(logFiles, filePath, targetFolderPath):
     for logFile in logFiles:
         sourcePath = os.path.join(filePath, logFile.getName())
         shutil.copy2(sourcePath, targetFolderPath)
+        src = os.path.join(filePath, logFile.getName())
+        shutil.copy2(src, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
     if len(copiedContent) != len(logFiles):
         raise AssertionError("Not all log files have been copied successfully to target log folder.")
