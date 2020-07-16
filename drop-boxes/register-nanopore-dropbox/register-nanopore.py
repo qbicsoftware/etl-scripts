@@ -29,9 +29,6 @@ from java.net import URL
 
 import sample_tracking_helper_qbic as tracking_helper
 
-######## imports for fastq/5 file validation
-#import subprocess
-
 #### Setup Sample Tracking service
 SERVICE_CREDENTIALS = ServiceCredentials()
 SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
@@ -58,6 +55,7 @@ NANOPORE_SAMPLE_PREFIX = "NGS"
 # needed for pooled samples with multiple measurements
 usedSampleIdentifiers = set()
 usedExperimentIdentifiers = set()
+checksumMap = {}
 
 def createNewSample(transaction, space, parentSampleCode):
     run = 0
@@ -101,8 +99,11 @@ def getTimeStamp():
     ts = str(now.minute)+str(now.second)+str(now.microsecond)
     return ts
 
+# copies log files from a folder that may contain other files to another path
 def copyLogFilesTo(logFiles, filePath, targetFolderPath):
     for logFile in logFiles:
+        sourcePath = os.path.join(filePath, logFile.getName())
+        shutil.copy2(sourcePath, targetFolderPath)
         src = os.path.join(filePath, logFile.getName())
         shutil.copy2(src, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
@@ -139,7 +140,6 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
          ...
     ]
     """
-    # 1.) Create a new experiment in openBIS
     runExperiment = createNewExperiment(transaction, space, project)
 
     # 2.) Enrich it with metadata about the sequencing run (base caller, adapter, library kit, etc.)
@@ -154,14 +154,61 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     runExperiment.setPropertyValue("Q_NANOPORE_HOSTNAME", measurement.getMachineHost())
     runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
     runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", convertTime(measurement.getStartDate()))
-    for sampleCode in rawDataPerSample.keySet():
-        datamap = rawDataPerSample.get(sampleCode)
+    if measurement.getAdapter():
+        runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
+    # handle measured samples
+    unclassifiedMap = measurement.getUnclassifiedData()
+    for barcode in rawDataPerSample.keySet():
+        datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
         # 3.) Aggregate all log files into an own log folder per measurement
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
-        createSampleWithData(transaction, space, sampleCode, datamap, runExperiment, currentPath, newLogFolder)
+        createSampleWithData(transaction, space, barcode, datamap, unclassifiedMap, runExperiment, currentPath, newLogFolder)
 
-def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
+# fills the global dictionary containing all checksums for paths from the global checksum file
+def fillChecksumMap(checksumFilePath):
+    with open(checksumFilePath, 'r') as chf:
+        for line in chf:
+            # remove asterisk from paths, so they can be compared later on
+            tokens = line.strip().split(" *")
+            path = tokens[1]
+            checksum = tokens[0]
+            checksumMap[path] = checksum
+
+# creates a file containing checksums and paths for files contained in the passed path using the global checksum dictionary
+def createChecksumFileForFolder(incomingPath, folderPath):
+
+    relativePath = os.path.relpath(folderPath, incomingPath)
+
+    pathEnd = os.path.basename(os.path.normpath(folderPath))
+    checksumFilePath = os.path.join(folderPath, pathEnd+'.sha256sum')
+    if not os.path.isfile(checksumFilePath):
+        with open(checksumFilePath, 'w') as f:
+            for key, value in checksumMap.items():
+                # for each file in our dictionary that starts with the currently handled path, we add the known checksums and the paths, along with the asterisk we removed earlier
+                if key.startswith(relativePath):
+                    f.write(value+' *'+key+'\n')
+    return checksumFilePath
+
+# moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
+def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, unclassifiedDataObject, suffix):
+    name = dataObject.getName()
+    relativePath = dataObject.getRelativePath()
+    # the source path of the currently handled data object (e.g. fast5_fail folder)
+    sourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
+    checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
+    # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
+    destination = os.path.join(destinationPath, name + "_" + suffix)
+    os.rename(sourcePath, destination)
+    # if unclassified data exists, create relevant checksums and add them with the data to the expected (barcoded) data folder
+    if unclassifiedDataObject:
+        relativePath = unclassifiedDataObject.getRelativePath()
+        # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
+        unclassifiedSourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
+        unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSourcePath)
+        shutil.copytree(unclassifiedSourcePath, os.path.join(destination,"unclassified"))
+
+def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, unclassifiedDataMap, openbisExperiment, currentPath, absLogPath):
     """ Aggregates all measurement related files and registers them in openBIS.
     
     The Map mapWithDataForSample contains all DataFolders created for one sample code:
@@ -172,6 +219,9 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
         "fastqpass": DataFolder
      ]   
     """
+    # needed to create relative path used in checksums file
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+
     search_service = transaction.getSearchService()
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentSampleCode))
@@ -185,28 +235,25 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     # Aggregate the folders fastqfail and fastqpass under a common folder "<sample code>_fastq"
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
-    folder = mapWithDataForSample.get("fastqfail")
-    name = folder.getName()
-    src = os.path.join(currentPath, name)
-    os.rename(src, topFolderFastq+'/'+name)
 
-    folder = mapWithDataForSample.get("fastqpass")
-    name = folder.getName()
-    src = os.path.join(currentPath, folder.getName())
-    os.rename(src, topFolderFastq+'/'+name)
+    unclassifiedFastqFail = unclassifiedDataMap.get("fastqfail")
+    unclassifiedFastqPass = unclassifiedDataMap.get("fastqpass")
+    unclassifiedFast5Fail = unclassifiedDataMap.get("fast5fail")
+    unclassifiedFast5Pass = unclassifiedDataMap.get("fast5pass")
+
+    fastqFail = mapWithDataForSample.get("fastqfail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, unclassifiedFastqFail, "fail")
+    fastqPass = mapWithDataForSample.get("fastqpass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, unclassifiedFastqPass, "pass")
 
     # Aggregate the folders fast5fail and fast5pass under a common folder "<sample code>_fast5"
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
-    folder = mapWithDataForSample.get("fast5pass")
-    name = folder.getName()
-    src = os.path.join(currentPath, folder.getName())
-    os.rename(src, topFolderFast5+'/'+name)
 
-    folder = mapWithDataForSample.get("fast5fail")
-    name = folder.getName()
-    src = os.path.join(currentPath, folder.getName())
-    os.rename(src, topFolderFast5+'/'+name)
+    fast5Fail = mapWithDataForSample.get("fast5fail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, unclassifiedFast5Fail, "fail")
+    fast5Pass = mapWithDataForSample.get("fast5pass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, unclassifiedFast5Pass, "pass")
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
@@ -239,6 +286,8 @@ def process(transaction):
         currentPath = os.path.realpath(os.path.join(incomingPath,f))
         if os.path.isdir(currentPath):
             nanoporeFolder = currentPath
+        if currentPath.endswith('.sha256sum'):
+            fillChecksumMap(currentPath)
 
     origin = getDatahandlerMetadata(incomingPath, "source_dropbox.txt")
     # Use file structure parser to create structure object
