@@ -81,6 +81,10 @@ def process(transaction):
                 experimentIDs.append(exp.getExperimentIdentifier())
                 if exp.getExperimentType() == expType:
                         msExperiment = exp
+        msSampleID = '/' + space + '/' + 'MS' + parentCode
+        msSample = transaction.getSampleForUpdate(msSampleID)
+        if msSample:
+                msExperiment = msSample.getExperiment()
         # no existing experiment for samples of this sample preparation found
         if not msExperiment:
                 expID = experimentIDs[0]
@@ -91,13 +95,14 @@ def process(transaction):
                         expID = '/' + space + '/' + project + '/' + project + 'E' + str(expNum)
                 msExperiment = transaction.createNewExperiment(expID, expType)
 
-        newMSSample = transaction.createNewSample('/' + space + '/' + 'MS'+ parentCode, "Q_MS_RUN")
-        newMSSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newMSSample.setExperiment(msExperiment) 
+        if not msSample:
+                msSample = transaction.createNewSample('/' + space + '/' + 'MS'+ parentCode, "Q_MS_RUN")
+                msSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
+                msSample.setExperiment(msExperiment) 
         # create new dataset 
         dataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
         dataSet.setMeasuredData(False)
-        dataSet.setSample(newMSSample)
+        dataSet.setSample(msSample)
 
         transaction.moveFile(incomingPath, dataSet)
 
