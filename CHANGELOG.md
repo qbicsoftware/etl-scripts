@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1
+
+* Avoid sample registration for existing mass spectrometry data
+
 ## 1.3
 
 * Provide metadata schema in JSON for the IMGAG dropbox
