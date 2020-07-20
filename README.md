@@ -8,5 +8,9 @@ The ETL processes combine some quality control measures for incoming data and da
 ### NGS single-end / paired-end data
 
 ```
-
+<QBIC sample code>.fastq // Directory
+    |-- <QBIC sample code>_R1.fastq
+    |-- <QBIC sample code>_R1.fastq.sha256sum
+    |-- <QBIC sample code>_R2.fastq
+    |-- <QBIC sample code>_R2.fastq.sha256sum
 ```
