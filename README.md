@@ -10,6 +10,10 @@ The ETL processes combine some quality control measures for incoming data and da
 **Responsible dropbox:**
 [QBiC-register-fastq-dropbox](drop-boxes/register-fastq-dropbox)
 
+**Resulting data model in openBIS**  
+Q_TEST_SAMPLE -> Q_NGS_RAW_DATA (with sample code) -> DataSet (directory
+with files contained)
+
 **Description**  
 For paired-end sequencing reads in FASTQ format, the file structure
 needs to look like this
