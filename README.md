@@ -7,6 +7,13 @@ The ETL processes combine some quality control measures for incoming data and da
 
 ### NGS single-end / paired-end data
 
+**Responsible dropbox:**
+[QBiC-register-fastq-dropbox](drop-boxes/register-fastq-dropbox)
+
+**Description**  
+For paired-end sequencing reads in FASTQ format, the file structure
+needs to look like this
+
 ```
 <QBIC sample code>.fastq // Directory
     |-- <QBIC sample code>_R1.fastq
@@ -14,3 +21,24 @@ The ETL processes combine some quality control measures for incoming data and da
     |-- <QBIC sample code>_R2.fastq
     |-- <QBIC sample code>_R2.fastq.sha256sum
 ```
+
+or in the case of gzipped FASTQ files:
+
+```
+<QBIC sample code>.fastq.gz // Directory
+    |-- <QBIC sample code>_R1.fastq.gz
+    |-- <QBIC sample code>_R1.fastq.gz.sha256sum
+    |-- <QBIC sample code>_R2.fastq.gz
+    |-- <QBIC sample code>_R2.fastq.gz.sha256sum
+```
+
+In the case of single-end sequencing data, the file structure needs to
+look like this:
+
+```
+<QBIC sample code>.fastq.gz // Directory
+    |-- <QBIC sample code>.fastq.gz
+    |-- <QBIC sample code>.fastq.gz.sha256sum
+```
+
+
