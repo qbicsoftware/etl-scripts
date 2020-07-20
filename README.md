@@ -9,6 +9,10 @@ These guidelines describe the necessary file structure for different
 data types to be met in order to ingest and register them correctly in
 openBIS.
 
+Formats:
+
+- [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+
 ### NGS single-end / paired-end data
 
 **Responsible dropbox:**
