@@ -5,6 +5,10 @@ The ETL processes combine some quality control measures for incoming data and da
 
 ## Data format guidelines
 
+These guidelines describe the necessary file structure for different
+data types to be met in order to ingest and register them correctly in
+openBIS.
+
 ### NGS single-end / paired-end data
 
 **Responsible dropbox:**
