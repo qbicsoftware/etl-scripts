@@ -14,21 +14,6 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-######## Sample Tracking related import
-from life.qbic.sampletracking import SampleTracker
-from life.qbic.sampletracking import ServiceCredentials
-from java.net import URL
-
-import sample_tracking_helper_qbic as tracking_helper
-#### Setup Sample Tracking service
-SERVICE_CREDENTIALS = ServiceCredentials()
-SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
-SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
-SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-QBIC_LOCATION = tracking_helper.get_qbic_location_json()
-
-### We need this object to update the sample location later
-SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
 # ETL script for registration of VCF files
 # expected:
@@ -64,7 +49,6 @@ def process(transaction):
                 sc = SearchCriteria()
                 sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, "MA"+code))
                 foundSamples = search_service.searchForSamples(sc)
-
                 sampleIdentifier = foundSamples[0].getSampleIdentifier()
                 space = foundSamples[0].getSpace()
                 sa = transaction.getSampleForUpdate(sampleIdentifier)
@@ -76,6 +60,3 @@ def process(transaction):
 
                 image = os.path.realpath(os.path.join(incomingPath,name))
                 transaction.moveFile(image, dataSet)
-
-                #sample tracking section
-                SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(code)

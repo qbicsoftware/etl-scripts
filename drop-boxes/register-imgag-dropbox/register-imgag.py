@@ -7,9 +7,6 @@ import sys
 sys.path.append('/home-link/qeana10/bin/')
 sys.path.append('/home-link/qeana10/bin/simplejson-3.8.0/')
 
-from life.qbic import TrackingHelper
-from life.qbic import SampleNotFoundException
-import sample_tracking_helper_qbic as thelper
 import re
 import os
 import checksum
@@ -27,6 +24,22 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
 from shutil import copyfile
+######## Sample Tracking related import
+from life.qbic.sampletracking import SampleTracker
+from life.qbic.sampletracking import ServiceCredentials
+from java.net import URL
+
+import sample_tracking_helper_qbic as tracking_helper
+#### Setup Sample Tracking service
+SERVICE_CREDENTIALS = ServiceCredentials()
+SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+
+### We need this object to update the sample location later
+SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
+
 # Data import and registration
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
@@ -73,7 +86,7 @@ def get_space_from_project(transaction, project):
     space = foundSamples[0].getSpace()
     return space
 
-def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: GS130715_03-GS130717_03 (verified in startup.log)
+def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#varcode example: GS130715_03-GS130717_03 (verified in startup.log)
     qbicBarcodes = []
     geneticIDS = []
     sampleSource = []
@@ -89,7 +102,8 @@ def find_and_register_vcf(transaction, jsonContent, varcode):#varcode example: G
             sampleSource.append(jsonContent[key]["tumor"])
             if jsonContent[key]["id_genetics"] == varcode:
                 varcodekey = key
-
+    # add barcodes found in metadata to set of parent codes for sample tracking
+    parentCodeSet.update(qbicBarcodes)
     # if a folder has to be registered containing somatic variant calls and germline calls
     if '-' not in varcode:
         geneticIDS = [varcode]
@@ -293,19 +307,7 @@ def createNewBarcode(project, tr):
 
     return newBarcode
 
-def handleSampleTracking(barcode):
-    service_url = thelper.get_service_reg_url()
-    service_user = thelper.get_service_user()
-    service_pass = thelper.get_service_password()
-    tracking = TrackingHelper(service_url, service_user, service_pass)
-    try:
-        tracking.sampleExists(barcode)
-    except SampleNotFoundException as err:
-        print barcode+" not found in tracking db, adding"
-    location = thelper.get_qbic_location_json()
-    tracking.tryUpdateSample(barcode,location)
-
-def find_and_register_ngs(transaction, jsonContent):
+def find_and_register_ngs(transaction, jsonContent, parentCodeSet):
     if "qc" in jsonContent["sample1"]:
         qcValues = jsonContent["sample1"]["qc"]
     else:
@@ -318,6 +320,9 @@ def find_and_register_ngs(transaction, jsonContent):
     expType = jsonContent["type"]
 
     project = qbicBarcode[:5]
+
+    # add barcodes found in metadata to set of parent codes for sample tracking
+    parentCodeSet.add(qbicBarcode)
 
     search_service = transaction.getSearchService()
     sc = SearchCriteria()
@@ -455,7 +460,7 @@ def find_and_register_ngs(transaction, jsonContent):
         datasetSample = newNGSrunSample
     return datasetSample
 
-def find_and_register_ngs_without_metadata(transaction):
+def find_and_register_ngs_without_metadata(transaction, parentCodeSet):
     context = transaction.getRegistrationContext().getPersistentMap()
 
     # Get the incoming path of the transaction
@@ -479,6 +484,9 @@ def find_and_register_ngs_without_metadata(transaction):
     sampleIdentifier = foundSamples[0].getSampleIdentifier()
     space = foundSamples[0].getSpace()
     sa = transaction.getSampleForUpdate(sampleIdentifier)
+
+    # add barcode to set of parent codes for sample tracking
+    parentCodeSet.add(identifier)
 
     sampleType = "Q_NGS_SINGLE_SAMPLE_RUN"
     if sa.getSampleType() != sampleType:
@@ -612,9 +620,11 @@ def process(transaction):
         else:
             pass
     folder = os.path.join(incomingPath, name)
+    # collect all parent codes found in metadata, no matter the use case
+    parentCodes = set()
     if(metadataFound):
         if len(fastqs) > 0:
-            fastqSample = find_and_register_ngs(transaction, jsonContent)
+            fastqSample = find_and_register_ngs(transaction, jsonContent, parentCodes)
             fastqDataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
             fastqDataSet.setSample(fastqSample)
 
@@ -632,7 +642,7 @@ def process(transaction):
         for vc in vcfs:
             ident = vc.split('.')[0].replace('_vc_strelka','').replace('_var','').replace('_annotated','').replace('_adme', '').replace('_old', '') #example: GS130715_03-GS130717_03
             print ident
-            vcfSample = find_and_register_vcf(transaction, jsonContent, ident)
+            vcfSample = find_and_register_vcf(transaction, jsonContent, ident, parentCodes)
             vcfDataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
             vcfDataSet.setSample(vcfSample)
             vcfFolder = os.path.join(folder, name+"_vcf_files")
@@ -653,4 +663,7 @@ def process(transaction):
 
             transaction.moveFile(vcfFolder, vcfDataSet)
     else:
-            find_and_register_ngs_without_metadata(transaction)
+            find_and_register_ngs_without_metadata(transaction, parentCodes)
+    for code in parentCodes:
+            #sample tracking section
+            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(code)
