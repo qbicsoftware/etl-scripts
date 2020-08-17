@@ -157,13 +157,15 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     if measurement.getAdapter():
         runExperiment.setPropertyValue("Q_SEQUENCING_ADAPTER", measurement.getAdapter())
     # handle measured samples
-    unclassifiedMap = measurement.getUnclassifiedData()
     for barcode in rawDataPerSample.keySet():
         datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
         # 3.) Aggregate all log files into an own log folder per measurement
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
-        createSampleWithData(transaction, space, barcode, datamap, unclassifiedMap, runExperiment, currentPath, newLogFolder)
+        createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
+    unclassifiedMap = measurement.getUnclassifiedData()
+    if len(unclassifiedMap) > 0:
+        registerUnclassifiedData(transaction, unclassifiedMap, runExperiment, currentPath, measurement.getFlowcellId())
 
 # fills the global dictionary containing all checksums for paths from the global checksum file
 def fillChecksumMap(checksumFilePath):
@@ -190,8 +192,40 @@ def createChecksumFileForFolder(incomingPath, folderPath):
                     f.write(value+' *'+key+'\n')
     return checksumFilePath
 
+# prepares unclassified data folder (e.g. unclassified fast5_pass) including checksums and moves folder to target destination folder
+def prepareUnclassifiedData(transaction, unclassifiedDataObject, currentPath, destinationPath):
+    incomingPath = transaction.getIncoming().getAbsolutePath()
+    relativePath = unclassifiedDataObject.getRelativePath()
+    destination = os.path.join(destinationPath, unclassifiedDataObject.getName())
+    # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
+    unclassifiedSourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
+    unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSourcePath)
+    # we move the unclassified object to its destination (e.g. the unclassified fast5 top folder)
+    os.rename(unclassifiedSourcePath, destination)
+
+# attaches unclassified data to the run experiment without sample
+def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, currentPath, flowcellBarcode):
+    topFolderFastq = os.path.join(currentPath, flowcellBarcode+"_unclassified_fastq")
+    topFolderFast5 = os.path.join(currentPath, flowcellBarcode+"_unclassified_fast5")
+    os.makedirs(topFolderFastq)
+    os.makedirs(topFolderFast5)
+
+    #create checksum files and move unclassified folders to their top folder
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fastqfail"), currentPath, topFolderFastq)
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fastqpass"), currentPath, topFolderFastq)
+
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5fail"), currentPath, topFolderFast5)
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5pass"), currentPath, topFolderFast5)
+
+    fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
+    fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
+    fast5DataSet.setExperiment(runExperiment)
+    fastQDataSet.setExperiment(runExperiment)
+    transaction.moveFile(topFolderFast5, fast5DataSet)
+    transaction.moveFile(topFolderFastq, fastQDataSet)
+
 # moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
-def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, unclassifiedDataObject, suffix):
+def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, suffix):
     name = dataObject.getName()
     relativePath = dataObject.getRelativePath()
     # the source path of the currently handled data object (e.g. fast5_fail folder)
@@ -200,15 +234,8 @@ def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, un
     # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
     destination = os.path.join(destinationPath, name + "_" + suffix)
     os.rename(sourcePath, destination)
-    # if unclassified data exists, create relevant checksums and add them with the data to the expected (barcoded) data folder
-    if unclassifiedDataObject:
-        relativePath = unclassifiedDataObject.getRelativePath()
-        # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
-        unclassifiedSourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
-        unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSourcePath)
-        shutil.copytree(unclassifiedSourcePath, os.path.join(destination,"unclassified"))
 
-def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, unclassifiedDataMap, openbisExperiment, currentPath, absLogPath):
+def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     """ Aggregates all measurement related files and registers them in openBIS.
     
     The Map mapWithDataForSample contains all DataFolders created for one sample code:
@@ -236,24 +263,19 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
     os.makedirs(topFolderFastq)
 
-    unclassifiedFastqFail = unclassifiedDataMap.get("fastqfail")
-    unclassifiedFastqPass = unclassifiedDataMap.get("fastqpass")
-    unclassifiedFast5Fail = unclassifiedDataMap.get("fast5fail")
-    unclassifiedFast5Pass = unclassifiedDataMap.get("fast5pass")
-
     fastqFail = mapWithDataForSample.get("fastqfail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, unclassifiedFastqFail, "fail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, "fail")
     fastqPass = mapWithDataForSample.get("fastqpass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, unclassifiedFastqPass, "pass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, "pass")
 
     # Aggregate the folders fast5fail and fast5pass under a common folder "<sample code>_fast5"
     topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
     os.makedirs(topFolderFast5)
 
     fast5Fail = mapWithDataForSample.get("fast5fail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, unclassifiedFast5Fail, "fail")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, "fail")
     fast5Pass = mapWithDataForSample.get("fast5pass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, unclassifiedFast5Pass, "pass")
+    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, "pass")
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
