@@ -196,12 +196,11 @@ def createChecksumFileForFolder(incomingPath, folderPath):
 def prepareUnclassifiedData(transaction, unclassifiedDataObject, currentPath, destinationPath):
     incomingPath = transaction.getIncoming().getAbsolutePath()
     relativePath = unclassifiedDataObject.getRelativePath()
-    destination = os.path.join(destinationPath, unclassifiedDataObject.getName())
     # the source path of the currently handled data object (e.g. unclassified fast5_fail folder)
     unclassifiedSourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
     unclassifiedChecksumFile = createChecksumFileForFolder(incomingPath, unclassifiedSourcePath)
     # we move the unclassified object to its destination (e.g. the unclassified fast5 top folder)
-    os.rename(unclassifiedSourcePath, destination)
+    os.rename(unclassifiedSourcePath, destinationPath)
 
 # attaches unclassified data to the run experiment without sample
 def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, currentPath, flowcellBarcode):
@@ -211,11 +210,11 @@ def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, cu
     os.makedirs(topFolderFast5)
 
     #create checksum files and move unclassified folders to their top folder
-    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fastqfail"), currentPath, topFolderFastq)
-    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fastqpass"), currentPath, topFolderFastq)
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fastqfail"), currentPath, os.path.join(topFolderFastq, "fastq_fail"))
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fastqpass"), currentPath, os.path.join(topFolderFastq, "fastq_pass"))
 
-    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5fail"), currentPath, topFolderFast5)
-    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5pass"), currentPath, topFolderFast5)
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5fail"), currentPath, os.path.join(topFolderFast5, "fast5_fail"))
+    prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5pass"), currentPath, os.path.join(topFolderFast5, "fast5_pass"))
 
     fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
     fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
