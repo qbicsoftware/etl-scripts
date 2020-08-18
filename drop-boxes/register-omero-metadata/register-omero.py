@@ -72,7 +72,7 @@ def isExpected(identifier):
 	except:
 		return False
 
-def createNewImagingExperiment(tr, space, project, modality):
+def createNewImagingExperiment(tr, space, project, properties):
 	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
 	MODALITY_CODE = "Q_BMI_MODALITY"
 	search_service = tr.getSearchService()
@@ -87,8 +87,9 @@ def createNewImagingExperiment(tr, space, project, modality):
 		i += 1
 		exp_num = len(existing_exps) + i
 		exp_id = '/' + space + '/' + project + '/' + project + 'E' + str(exp_num)
-	exp = tr.createNewExperiment(expID, IMAGING_EXP_TYPE)
-	exp.setPropertyValue(MODALITY_CODE, modality)
+	exp = tr.createNewExperiment(exp_ID, IMAGING_EXP_TYPE)
+	for key in properties.keys():
+		exp.setPropertyValue(key, properties[key])
 	return exp
 
 def createNewImagingRun(tr, base_sample, exp, omero_link, run_offset):
@@ -121,6 +122,15 @@ def callOmeroWithFilePath(file_path, sample_barcode):
 
 def getFileFromLine(line):
 	return line.split("\t")[0]
+
+# dependent on metadata dictionaries of two different files (data model), decide if new openBIS experiment needs to be created
+# might be replaced by specific metadata properties, once we know more
+def isSameExperimentMetadata(props1, props2):
+	# initilization of tsv parser, always results in new experiment
+	if not props1 or not props2:
+		return False
+	else:
+		#TODO
 
 def process(transaction):
 	context = transaction.getRegistrationContext().getPersistentMap()
@@ -165,21 +175,38 @@ def process(transaction):
 			if ext.lower()=='.tsv':
 				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
 	offset = 0
+	# see below
+	previousProps = None
 	# go through the metadatafile containing all pre-specified imaging metadata
+	header = metadataFile[0]
 	for line in metadataFile[1:]:  # (Exclude header)
-		# TODO Get modality and other metadata from tsv here for one sample
-		modality = "CT-BIOPSY"
-		filePath = getFileFromLine(line)
-		print filePath
-		list_of_omero_ids = callOmeroWithFilePath(filePath, code)
+		# Get modality and other metadata from tsv here for one sample
+		properties = {}
+		tokens = line.split("\t")
+		for i in range(len(header)):
+			properties[header[i]] = tokens[i]
+		fileName = getFileFromLine(line)# or use dictionary
+
+		imageFile = os.path.join(incomingPath, fileName)
+		print "handling file "+imageFile
+
+		list_of_omero_ids = callOmeroWithFilePath(imageFile, code)
 		# TODO decide if new experiment is needed based on some pre-defined criteria.
 		# Normally, the most important criterium is collision of experiment type properties
 		# between samples. E.g. two different imaging modalities need two experiments.
-		if(True):
-			exp = createNewImagingExperiment(transaction, space, project, modality)
-		createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)
-		# increment id offset for next sample in this loop
+		fileBelongsToExistingExperiment = isSameExperimentMetadata(previousProps, properties)
+		previousProps = properties
+		if(not fileBelongsToExistingExperiment):
+			exp = createNewImagingExperiment(transaction, space, project, properties)
+		imagingSample = createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)# maybe there are sample properties, too!
+		# register the actual data
+		IMAGING_DATASET_CODE = Q_BMI_GENERIC_IMAGING_DATA # I guess
+		dataset = transaction.createNewDataSet(IMAGING_DATASET_CODE)
+		dataset.setSample(imagingSample)
+		transaction.moveFile(imageFile, dataset)
+		# increment id offset for next sample in this loop - not sure anymore if this is needed
 		offset+=1
+
 
 
 
