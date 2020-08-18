@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0
+
+* Register unclassified pooling data of Nanopore experiments directly at the experiment level (no copies are added to sample-based datasets)
+
 ## 1.3.1
 
 * Avoid sample registration for existing mass spectrometry data
