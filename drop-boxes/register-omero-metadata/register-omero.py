@@ -138,6 +138,7 @@ def process(transaction):
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
 
+
 	key = context.get("RETRY_COUNT")
 	if (key == None):
 		key = 1
