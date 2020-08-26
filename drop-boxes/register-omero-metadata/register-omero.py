@@ -4,10 +4,11 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 '''
 import sys
 sys.path.append('/home-link/qeana10/bin/')
-
+import image_registration_process as irp
 from life.qbic import TrackingHelper
 from life.qbic import SampleNotFoundException
 import sample_tracking_helper_qbic as thelper
+
 import checksum
 import re
 import os
@@ -18,18 +19,7 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-class Error(Exception):
-	"""Base class for exceptions in this module."""
-	pass
 
-	def __init__(self, call, msg):
-		self.call = call
-		self.msg = msg
-
-class BarcodeError(Error):
-	def __init__(self, barcode, msg):
-		self.barcode = barcode
-		self.msg = msg
 
 #class OmeroError(Error):
 
@@ -63,14 +53,6 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 # An exception needs to be thrown if anything goes wrong. This is important so that the ETL transaction does not finish
 # and delete the data!
 #####
-
-def isExpected(identifier):
-	try:
-		id = identifier[0:9]
-		#also checks for old checksums with lower case letters
-		return checksum.checksum(id)==identifier[9]
-	except:
-		return False
 
 def createNewImagingExperiment(tr, space, project, properties):
 	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
@@ -138,21 +120,18 @@ def process(transaction):
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
 
+	registrationProcess = irp.ImageRegistrationProcess(transaction)
+	
+	registrationProcess.fetchOpenBisSampleCode()
 
+	registrationProcess.requestOmeroDatasetId()
+
+	# Needed ???
 	key = context.get("RETRY_COUNT")
 	if (key == None):
 		key = 1
 
-	# Get the name of the incoming file
-	name = transaction.getIncoming().getName()
-	found = barcode_pattern.findall(name)
-	if len(found) == 0:
-		raise BarcodeError(name, "barcode pattern was not found")
-	code = found[0]
-	if isExpected(code):
-		project = code[:5]
-	else:
-		raise BarcodeError(code, "checksum for barcode is wrong")        
+	
 
 	search_service = transaction.getSearchService()
 	sc = SearchCriteria()
