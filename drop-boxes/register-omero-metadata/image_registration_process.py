@@ -34,19 +34,19 @@ class ImageRegistrationProcess:
         except:
             return False
 
-    def requestOmeroDatasetId(self):
+    def requestOmeroDatasetId(self, openbis_sample_code):
         pass
 
-    def registerImageInOmero(self):
-        pass
-
-    def triggerOMETiffConversion(self):
+    def registerImageInOmero(self, omero_dataset_id):
         pass
 
     def extractMetadataFromTSV(self):
         pass
 
-    def registerExperimentDataInOpenBIS(self):
+    def registerExperimentDataInOpenBIS(self, omero_image_ids):
+        pass
+
+    def triggerOMETiffConversion(self):
         pass
 
 

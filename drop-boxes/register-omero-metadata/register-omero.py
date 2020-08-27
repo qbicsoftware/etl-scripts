@@ -131,16 +131,16 @@ def process(transaction):
 	
 	# 2. We want to get the openBIS sample code from the incoming data
 	# This tells us to which biological sample the image data was aquired from.
-	registrationProcess.fetchOpenBisSampleCode()
+	sample_code = registrationProcess.fetchOpenBisSampleCode()
 
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
-	registrationProcess.requestOmeroDatasetId()
+	omero_dataset_id = registrationProcess.requestOmeroDatasetId(sample_code)
 
 	# 4. After we have received the omero dataset id, we know where to attach the image to
 	# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
-	registrationProcess.registerImageInOmero()
+	omero_image_ids = registrationProcess.registerImageInOmero(omero_dataset_id)
 
 	# 5. Additional metadata is provided in an own metadata TSV file. 
 	# We extract the metadata from this file.
@@ -151,7 +151,7 @@ def process(transaction):
 	# imaging experiment itself, such as modality, imaged tissue and more. 
 	# We also want to connect this data with the previously created, corresponding OMERO image id t
 	# hat represents the result of this experiment in OMERO. 
-	registrationProcess.registerExperimentDataInOpenBIS()
+	registrationProcess.registerExperimentDataInOpenBIS(omero_image_ids)
 
 	# 7. Last but not least we create the open science file format for images which is
 	# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
