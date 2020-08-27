@@ -115,17 +115,49 @@ def isSameExperimentMetadata(props1, props2):
 		#TODO
 
 def process(transaction):
+	"""The main entry point.
+	
+	openBIS calls this method, when an incoming transaction is registered.
+	This happens, when the data has been moved into the openBIS dropbox AND a marker file 
+	was created (event trigger).
+	"""
 	context = transaction.getRegistrationContext().getPersistentMap()
 
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
 
+	# 1. Initialize the image registration process
 	registrationProcess = irp.ImageRegistrationProcess(transaction)
 	
+	# 2. We want to get the openBIS sample code from the incoming data
+	# This tells us to which biological sample the image data was aquired from.
 	registrationProcess.fetchOpenBisSampleCode()
 
+	# 3. We now request the associated omero dataset id for the openBIS sample code.
+	# Each dataset in OMERO contains the associated openBIS biological sample id, which
+	# happened during the experimental design registration with the projectwizard.
 	registrationProcess.requestOmeroDatasetId()
 
+	# 4. After we have received the omero dataset id, we know where to attach the image to
+	# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
+	registrationProcess.registerImageInOmero()
+
+	# 5. Additional metadata is provided in an own metadata TSV file. 
+	# We extract the metadata from this file.
+	registrationProcess.extractMetadataFromTSV()
+
+	# 6. In addition to the image registration and technical metadata storage, we want to add
+	# further experimental metadata in openBIS. This metadata contains information about the 
+	# imaging experiment itself, such as modality, imaged tissue and more. 
+	# We also want to connect this data with the previously created, corresponding OMERO image id t
+	# hat represents the result of this experiment in OMERO. 
+	registrationProcess.registerExperimentDataInOpenBIS()
+
+	# 7. Last but not least we create the open science file format for images which is
+	# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
+	registrationProcess.triggerOMETiffConversion()
+
+	
 	# Needed ???
 	key = context.get("RETRY_COUNT")
 	if (key == None):
