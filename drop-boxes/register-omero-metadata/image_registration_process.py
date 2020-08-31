@@ -1,24 +1,36 @@
 import re
-
 import checksum
 
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-import subprocess
+
+from subprocess import Popen, PIPE
+
+barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 
 class ImageRegistrationProcess:
 
-    barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
+    def __init__(self, transaction, env_name="omero_env_0", project_code="", sample_code=""):
 
-    def __init__(self, transaction):
         self._transaction = transaction
         self._incoming_file_name = transaction.getIncoming().getName()
-        self._sample_code = ""
-        self._project_code = ""
+
+        self._project_code = project_code
+        self._sample_code = sample_code
+
+        self._init_cmd_list = []
+        self._init_cmd_list.append('eval "$(/home/qeana10/miniconda2/bin/conda shell.bash hook)"')
+        self._init_cmd_list.append('export OMERO_PREFIX=/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.py-5.4.10-ice36-b105')
+        self._init_cmd_list.append('export PYTHONPATH=$PYTHONPATH:$OMERO_PREFIX/lib/python')
+        self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.server-5.4.10-ice36-b105/bin')
+
+        self._init_cmd_list.append('conda ' + env_name)
+        self._init_cmd_list.append('cd /home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/') #move to the dir where backendinterface.py lives
 
     def fetchOpenBisSampleCode(self):
+
         found = barcode_pattern.findall(self._incoming_file_name)
         if len(found) == 0:
             raise SampleCodeError(self._incoming_file_name, "Sample code does not match the QBiC sample code schema.")
@@ -27,6 +39,8 @@ class ImageRegistrationProcess:
             self._project_code = self._sample_code[:5]
         else:
             raise SampleCodeError(self._sample_code, "The sample code seems to be invalid, the checksum could not be confirmed.")
+
+        return self._project_code, self._sample_code
     
     def _isValidSampleCode(self, sample_code):
         try:
@@ -35,24 +49,57 @@ class ImageRegistrationProcess:
         except:
             return False
 
-    #ToDo If we want to compare on Project Level then should we transfer the project Id and sample code or just iterate over all projects?
-    def requestOmeroDatasetId(self, openbis_sample_code):
+    def requestOmeroDatasetId(self, project_code=None, sample_code=None):
+
+        if project_code == None:
+            project_code = self._project_code
+        if sample_code == None:
+            sample_code = self._sample_code
+
+        cmd_list = list(self._init_cmd_list)
+        cmd_list.append( "python backendinterface.py -p " + str(project_code) + " -s " + str(sample_code) )
+
+        commands = ""
+        for cmd in cmd_list:
+            commands = commands + cmd + "\n"
+        #print "cmds: " + commands
+
+        process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
+        out, err = process.communicate( commands )
+
+        #print str(out)
+
+        ds_id = str(out)
+
+        return ds_id
+
+
+    def registerImageFileInOmero(self, file_path, dataset_id):
+
+        cmd_list = list(self._init_cmd_list)
+        cmd_list.append( "python backendinterface.py -f " + file_path + " -d " + str(dataset_id) )
+
+        commands = ""
+        for cmd in cmd_list:
+            commands = commands + cmd + "\n"
+        #print "cmds: " + commands
+
+        process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
+        out, err = process.communicate( commands )
+
+        id_list = str(out).split()
+
+        return id_list
+        
+
+
+    def triggerOMETiffConversion(self):
         pass
 
-    #ToDo Should the Image be provided via File or as an Array? This Code was originally written for File Input and calls the Omero Import Tool from the commandline
-    def registerImageInOmero(self, omero_dataset_id):
-        pass
-
-    #ToDo Not Implemented Yet since we don't know how the metadata will look like
     def extractMetadataFromTSV(self):
         pass
 
-    #ToDo Not Implemented Yet wait for Andreas?
-    def registerExperimentDataInOpenBIS(self, omero_image_ids):
-        pass
-
-    #ToDo This can be removed since it's handled in the java Omero-client-lib
-    def triggerOMETiffConversion(self):
+    def registerExperimentDataInOpenBIS(self):
         pass
 
 
@@ -65,3 +112,5 @@ class SampleCodeError(Exception):
 
     def test(self):
         pass
+
+
