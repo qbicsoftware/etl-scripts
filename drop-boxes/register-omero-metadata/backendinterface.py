@@ -9,16 +9,26 @@ environment you are loading this module:
 This code is based on the following documentation:
     https://docs.openmicroscopy.org/omero/5.4.0/developers/Python.html
 It contains the following functions:
-    * omero_connect - conects to server
+    * omero_connect - connects to server
     * TODO...
     
 """
 
+
 def omero_connect(usr, pwd, host, port):
     """
-    TODO
-    """
+    Connects to the OMERO Server with the provided username and password.
 
+    Args:
+        usr: The username to log into OMERO
+        pwd: a password associated with the given username
+        host: the OMERO hostname
+        port: the port at which the OMERO server can be reached
+
+    Returns:
+        Connected BlitzGateway to the OMERO Server with the provided credentials
+
+    """
     from omero.gateway import BlitzGateway
 
     conn = BlitzGateway(usr, pwd, host=host, port=port)
@@ -32,11 +42,15 @@ def omero_connect(usr, pwd, host, port):
 
 def print_data_ids(conn):
     """
-    TODO
-    """
+        Prints all IDs of the data objects(Projects, Datasets, Images) associated with the logged in user on the OMERO server
 
-    my_exp_id = conn.getUser().getId()
-    default_group_id = conn.getEventContext().groupId
+        Args:
+            conn: Established Connection to the OMERO Server via a BlitzGateway
+
+        Returns:
+            Nothing except a printed text output to console
+
+        """
 
     for project in conn.getObjects("Project"):
         print('project: ' + str(project.getName()) + ' -- ' + str(project.getId()))
@@ -49,9 +63,16 @@ def print_data_ids(conn):
 
 def get_omero_dataset_id(conn, openbis_project_id, openbis_sample_id):
     """
-    TODO
-    """
+           Prints all IDs of the data objects(Projects, Datasets, Images) associated with the logged in user on the OMERO server
 
+           Args:
+               conn: Established Connection to the OMERO Server via a BlitzGateway
+               openbis_project_id: Id specifying the project information stored on OpenBIS
+               openbis_sample_id: Id specifying the sample information stored on OpenBIS
+           Returns:
+               omero_dataset_id:  Id specifying the dataset information stored on OMERO
+
+           """
     omero_dataset_id = -1
     found_id = False
 
@@ -187,7 +208,7 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
 
 ########################################
-#fucntions to register numpy arrays
+#functions to register numpy arrays
 
 def generate_array_plane(new_img):
     """
