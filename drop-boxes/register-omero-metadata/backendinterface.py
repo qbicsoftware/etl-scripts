@@ -20,11 +20,11 @@ def omero_connect(usr, pwd, host, port):
     """
 
     from omero.gateway import BlitzGateway
-    
+
     conn = BlitzGateway(usr, pwd, host=host, port=port)
     connected = conn.connect()
     conn.setSecure(True)
-    
+
     if not connected:
         print("Error: Connection not available")
 
@@ -37,13 +37,13 @@ def print_data_ids(conn):
 
     my_exp_id = conn.getUser().getId()
     default_group_id = conn.getEventContext().groupId
-    
+
     for project in conn.getObjects("Project"):
         print('project: ' + str(project.getName()) + ' -- ' + str(project.getId()))
 
         for dataset in project.listChildren():
             print('ds: ' + str(dataset.getName()) + ' -- ' + str(dataset.getId()))
-            
+
             for image in dataset.listChildren():
                 print('img: ' + str(image.getName()) + ' -- ' + str(image.getId()))
 
@@ -163,7 +163,6 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
     if ds_id != -1:
 
         cmd = "omero import -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
-        #print("----cmd: " + cmd)
 
         proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
@@ -173,26 +172,16 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
         std_out, std_err = proc.communicate()
 
-        #print("std_out: " + std_out)
-        #print("std_err: " + std_err)
-        #print("return_code: " + str(proc.returncode))
-
         if int(proc.returncode) == 0:
-
-            #print("-->" + std_out)
 
             fist_line = std_out.splitlines()[0]
             image_ids = fist_line[6:].split(',')
 
-            #print("id list: " + str(image_ids))
-
         else:
             image_ids = -1
-            #print("return code fail")
 
     else:
         image_ids = -1
-        #print("invalid sample_id")
 
     return image_ids
 
@@ -204,16 +193,16 @@ def generate_array_plane(new_img):
     """
     TODO
     """
-    
+
     img_shape = new_img.shape
     size_z = img_shape[4]
     size_t = img_shape[0]
     size_c = img_shape[1]
-        
+
     for z in range(size_z):              # all Z sections
         for c in range(size_c):          # all channels
             for t in range(size_t):      # all time-points
-                
+
                 new_plane = new_img[t, c, :, :, z]
                 yield new_plane
 
@@ -221,12 +210,12 @@ def create_array(conn, img, img_name, img_desc, ds):
     """
     TODO
     """
-        
+
     dims = img.shape
     z = dims[4]
     t = dims[0]
     c = dims[1]
-    
+
     new_img = conn.createImageFromNumpySeq(generate_array_plane(img),
                                            img_name,
                                            z, c, t,
@@ -234,7 +223,7 @@ def create_array(conn, img, img_name, img_desc, ds):
                                            dataset=ds)
 
     return new_img.getId()
-    
+
 def register_image_array(img, img_name, img_desc, project_id, sample_id, usr, pwd, host, port=4064):
     """
     This function imports a 5D (time-points, channels, x, y, z) numpy array of an image
@@ -253,7 +242,7 @@ def register_image_array(img, img_name, img_desc, project_id, sample_id, usr, pw
     Returns:
         int: newly generated omero ID for registered image array
     """
-    
+
     img_id = -1
     save_flag = 0
 
@@ -265,7 +254,7 @@ def register_image_array(img, img_name, img_desc, project_id, sample_id, usr, pw
                 if dataset.getName() == sample_id:
 
                     img_id = create_array(conn, img, img_name, img_desc, dataset)
-                    
+
                     save_flag = 1
                     break
         if save_flag == 1:
@@ -280,45 +269,30 @@ def get_image_array(conn, image_id):
     """
 
     import numpy as np
-    
+
     image = conn.getObject("Image", image_id)
-    
-    #print "\nImage:%s" % imageId
-    #print "=" * 50
-    #print image.getName(), image.getDescription()
-    # Retrieve information about an image.
-    #print " X:", image.getSizeX()
-    #print " Y:", image.getSizeY()
-    #print " Z:", image.getSizeZ()
-    #print " C:", image.getSizeC()
-    #print " T:", image.getSizeT()
-            
-    # List Channels (loads the Rendering settings to get channel colors)
-    #for channel in image.getChannels():
-    #    print 'Channel:', channel.getLabel(),
-    #    print 'Color:', channel.getColor().getRGB()
-    #    print 'Lookup table:', channel.getLut()
-    #    print 'Is reverse intensity?', channel.isReverseIntensity()
-        
-    ##construct numpy array (t, c, x, y, z)
-    
-    
+
+    #construct numpy array (t, c, x, y, z)
+
     size_x = image.getSizeX()
     size_y = image.getSizeY()
     size_z = image.getSizeZ()
     size_c = image.getSizeC()
     size_t = image.getSizeT()
-    hypercube = np.zeros((size_t, size_c, size_x, size_y, size_z))
-    
+
+    # X and Y fields have to be aligned this way since during generation of the image from the numpy array the 2darray is expected to be (Y,X)
+    # See Documentation here https://downloads.openmicroscopy.org/omero/5.5.1/api/python/omero/omero.gateway.html#omero.gateway._BlitzGateway
+    hypercube = np.zeros((size_t, size_c, size_y, size_x, size_z))
+
     pixels = image.getPrimaryPixels()
-    
+
     for t in range(size_t):
         for c in range(size_c):
             for z in range(size_z):
                 plane = pixels.getPlane(z, c, t)      # get a numpy array.
                 hypercube[t, c, :, :, z] = plane
-                
-    return hypercube #, image.getParent()
+
+    return hypercube
 
 ################################
 
@@ -377,12 +351,10 @@ if __name__ == '__main__':
         for id_i in img_ids:
             id_str = id_str + id_i + " "
 
-        #print "-------> backend_interface output (img reg):"
         print id_str
-        #print "----------------------------------"
     else:
 
         conn = omero_connect(USERNAME, PASSWORD, HOST, str(PORT))
         ds_id = get_omero_dataset_id(conn, str(args.project_id), str(args.sample_id))
-        
+
         print ds_id
