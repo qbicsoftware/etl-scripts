@@ -4,14 +4,10 @@ import checksum
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-<<<<<<< HEAD
-
+import csv
 from subprocess import Popen, PIPE
 
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
-=======
-import csv
->>>>>>> 6f0bd9e8b8b7c7b70cc383b0dafd1d935699c369
 
 class ImageRegistrationProcess:
 
@@ -59,7 +55,6 @@ class ImageRegistrationProcess:
         if sample_code == None:
             sample_code = self._sample_code
 
-<<<<<<< HEAD
         cmd_list = list(self._init_cmd_list)
         cmd_list.append( "python backendinterface.py -p " + str(project_code) + " -s " + str(sample_code) )
 
@@ -76,7 +71,6 @@ class ImageRegistrationProcess:
         ds_id = str(out)
 
         return ds_id
-
 
     def registerImageFileInOmero(self, file_path, dataset_id):
 
@@ -96,10 +90,9 @@ class ImageRegistrationProcess:
         return id_list
         
 
-
     def triggerOMETiffConversion(self):
         pass
-=======
+
     #ToDo Check if Metadata file is provided as was suggested in test.tsv provided by LK
     def extractMetadataFromTSV(self, tsvFilePath):
         tsvFileMap = {}
@@ -110,10 +103,6 @@ class ImageRegistrationProcess:
                 tsvFileMap.update(row)
 
         return tsvFileMap
->>>>>>> 6f0bd9e8b8b7c7b70cc383b0dafd1d935699c369
-
-    def extractMetadataFromTSV(self):
-        pass
 
     def registerExperimentDataInOpenBIS(self):
         pass
