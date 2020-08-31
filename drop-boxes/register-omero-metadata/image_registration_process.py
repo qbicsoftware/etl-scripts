@@ -3,10 +3,9 @@ import re
 import checksum
 
 import ch.systemsx.cisd.etlserver.registrator.api.v2
-
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-import subprocess
+import csv
 
 class ImageRegistrationProcess:
 
@@ -43,9 +42,16 @@ class ImageRegistrationProcess:
     def registerImageInOmero(self, omero_dataset_id):
         pass
 
-    #ToDo Not Implemented Yet since we don't know how the metadata will look like
-    def extractMetadataFromTSV(self):
-        pass
+    #ToDo Check if Metadata file is provided as was suggested in test.tsv provided by LK
+    def extractMetadataFromTSV(self, tsvFilePath):
+        tsvFileMap = {}
+
+        with open(tsvFilePath) as tsvfile:
+            reader = csv.DictReader(tsvfile, delimiter='\t')
+            for row in reader:
+                tsvFileMap.update(row)
+
+        return tsvFileMap
 
     #ToDo Not Implemented Yet wait for Andreas?
     def registerExperimentDataInOpenBIS(self, omero_image_ids):
