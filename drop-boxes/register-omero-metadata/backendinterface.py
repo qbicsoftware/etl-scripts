@@ -349,9 +349,9 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 from optparse import OptionParser
 
 ###OMERO server info
-USERNAME = "zmbp_user_1"
-PASSWORD = "prtlUsr01-4Mark01/"
-HOST = "134.2.183.129"
+USERNAME = "usr"
+PASSWORD = "pwd"
+HOST = "host"
 PORT = 4064
 
 
