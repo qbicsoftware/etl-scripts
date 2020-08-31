@@ -1,6 +1,5 @@
 import re
 import checksum
-
 import ch.systemsx.cisd.etlserver.registrator.api.v2
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
@@ -61,12 +60,9 @@ class ImageRegistrationProcess:
         commands = ""
         for cmd in cmd_list:
             commands = commands + cmd + "\n"
-        #print "cmds: " + commands
 
         process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
         out, err = process.communicate( commands )
-
-        #print str(out)
 
         ds_id = str(out)
 
@@ -80,7 +76,6 @@ class ImageRegistrationProcess:
         commands = ""
         for cmd in cmd_list:
             commands = commands + cmd + "\n"
-        #print "cmds: " + commands
 
         process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
         out, err = process.communicate( commands )
