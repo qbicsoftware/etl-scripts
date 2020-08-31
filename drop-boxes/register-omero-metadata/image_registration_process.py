@@ -96,11 +96,15 @@ class ImageRegistrationProcess:
     #ToDo Check if Metadata file is provided as was suggested in test.tsv provided by LK
     def extractMetadataFromTSV(self, tsvFilePath):
         tsvFileMap = {}
-
-        with open(tsvFilePath) as tsvfile:
-            reader = csv.DictReader(tsvfile, delimiter='\t')
-            for row in reader:
-                tsvFileMap.update(row)
+        try:
+            with open(tsvFilePath) as tsvfile:
+                reader = csv.DictReader(tsvfile, delimiter='\t', strict=True)
+                for row in reader:
+                    tsvFileMap.update(row)
+        except IOError:
+            print "Error: No file found at provided filepath " + tsvFilePath
+        except csv.Error as e:
+            print 'Could not gather the Metadata from TSVfile %s, in line %d: %s' % (tsvfile, reader.line_num, e)
 
         return tsvFileMap
 
