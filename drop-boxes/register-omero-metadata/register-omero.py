@@ -107,16 +107,46 @@ def callOmeroWithFilePath(file_path, sample_barcode):
 def getFileFromLine(line):
 	return line.split("\t")[0]
 
-# dependent on metadata dictionaries of two different files (data model), decide if new openBIS experiment needs to be created
-# might be replaced by specific metadata properties, once we know more
 def isSameExperimentMetadata(props1, props2):
+	"""dependent on metadata dictionaries of two different files (data model), decide if new openBIS experiment needs to be created
+	might be replaced by specific metadata properties, once we know more
+	"""
 	# initilization of tsv parser, always results in new experiment
 	if not props1 or not props2:
 		return False
 	else:
 		return True
 
-#########################
+
+def registerImageInOpenBIS(transaction):
+	search_service = transaction.getSearchService()
+	sc = SearchCriteria()
+	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
+	foundSamples = search_service.searchForSamples(sc)
+	sample = None
+	space = None
+	sa = None
+
+	if len(foundSamples) == 0:
+		raise BarcodeError(sample_code, "sample was not found in openBIS")
+	sample = foundSamples[0]
+	sampleID = sample.getSampleIdentifier()
+	sa = transaction.getSampleForUpdate(sampleID)
+	space = sa.getSpace()
+
+def findMetaDataFile(incomingPath):
+	"""Scans the incoming path for a metadata tsv file.
+	Returns a list with parsed entry lines of the tsv file. 
+	Is empty if no file was found.
+	"""
+	metadataFileContent = []
+	for root, subFolders, files in os.walk(incomingPath):
+		for f in files:
+			stem, ext = os.path.splitext(f)
+			if ext.lower()=='.tsv':
+				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
+	return metadataFileContent
+
 
 def process(transaction):
 	"""The main entry point.
@@ -142,60 +172,24 @@ def process(transaction):
 	# happened during the experimental design registration with the projectwizard.
 	omero_dataset_id = registrationProcess.requestOmeroDatasetId()
 
-	##################
-
-	# Needed ???
-	key = context.get("RETRY_COUNT")
-	if (key == None):
-		key = 1
+	# Find and parse metadata file content
+	metadataFile = findMetaDataFile(incomingPath)
 	
-
-	search_service = transaction.getSearchService()
-	sc = SearchCriteria()
-	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
-	foundSamples = search_service.searchForSamples(sc)
-	sample = None
-	space = None
-	sa = None
-
-	if len(foundSamples) == 0:
-		raise BarcodeError(sample_code, "sample was not found in openBIS")
-	sample = foundSamples[0]
-	sampleID = sample.getSampleIdentifier()
-	sa = transaction.getSampleForUpdate(sampleID)
-	space = sa.getSpace()
-
-	metadataFile = None
-	for root, subFolders, files in os.walk(incomingPath):
-		for f in files:
-			stem, ext = os.path.splitext(f)
-			if ext.lower()=='.tsv':
-				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
-	offset = 0
-	# see below
-	previousProps = None
-	# go through the metadatafile containing all pre-specified imaging metadata
-	header = metadataFile[0]
+	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
 		# Get modality and other metadata from tsv here for one sample
 		properties = {}
 		
-		#tokens = line.split("\t")
-		#print "tokes: " + tokens
-		#for i in range(len(header)):
-		#	properties[header[i]] = tokens[i]
-		
-		fileName = getFileFromLine(line)# or use dictionary
+		# Retrieve the image file name
+		fileName = getFileFromLine(line)
 
 		imageFile = os.path.join(incomingPath, fileName)
-		print "handling file "+imageFile
-
-		#####################
+		print "New incoming image file for OMERO registration:\t" + imageFile
 
 		# 4. After we have received the omero dataset id, we know where to attach the image to
 		# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
 		omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
-		print "-->ETL img ids: " + str(omero_image_ids)
+		print "Created OMERO image identifiers:\t" + str(omero_image_ids)
 
 		# 5. Additional metadata is provided in an own metadata TSV file. 
 		# We extract the metadata from this file.
@@ -229,5 +223,4 @@ def process(transaction):
 		#dataset.setSample(imagingSample)
 		#transaction.moveFile(imageFile, dataset)
 		# increment id offset for next sample in this loop - not sure anymore if this is needed
-		offset+=1
-
+		
