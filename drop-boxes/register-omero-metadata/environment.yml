@@ -1,0 +1,9 @@
+name: omero-etl
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - python=2.7
+  - zeroc-ice=3.6.3
+  - pillow=6.2.1
+  - numpy=1.16.6
