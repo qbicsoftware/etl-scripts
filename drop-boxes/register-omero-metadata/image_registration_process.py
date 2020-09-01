@@ -28,7 +28,6 @@ class ImageRegistrationProcess:
         self._init_cmd_list.append('cd /home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/') #move to the dir where backendinterface.py lives
 
     def fetchOpenBisSampleCode(self):
-
         found = barcode_pattern.findall(self._incoming_file_name)
         if len(found) == 0:
             raise SampleCodeError(self._incoming_file_name, "Sample code does not match the QBiC sample code schema.")
@@ -69,7 +68,6 @@ class ImageRegistrationProcess:
         return ds_id
 
     def registerImageFileInOmero(self, file_path, dataset_id):
-
         cmd_list = list(self._init_cmd_list)
         cmd_list.append( "python backendinterface.py -f " + file_path + " -d " + str(dataset_id) )
 
