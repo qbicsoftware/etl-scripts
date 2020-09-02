@@ -20,12 +20,17 @@ class ImageRegistrationProcess:
 
         self._init_cmd_list = []
         self._init_cmd_list.append('eval "$(/home/qeana10/miniconda2/bin/conda shell.bash hook)"')
+        self._init_cmd_list.append('conda activate ' + env_name)
+
         self._init_cmd_list.append('export OMERO_PREFIX=/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.py-5.4.10-ice36-b105')
         self._init_cmd_list.append('export PYTHONPATH=$PYTHONPATH:$OMERO_PREFIX/lib/python')
-        self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.server-5.4.10-ice36-b105/bin')
+        
+        #now use the omero-importer app packaged in the conda env
+        #self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.server-5.4.10-ice36-b105/bin')
+        self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/miniconda2/envs/' + env_name + '/bin')
 
-        self._init_cmd_list.append('conda ' + env_name)
-        self._init_cmd_list.append('cd /home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/') #move to the dir where backendinterface.py lives
+        #move to the dir where backendinterface.py lives
+        self._init_cmd_list.append('cd /home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/')
 
     def fetchOpenBisSampleCode(self):
         found = barcode_pattern.findall(self._incoming_file_name)

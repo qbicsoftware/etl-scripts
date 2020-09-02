@@ -124,7 +124,7 @@ def register_image_file(file_path, project_id, sample_id, usr, pwd, host, port=4
 
     if ds_id != -1:
 
-        cmd = "omero import -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
+        cmd = "omero-importer -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
         print("----cmd: " + cmd)
 
         proc = subprocess.Popen(cmd,
@@ -183,7 +183,7 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
     if ds_id != -1:
 
-        cmd = "omero import -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
+        cmd = "omero-importer -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
 
         proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
