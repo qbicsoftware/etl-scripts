@@ -3,6 +3,28 @@
 This repository holds a collection of Jython ETL (extract-transform-load) scripts that are used at QBiC that define the behaviour of openBIS dropboxes.
 The ETL processes combine some quality control measures for incoming data and data transformation to facilitate the registration in openBIS.
 
+## Environment setup
+
+**1. Conda environment for the register-omero-metadata dropbox**
+
+To provide the dependencies for the register-omero-metadata dropbox to work properly, you can build a conda environment based on the provided [`environment.yaml`](./environment.yaml):
+
+```bash
+conda env create -f environment.yaml
+```
+Make sure that the path to the executables provided in the environment are referenced properly in the register-omero-metadata Python script.
+
+**2. Dependencies for sample tracking functionality**
+
+OpenBIS loads Java libararies on startup, if they are provided in a `lib` folder of an openBIS dropbox. For the sample-tracking to work, you need to provide the 
+[sample-tracking-helper](https://github.com/qbicsoftware/sample-tracking-helper-lib) library and deploy it in one of the lib folders.
+
+
+**3. Dependencies for data transfer objects and parsers**
+
+We decoupled some shared functionality in the [data-model-lib](https://github.com/qbicsoftware/data-model-lib) and the [core-utils-lib](https://github.com/qbicsoftware/core-utils-lib). Please make sure to deploy them as well in of the lib folders, such that the classes are loaded by the etlserver class loader and available during runtime.
+
+
 ## Data format guidelines
 
 These guidelines describe the necessary file structure for different
