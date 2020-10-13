@@ -4,10 +4,12 @@ print statements go to: ~openbis/servers/datastore_server/log/startup_log.txt
 '''
 import sys
 sys.path.append('/home-link/qeana10/bin/')
+import image_registration_process as irp
 
-from life.qbic import TrackingHelper
-from life.qbic import SampleNotFoundException
-import sample_tracking_helper_qbic as thelper
+#from life.qbic import TrackingHelper
+#from life.qbic import SampleNotFoundException
+#import sample_tracking_helper_qbic as thelper
+
 import checksum
 import re
 import os
@@ -18,18 +20,7 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-class Error(Exception):
-	"""Base class for exceptions in this module."""
-	pass
 
-	def __init__(self, call, msg):
-		self.call = call
-		self.msg = msg
-
-class BarcodeError(Error):
-	def __init__(self, barcode, msg):
-		self.barcode = barcode
-		self.msg = msg
 
 #class OmeroError(Error):
 
@@ -64,15 +55,8 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 # and delete the data!
 #####
 
-def isExpected(identifier):
-	try:
-		id = identifier[0:9]
-		#also checks for old checksums with lower case letters
-		return checksum.checksum(id)==identifier[9]
-	except:
-		return False
 
-def createNewImagingExperiment(tr, space, project, modality):
+def createNewImagingExperiment(tr, space, project, properties):
 	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
 	MODALITY_CODE = "Q_BMI_MODALITY"
 	search_service = tr.getSearchService()
@@ -87,8 +71,9 @@ def createNewImagingExperiment(tr, space, project, modality):
 		i += 1
 		exp_num = len(existing_exps) + i
 		exp_id = '/' + space + '/' + project + '/' + project + 'E' + str(exp_num)
-	exp = tr.createNewExperiment(expID, IMAGING_EXP_TYPE)
-	exp.setPropertyValue(MODALITY_CODE, modality)
+	exp = tr.createNewExperiment(exp_id, IMAGING_EXP_TYPE)
+	for key in properties.keys():
+		exp.setPropertyValue(key, properties[key])
 	return exp
 
 def createNewImagingRun(tr, base_sample, exp, omero_link, run_offset):
@@ -122,70 +107,120 @@ def callOmeroWithFilePath(file_path, sample_barcode):
 def getFileFromLine(line):
 	return line.split("\t")[0]
 
-def process(transaction):
-	context = transaction.getRegistrationContext().getPersistentMap()
-
-	# Get the incoming path of the transaction
-	incomingPath = transaction.getIncoming().getAbsolutePath()
-
-	key = context.get("RETRY_COUNT")
-	if (key == None):
-		key = 1
-
-	# Get the name of the incoming file
-	name = transaction.getIncoming().getName()
-	found = barcode_pattern.findall(name)
-	if len(found) == 0:
-		raise BarcodeError(name, "barcode pattern was not found")
-	code = found[0]
-	if isExpected(code):
-		project = code[:5]
+def isSameExperimentMetadata(props1, props2):
+	"""dependent on metadata dictionaries of two different files (data model), decide if new openBIS experiment needs to be created
+	might be replaced by specific metadata properties, once we know more
+	"""
+	# initilization of tsv parser, always results in new experiment
+	if not props1 or not props2:
+		return False
 	else:
-		raise BarcodeError(code, "checksum for barcode is wrong")        
+		return True
 
+
+def registerImageInOpenBIS(transaction):
 	search_service = transaction.getSearchService()
 	sc = SearchCriteria()
-	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
 	foundSamples = search_service.searchForSamples(sc)
 	sample = None
 	space = None
 	sa = None
 
 	if len(foundSamples) == 0:
-		raise BarcodeError(code, "sample was not found in openBIS")
+		raise BarcodeError(sample_code, "sample was not found in openBIS")
 	sample = foundSamples[0]
 	sampleID = sample.getSampleIdentifier()
 	sa = transaction.getSampleForUpdate(sampleID)
 	space = sa.getSpace()
 
-	metadataFile = None
+def findMetaDataFile(incomingPath):
+	"""Scans the incoming path for a metadata tsv file.
+	Returns a list with parsed entry lines of the tsv file. 
+	Is empty if no file was found.
+	"""
+	metadataFileContent = []
 	for root, subFolders, files in os.walk(incomingPath):
 		for f in files:
 			stem, ext = os.path.splitext(f)
 			if ext.lower()=='.tsv':
 				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
-	offset = 0
-	# go through the metadatafile containing all pre-specified imaging metadata
+	return metadataFileContent
+
+
+def process(transaction):
+	"""The main entry point.
+	
+	openBIS calls this method, when an incoming transaction is registered.
+	This happens, when the data has been moved into the openBIS dropbox AND a marker file 
+	was created (event trigger).
+	"""
+	context = transaction.getRegistrationContext().getPersistentMap()
+
+	# Get the incoming path of the transaction
+	incomingPath = transaction.getIncoming().getAbsolutePath()
+
+	# 1. Initialize the image registration process
+	registrationProcess = irp.ImageRegistrationProcess(transaction)
+	
+	# 2. We want to get the openBIS sample code from the incoming data
+	# This tells us to which biological sample the image data was aquired from.
+	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
+
+	# 3. We now request the associated omero dataset id for the openBIS sample code.
+	# Each dataset in OMERO contains the associated openBIS biological sample id, which
+	# happened during the experimental design registration with the projectwizard.
+	omero_dataset_id = registrationProcess.requestOmeroDatasetId()
+
+	# Find and parse metadata file content
+	metadataFile = findMetaDataFile(incomingPath)
+	
+	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
-		# TODO Get modality and other metadata from tsv here for one sample
-		modality = "CT-BIOPSY"
-		filePath = getFileFromLine(line)
-		print filePath
-		list_of_omero_ids = callOmeroWithFilePath(filePath, code)
+		# Get modality and other metadata from tsv here for one sample
+		properties = {}
+		
+		# Retrieve the image file name
+		fileName = getFileFromLine(line)
+
+		imageFile = os.path.join(incomingPath, fileName)
+		print "New incoming image file for OMERO registration:\t" + imageFile
+
+		# 4. After we have received the omero dataset id, we know where to attach the image to
+		# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
+		omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
+		print "Created OMERO image identifiers:\t" + str(omero_image_ids)
+
+		# 5. Additional metadata is provided in an own metadata TSV file. 
+		# We extract the metadata from this file.
+		#registrationProcess.extractMetadataFromTSV()
+
+		# 6. In addition to the image registration and technical metadata storage, we want to add
+		# further experimental metadata in openBIS. This metadata contains information about the 
+		# imaging experiment itself, such as modality, imaged tissue and more. 
+		# We also want to connect this data with the previously created, corresponding OMERO image id t
+		# hat represents the result of this experiment in OMERO. 
+		#registrationProcess.registerExperimentDataInOpenBIS(omero_image_ids)
+
+		# 7. Last but not least we create the open science file format for images which is
+		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
+		#registrationProcess.triggerOMETiffConversion()
+
+		####################
+
 		# TODO decide if new experiment is needed based on some pre-defined criteria.
 		# Normally, the most important criterium is collision of experiment type properties
 		# between samples. E.g. two different imaging modalities need two experiments.
-		if(True):
-			exp = createNewImagingExperiment(transaction, space, project, modality)
-		createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)
-		# increment id offset for next sample in this loop
-		offset+=1
-
-
-
-
-
-
-
-
-
+		
+		#fileBelongsToExistingExperiment = isSameExperimentMetadata(previousProps, properties)
+		#previousProps = properties
+		#if(not fileBelongsToExistingExperiment):
+		#	exp = createNewImagingExperiment(transaction, space, project_code, properties)
+		#imagingSample = createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)# maybe there are sample properties, too!
+		# register the actual data
+		#IMAGING_DATASET_CODE = Q_BMI_GENERIC_IMAGING_DATA # I guess
+		#dataset = transaction.createNewDataSet(IMAGING_DATASET_CODE)
+		#dataset.setSample(imagingSample)
+		#transaction.moveFile(imageFile, dataset)
+		# increment id offset for next sample in this loop - not sure anymore if this is needed
+		
