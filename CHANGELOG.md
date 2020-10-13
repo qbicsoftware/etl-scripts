@@ -2,6 +2,10 @@
 
 ## 1.4.0
 
+* Provide first imaging registration support with OMERO server
+* Provide `environment.yaml` that can be used to configure a conda
+  environment for the proper setup for the register-omero-metadata
+  dropbox
 * Register unclassified pooling data of Nanopore experiments directly at the experiment level (no copies are added to sample-based datasets)
 
 ## 1.3.1
