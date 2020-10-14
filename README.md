@@ -1,7 +1,7 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/qbicsoftware/omero-portlet)
 ![Python Language](https://img.shields.io/badge/language-python-blue.svg)
-[![License](https://img.shields.io/github/license/qbicsoftware/etl-scripts
-)]
+![License](https://img.shields.io/github/license/qbicsoftware/etl-scripts
+)
 [![DOI](https://zenodo.org/badge/45912621.svg)](https://zenodo.org/badge/latestdoi/45912621)
 
 
