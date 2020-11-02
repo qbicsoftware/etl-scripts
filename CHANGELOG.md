@@ -1,5 +1,9 @@
 # Changelog
 
+## Currently in development
+
+* New maintenance task: update missing checksum one, after dss start.
+
 ## 1.4.0
 
 * Provide first imaging registration support with OMERO server
