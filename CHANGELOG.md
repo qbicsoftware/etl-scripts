@@ -4,6 +4,8 @@
 ## 1.5.0 2020-11-03
 
 * New maintenance task: update missing checksum once, after dss starts.
+* Fix for nanopore registration: rename folders for pooling case
+* Fix for experiment update: force identifier into a string to support v3 API objects
 
 ## 1.4.1 2020-11-03
 
