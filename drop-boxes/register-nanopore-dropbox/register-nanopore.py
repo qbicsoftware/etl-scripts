@@ -226,12 +226,15 @@ def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, cu
 # moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
 def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, suffix):
     name = dataObject.getName()
+    # if pooled data, folder is named using barcode and needs to be adapted
+    if not "_" in name:
+        name = name + "_" + suffix
     relativePath = dataObject.getRelativePath()
     # the source path of the currently handled data object (e.g. fast5_fail folder)
     sourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
     checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
     # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
-    destination = os.path.join(destinationPath, name + "_" + suffix)
+    destination = os.path.join(destinationPath, name)
     os.rename(sourcePath, destination)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
