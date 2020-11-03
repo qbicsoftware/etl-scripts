@@ -1,5 +1,10 @@
 # Changelog
 
+
+## 1.5.0 2020-11-03
+
+* New maintenance task: update missing checksum once, after dss starts.
+
 ## 1.4.1 2020-11-03
 
 * Imgag dropbox: raise an exception, if files of unknown type are part of the transaction
