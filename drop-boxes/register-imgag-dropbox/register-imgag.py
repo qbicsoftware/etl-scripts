@@ -596,13 +596,14 @@ def process(transaction):
                 print rawFile
                 if rawFile.endswith("vcf") or rawFile.endswith("vcf.gz"):
                     vcfs.append(rawFile)
-                if rawFile.endswith("fastq") or rawFile.endswith("fastq.gz"):
+                elif rawFile.endswith("fastq") or rawFile.endswith("fastq.gz"):
                     fastqs.append(rawFile)
-                if rawFile.endswith("GSvar") or rawFile.endswith("GSvar.gz"):
+                elif rawFile.endswith("GSvar") or rawFile.endswith("GSvar.gz"):
                     gsvars.append(rawFile)
-                if rawFile.endswith("tsv") or rawFile.endswith("tsv.gz"):
+                elif rawFile.endswith("tsv") or rawFile.endswith("tsv.gz"):
                     tsvs.append(rawFile)
-
+                else:
+                    raise Exception(rawFile + " is of an unsupported format")
 
             #if rawFiles[0].endswith("vcf") or rawFiles[0].endswith("vcf.gz"):
             #	datasetSample = find_and_register_vcf(transaction, jsonContent)
