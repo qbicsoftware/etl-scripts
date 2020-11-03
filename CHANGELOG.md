@@ -1,8 +1,8 @@
 # Changelog
 
-## Currently in development
+## 1.5.0 2020-11-03
 
-* New maintenance task: update missing checksum one, after dss start.
+* New maintenance task: update missing checksum once, after dss starts.
 
 ## 1.4.0
 
