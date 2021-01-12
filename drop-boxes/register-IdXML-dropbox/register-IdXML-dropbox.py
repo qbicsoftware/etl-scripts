@@ -7,6 +7,7 @@ import sys
 sys.path.append('/home-link/qeana10/bin/')
 
 import checksum
+import time
 import re
 import os
 import ch.systemsx.cisd.etlserver.registrator.api.v2
@@ -103,4 +104,15 @@ def process(transaction):
         transaction.moveFile(incomingPath, dataSet)
 
         #sample tracking section
-        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(identifier)
+        wait_seconds = 1
+        try_count = 3
+        for i in range(try_count):
+                try:
+                        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(identifier)
+                except Exception as e:
+                        if i < try_count -1:
+                                time.sleep(wait_seconds)
+                                continue
+                        else:
+                                raise
+                break
