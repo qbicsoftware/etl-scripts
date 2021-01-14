@@ -105,14 +105,14 @@ def process(transaction):
 
         #sample tracking section
         wait_seconds = 1
-        try_count = 3
-        for i in range(try_count):
+        max_attempts = 3
+        for attempt in range(max_attempts):
                 try:
                         SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(identifier)
+                        break
                 except Exception as e:
-                        if i < try_count -1:
+                        if attempt < max_attempts -1:
                                 time.sleep(wait_seconds)
                                 continue
                         else:
                                 raise
-                break
