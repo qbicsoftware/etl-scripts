@@ -110,7 +110,8 @@ def process(transaction):
                 try:
                         SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(identifier)
                         break
-                except Exception as e:
+                except:
+                        print "Updating location for sample "+identifier+" failed on attempt "+str(attempt+1)
                         if attempt < max_attempts -1:
                                 time.sleep(wait_seconds)
                                 continue
