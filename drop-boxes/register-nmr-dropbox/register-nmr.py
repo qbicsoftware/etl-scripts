@@ -7,7 +7,7 @@ import sys
 sys.path.append('/home-link/qeana10/bin/')
 
 import checksum
-import date
+import time
 import re
 import string
 import os

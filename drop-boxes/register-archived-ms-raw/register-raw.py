@@ -109,10 +109,10 @@ def process(transaction):
         max_attempts = 3
         for attempt in range(max_attempts):
                 try:
-                        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(identifier)
+                        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentCode)
                         break
                 except:
-                        print "Updating location for sample "+identifier+" failed on attempt "+str(attempt+1)
+                        print "Updating location for sample "+parentCode+" failed on attempt "+str(attempt+1)
                         if attempt < max_attempts -1:
                                 time.sleep(wait_seconds)
                                 continue

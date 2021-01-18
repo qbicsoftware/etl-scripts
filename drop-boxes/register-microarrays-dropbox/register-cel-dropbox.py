@@ -192,16 +192,17 @@ def process(transaction):
         for f in os.listdir(incomingPath):
                 os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         #sample tracking section
-        wait_seconds = 1
-        max_attempts = 3
-        for attempt in range(max_attempts):
-                try:
-                        SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentCode)
-                        break
-                except:
-                        print "Updating location for sample "+parentCode+" failed on attempt "+str(attempt+1)
-                        if attempt < max_attempts -1:
-                                time.sleep(wait_seconds)
-                                continue
-                        else:
-                                raise
+        for code in trackingCodes:
+                wait_seconds = 1
+                max_attempts = 3
+                for attempt in range(max_attempts):
+                        try:
+                                SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(code)
+                                break
+                        except:
+                                print "Updating location for sample "+code+" failed on attempt "+str(attempt+1)
+                                if attempt < max_attempts -1:
+                                        time.sleep(wait_seconds)
+                                        continue
+                                else:
+                                        raise
