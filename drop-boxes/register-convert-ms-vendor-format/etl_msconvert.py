@@ -484,8 +484,19 @@ class SampleNotFoundError(Exception):
         return self.value
 
 def handleSampleTracking(barcode):
-    #sample tracking section
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(barcode)
+    wait_seconds = 1
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(barcode)
+            break
+        except:
+            print "Updating location for sample "+barcode+" failed on attempt "+str(attempt+1)
+            if attempt < max_attempts -1:
+                time.sleep(wait_seconds)
+                continue
+            else:
+                raise
 
 def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
