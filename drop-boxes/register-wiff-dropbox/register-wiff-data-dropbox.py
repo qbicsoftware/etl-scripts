@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import time
 import re
 import sys
 
@@ -107,7 +108,19 @@ def register_wiff_pairs(transaction, wiff_pairs, qbic_id):
     transaction.moveFile(registration_dir, data_set)
 
     # Update sample location
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qbic_id)
+    wait_seconds = 1
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qbic_id)
+            break
+        except:
+            print("Updating location for sample "+qbic_id+" failed on attempt "+str(attempt+1))
+            if attempt < max_attempts -1:
+                time.sleep(wait_seconds)
+                continue
+            else:
+                 raise
 
 
 def space_and_project(transaction, qbiccode):

@@ -1,8 +1,20 @@
 # Changelog
 
-## Currently in development
 
-* New maintenance task: update missing checksum one, after dss start.
+## 1.6.0 2021-01-22
+
+* Fix for workflow result registration: fetch sample by identifier instead of search for robustness against indexing problems
+* Retry sample tracking updates twice and log failures that occur
+
+## 1.5.0 2020-11-03
+
+* New maintenance task: update missing checksum once, after dss starts.
+* Fix for nanopore registration: rename folders for pooling case
+* Fix for experiment update: force identifier into a string to support v3 API objects
+
+## 1.4.1 2020-11-03
+
+* Imgag dropbox: raise an exception, if files of unknown type are part of the transaction
 
 ## 1.4.0
 
