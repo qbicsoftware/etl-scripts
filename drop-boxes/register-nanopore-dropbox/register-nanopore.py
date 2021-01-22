@@ -8,6 +8,7 @@ sys.path.append('/home-link/qeana10/bin/')
 
 import checksum
 import re
+import time
 import os
 import shutil
 from datetime import datetime
@@ -291,7 +292,19 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     transaction.moveFile(absLogPath, logDataSet)
 
     # Updates the sample location of the measured sample
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    wait_seconds = 1
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+            break
+        except:
+            print "Updating location for sample "+parentSampleCode+" failed on attempt "+str(attempt+1)
+            if attempt < max_attempts -1:
+                time.sleep(wait_seconds)
+                continue
+            else:
+                 raise
 
 def process(transaction):
     """Main ETL routine entry point"""

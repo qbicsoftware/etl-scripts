@@ -164,11 +164,22 @@ COUNTER = Counter()
 #############################################################################
 
 def update_sample_location_to_qbic(sampleId):
-   """Calls the sample status service and updates the
-   location to QBiC and the status 'DATA AT QBiC'.
-   """
-   # Update sample location
-   SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(sampleId)
+    """Calls the sample status service and updates the
+    location to QBiC and the status 'DATA AT QBiC'.
+    """
+    wait_seconds = 1
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(sampleId)
+            break
+        except:
+            print("Updating location for sample " + sampleId + " failed on attempt "+str(attempt+1))
+            if attempt < max_attempts -1:
+                time.sleep(wait_seconds)
+                continue
+            else:
+                raise
 
 
 def process(transaction):
