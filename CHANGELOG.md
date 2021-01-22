@@ -1,6 +1,11 @@
 # Changelog
 
 
+## 1.6.0 2021-01-22
+
+* Fix for workflow result registration: fetch sample by identifier instead of search for robustness against indexing problems
+* Retry sample tracking updates twice and log failures that occur
+
 ## 1.5.0 2020-11-03
 
 * New maintenance task: update missing checksum once, after dss starts.
