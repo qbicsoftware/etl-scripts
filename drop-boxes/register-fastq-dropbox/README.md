@@ -1,4 +1,4 @@
-#[QBiC-register-fastq-dropbox](drop-boxes/register-fastq-dropbox)
+#QBiC-register-fastq-dropbox
 
 ##Resulting data model in openBIS
 Q_TEST_SAMPLE -> Q_NGS_RAW_DATA (with sample code) -> DataSet (directory with files contained)
