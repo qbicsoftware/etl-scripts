@@ -26,7 +26,7 @@ info=<short info about the file>
 barcode=<the sample code of the attachment sample>
 type=<the type of attachment: information or results>
 ```
-The code of the attachment sample is built from the project code followed by three zeroes, e.g. QABCD000.
+The code of the attachment sample is built from the project code followed by three zeroes, conforming to the regular expression "Q[A-Z0-9]{4}000", e.g. QABCD000.
 
 See code examples:
 https://github.com/qbicsoftware/attachi-cli/blob/master/attachi/attachi.py#L63
