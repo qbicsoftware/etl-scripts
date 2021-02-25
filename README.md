@@ -47,8 +47,17 @@ Formats:
 [QBiC-register-fastq-dropbox](drop-boxes/register-fastq-dropbox)
 
 **Resulting data model in openBIS**  
-Q_TEST_SAMPLE -> Q_NGS_RAW_DATA (with sample code) -> DataSet (directory
-with files contained)
+Q_TEST_SAMPLE -> Q_NGS_SINGLE_SAMPLE_RUN (with sample code) -> DataSet
+of type Q_NGS_RAW_DATA (directory with files contained)
+
+Example sample ids are:
+
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+NGSQABCD001AE (Sequencing result, Q_SINGLE_SAMPLE_RUN)
+
+If several runs are submitted with the same analyte id, then no new id
+for the run is generated, but a new dataset attached to the existing
+sequencing result id.
 
 **Description**  
 For paired-end sequencing reads in FASTQ format, the file structure
