@@ -75,8 +75,8 @@ needs to look like this:
 
 ```
 <QBIC sample code> // Directory
-    |-- <QBIC sample code>.vcf.gz
-    |-- <QBIC sample code>.vcf.gz.sha256sum
+    |-- <QBIC sample code>.txt
+    |-- <QBIC sample code>.txt.sha256sum
 ```
 
 
