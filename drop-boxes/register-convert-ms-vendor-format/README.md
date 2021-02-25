@@ -1,42 +1,51 @@
-# IMGAG dropbox
+# Mass Spectrometry Dropbox
 
-## Expected data structure
-The data structure needs to be a root folder, containing a file `metadata` following the [upload metadata schema](upload-metadata.schema.json). In addition, the folder shall contain files of type `fastq/fastq.gz` and/or `vcf/vcf.gz` and/or `GSvar/GSvar.gz`. 
+** Expected data structure **
+In every use case, the data structure needs to contain a top folder around the respective data in order to accommodate metadata files.
 
-Incoming structure overview:
+The sample code found in the top folder can be of type `Q_TEST_SAMPLE` or `Q_MS_RUN`. In the former case, a new sample of type `Q_MS_RUN` is created and attached as child to the test sample.
 
+Valid folder/file types:
+- Thermo Fisher Raw file format
+- Waters Raw folder
+- Bruker .d folder
+
+Incoming structure overview for standard case without additional metadata file:
 ```
-|-QTEST001AE (top level folder name)
-    |
-    |- file1.fastq.gz
-    |- file2.fastq.gz
-    |- metadata
-    |- ...
+QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw
+|-- QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw
+|-- QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw.sha256sum
+```
+In this case, existing mass spectrometry metadata is expected to be already stored and the dataset will be attached.
 
+
+Incoming structure overview for case for Immunomics data with metadata file:
+```
+QABCD090B7
+|-- QABCD090B7
+|   |-- file1.raw
+|   |-- file2.raw
+|   |-- file3.raw
+|   `-- metadata.tsv
+|-- QABCD090B7.sha256sum
+`-- source_dropbox.txt
+```
+The source_dropbox.txt currently has to indicate the source as one of the Immunomics data sources.
+
+metadata.tsv columns for the Immunomics case, tab-separated with one example row:
+```
+Filename	Q_MS_DEVICE	Q_MEASUREMENT_FINISH_DATE	Q_EXTRACT_SHARE	Q_ADDITIONAL_INFO	Q_MS_LCMS_METHODS	technical_replicate	workflow_type
+file1.raw	THERMO_QEXACTIVE	171010	10		QEX_TOP07_470MIN	DDA_Rep1	DDA
 ```
 
-openBIS structure overview:
+Filename - one of the (e.g. raw) file names found in the incoming structure
+Q_MS_DEVICE - openBIS code from the vocabulary of Mass Spectrometry devices
+Q_MEASUREMENT_FINISH_DATE - Date in YYMMDD format (ISO 8601:2000)
+Q_EXTRACT_SHARE - the extract share
+Q_ADDITIONAL_INFO - any optional comments
+Q_MS_LCMS_METHODS - openBIS code from the vocabulary of LCMS methods
+technical_replicate - free text to denote replicates
+workflow_type - DDA or DIA
 
-TODO: ER model.
-
-## Expected metadata
-Metadata is expected to be noted in JSON and following the [upload metadata schema](upload-metadata.schema.json). An example JSON entry can look like this:
-
-```
-{
-    "files": [
-        "reads.1.fastq.gz",
-        "reads.2.fastq.gz"
-    ],
-    "type": "dna_seq",
-    "sample1": {
-        "genome": "GRCh37",
-        "id_genetics": "GS000000_01",
-        "id_qbic": "QTEST002AE",
-        "processing_system": "Test system",
-        "tumor": "no"
-    }
-}
-```
-
-The sample code for `id_qbic` can be of type `Q_TEST_SAMPLE` or `Q_BIOLOGICAL_SAMPLE`. In the latter case, a new sample of type `Q_TEST_SAMPLE` is created and attached as child to the biological sample. The data-set will be registered under this test sample then.
+**Resulting data model in openBIS**  
+...Q_TEST_SAMPLE (-> Q_MHC_LIGAND_EXTRACT (Immunomics case)) -> Q_MS_RUN per data file --> 2 DataSets per data file, one for raw data, one converted to mzML
