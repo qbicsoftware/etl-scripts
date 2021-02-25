@@ -12,6 +12,8 @@ openBIS.
 Formats:
 
 - [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+- [HLA Typing data](#hla-typing-data)
+
 
 ### NGS single-end / paired-end data
 
@@ -51,6 +53,24 @@ look like this:
 <QBIC sample code>.fastq.gz // Directory
     |-- <QBIC sample code>.fastq.gz
     |-- <QBIC sample code>.fastq.gz.sha256sum
+```
+
+### HLA Typing data
+**Responsible dropbox:**
+[QBiC-register-hlatyping-dropbox](drop-boxes/register-hlatyping-dropbox)
+
+**Resulting data model in openBIS**  
+Q_TEST_SAMPLE -> Q_NGS_HLATYPING (with sample code) -> DataSet (directory
+with files contained)
+
+**Description**  
+For HLA typing data in VCF format, the file structure
+needs to look like this:
+
+```
+<QBIC sample code> // Directory
+    |-- <QBIC sample code>.vcf.gz
+    |-- <QBIC sample code>.vcf.gz.sha256sum
 ```
 
 
