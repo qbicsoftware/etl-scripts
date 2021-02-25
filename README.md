@@ -63,6 +63,12 @@ look like this:
 Q_TEST_SAMPLE -> Q_NGS_HLATYPING (with sample code) -> DataSet (directory
 with files contained)
 
+Example sample ids are:
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+HLA1QABCD001AE (HLA-Typing result, Q_NGS_HLATYPING) for HLA MHC class I
+HLA2QABCD001AE (HLA-Typing result, Q_NGS_HLATYPING) for HLA MHC class II
+
+
 **Description**  
 For HLA typing data in VCF format, the file structure
 needs to look like this:
