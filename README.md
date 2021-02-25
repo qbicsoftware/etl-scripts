@@ -40,6 +40,7 @@ openBIS.
 Formats:
 
 - [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+- [NGS single-end / paired-end data with metadata (deprecated)](#ngs-single-end--paired-end-data-with-metadata-(deprecated))
 
 ### NGS single-end / paired-end data
 
@@ -81,4 +82,59 @@ look like this:
     |-- <QBIC sample code>.fastq.gz.sha256sum
 ```
 
+### NGS single-end / paired-end data with metadata (deprecated)
 
+**Disclaimer!**  
+This data format is targeted for a single use case and should not be
+used for general data registration purposes. Please use the
+[NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+format for now.
+
+**Responsible dropbox:**
+[QBiC-register-imgag-dropbox](drop-boxes/register-imgag-dropbox)
+
+**Resulting data model in openBIS**  
+Q_TEST_SAMPLE -> Q_NGS_SINGLE_SAMPLE_RUN (with sample code) -> DataSet
+of type Q_NGS_RAW_DATA (directory with raw sequencing files contained)
+
+Example sample ids:
+
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+NGS[0-9]{2}QABCS001AE (Sequencing Result, Q_NGS_SINGLE_SAMPLE_RUN) where
+the running two-digit number is taken from the identifier suffix from
+the `genetics_id` in the metadata file.
+
+**Description**  
+For paired-end sequencing reads in FASTQ format, the file structure
+needs to look like this
+
+```
+<QBIC sample code> // Directory
+    |-- file1.fastq.gz
+    |-- file2.fastq.gz
+    |-- metadata
+    |- ...
+```
+
+**Expected metadata**  
+Additional metadata is required in this format case and expected to be
+noted in JSON in a file called `metadata` and following the
+[upload metadata schema](drop-boxes/register-imgag-dropbox/upload-metadata.schema.json).
+A valid JSON object can look like this:
+
+```
+{
+    "files": [
+        "reads.1.fastq.gz",
+        "reads.2.fastq.gz"
+    ],
+    "type": "dna_seq",
+    "sample1": {
+        "genome": "GRCh37",
+        "id_genetics": "GS000000_01",
+        "id_qbic": "QTEST002AE",
+        "processing_system": "Test system",
+        "tumor": "no"
+    }
+}
+```
