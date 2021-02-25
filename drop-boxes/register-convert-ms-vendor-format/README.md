@@ -1,16 +1,16 @@
 # Mass Spectrometry Dropbox
 
-** Expected data structure **
+## Expected data structure
 In every use case, the data structure needs to contain a top folder around the respective data in order to accommodate metadata files.
 
 The sample code found in the top folder can be of type `Q_TEST_SAMPLE` or `Q_MS_RUN`. In the former case, a new sample of type `Q_MS_RUN` is created and attached as child to the test sample.
 
-Valid folder/file types:
+**Valid folder/file types**:
 - Thermo Fisher Raw file format
 - Waters Raw folder
 - Bruker .d folder
 
-Incoming structure overview for standard case without additional metadata file:
+**Incoming structure overview for standard case without additional metadata file:**
 ```
 QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw
 |-- QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw
@@ -19,7 +19,7 @@ QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw
 In this case, existing mass spectrometry metadata is expected to be already stored and the dataset will be attached.
 
 
-Incoming structure overview for case for Immunomics data with metadata file:
+**Incoming structure overview for case for Immunomics data with metadata file:**
 ```
 QABCD090B7
 |-- QABCD090B7
