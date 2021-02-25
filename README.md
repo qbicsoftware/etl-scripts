@@ -63,9 +63,15 @@ look like this:
 Q_TEST_SAMPLE -> Q_NGS_HLATYPING (with sample code) -> DataSet (directory
 with files contained)
 
+or
+
+Q_TEST_SAMPLE -> Q_NGS_SINGLE_SAMPLE_RUN (provided sample code) -> Q_NGS_HLATYPING -> DataSet (directory
+with files contained)
+
 Example sample ids are:
 QABCD001AE (Analyte, Q_TEST_SAMPLE)  
 HLA1QABCD001AE (HLA-Typing result, Q_NGS_HLATYPING) for HLA MHC class I
+or
 HLA2QABCD001AE (HLA-Typing result, Q_NGS_HLATYPING) for HLA MHC class II
 
 
