@@ -92,15 +92,15 @@ class ImageRegistrationProcess:
         pass
 
     #ToDo Check if Metadata file is provided as was suggested in test.tsv provided by LK
-    def extractMetadataFromTSV(self, tsvFilePath):
+    def extractMetadataFromTSV(self, tsv_file_path):
         tsvFileMap = {}
         try:
-            with open(tsvFilePath) as tsvfile:
+            with open(tsv_file_path) as tsvfile:
                 reader = csv.DictReader(tsvfile, delimiter='\t', strict=True)
                 for row in reader:
                     tsvFileMap.update(row)
         except IOError:
-            print "Error: No file found at provided filepath " + tsvFilePath
+            print "Error: No file found at provided filepath " + tsv_file_path
         except csv.Error as e:
             print 'Could not gather the Metadata from TSVfile %s, in line %d: %s' % (tsvfile, reader.line_num, e)
 
@@ -108,6 +108,29 @@ class ImageRegistrationProcess:
 
     def registerExperimentDataInOpenBIS(self):
         pass
+
+    def registerKeyValuePairs(self, image_id, property_map):
+        cmd_list = list(self._init_cmd_list)
+
+        #string format: key1::value1//key2::value2//key3::value3//...
+        key_value_str = ""
+        for key in property_map.keys(): 
+            key_value_str = key_value_str + str(key) + "::" + str(property_map[key]) + "//"
+        key_value_str = key_value_str[:len(key_value_str)-2] #remove last two chars
+        #print("irp str: " + key_value_str)
+
+        cmd_list.append( "python backendinterface.py -i " + str(image_id) + " -a " + key_value_str )
+
+        commands = ""
+        for cmd in cmd_list:
+            commands = commands + cmd + "\n"
+
+        process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
+        out, err = process.communicate( commands )
+
+        #print(out)
+
+        return 0
 
 
 class SampleCodeError(Exception):

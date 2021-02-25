@@ -195,8 +195,10 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
         if int(proc.returncode) == 0:
 
-            fist_line = std_out.splitlines()[0]
-            image_ids = fist_line[6:].split(',')
+            for line in std_out.splitlines():
+                if line[:6] == "Image:":
+                    image_ids = line[6:].split(',')
+                    break
 
         else:
             image_ids = -1
@@ -319,7 +321,16 @@ def get_image_array(conn, image_id):
 
 def add_annotations_to_image(conn, image_id, key_value_data):
     """
-    TODO
+    This function is used to add key-value pair annotations to an image
+    Example:
+        key_value_data = [["Drug Name", "Monastrol"], ["Concentration", "5 mg/ml"]]
+        add_annotations_to_image(conn, image_id, key_value_data)
+    Args:
+        conn: Established Connection to the OMERO Server via a BlitzGateway
+        image_id (int): An OMERO image ID
+        key_value_data (list of lists): list of key-value pairs
+    Returns:
+        int: not relevant atm
     """
 
     import omero
@@ -344,9 +355,13 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 from optparse import OptionParser
 
 ###OMERO server info
-USERNAME = "usr"
-PASSWORD = "pwd"
-HOST = "host"
+#USERNAME = "usr"
+#PASSWORD = "pwd"
+#HOST = "host"
+#PORT = 4064
+USERNAME = "portal_usr_1"
+PASSWORD = "29tesT1ng_4ccez*_04/"
+HOST = "134.2.24.118"
 PORT = 4064
 
 
@@ -357,6 +372,10 @@ def get_args():
 
     parser.add_option('-p', '--project', dest='project_id', default="None", help='project id for dataset id retrieval')
     parser.add_option('-s', '--sample', dest='sample_id', default="None", help='sample id for dataset id retrieval')
+
+    parser.add_option('-i', '--image', dest='image_id', default="None", help='image id for key-value pair annotation')
+    parser.add_option('-a', '--annotation', dest='ann_str', default="None", help='annotation string')
+
 
     (options, args) = parser.parse_args()
     return options
@@ -373,9 +392,27 @@ if __name__ == '__main__':
             id_str = id_str + id_i + " "
 
         print id_str
-    else:
+
+    elif args.project_id != "None":
 
         conn = omero_connect(USERNAME, PASSWORD, HOST, str(PORT))
         ds_id = get_omero_dataset_id(conn, str(args.project_id), str(args.sample_id))
 
         print ds_id
+
+    elif args.image_id != "None":
+
+        conn = omero_connect(USERNAME, PASSWORD, HOST, str(PORT))
+
+        #string format: key1::value1//key2::value2//key3::value3//...
+        key_value_data = []
+        pair_list = args.ann_str.split("//")
+        for pair in pair_list:
+            key_value = pair.split("::")
+            key_value_data.append(key_value)
+
+        #print("backend: key-value pairs: " + str(key_value_data))
+
+        add_annotations_to_image(conn, str(args.image_id), key_value_data)
+
+        print "annotation done."

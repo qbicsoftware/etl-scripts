@@ -144,8 +144,38 @@ def findMetaDataFile(incomingPath):
 		for f in files:
 			stem, ext = os.path.splitext(f)
 			if ext.lower()=='.tsv':
-				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
+				with open(os.path.join(root, f), 'U') as fh: metadataFileContent = fh.readlines()
 	return metadataFileContent
+
+def getPropertyNames(metadataFile):
+	"""Here we could add more complex behaviour later on.
+	"""
+
+	return metadataFile[0].split("\t")
+
+def getPropertyMap(line, property_names):
+	"""Build the property map. Here we could add more complex behaviour later on.
+	"""
+
+	properties = {}
+	property_values = line.split("\t")
+
+	for i in range(1, len(property_names)): #exclude first col (filename)
+		##remove trailing newline, and replace space with underscore
+		name = property_names[i].rstrip('\n').replace(" ", "_")
+		value = property_values[i].rstrip('\n').replace(" ", "_")
+
+		properties[name] = value
+
+	return properties
+
+def printPropertyMap(property_map):
+	"""Function to display metadata properties.
+	"""
+
+	print("KEY : VALUE")
+	for key in property_map.keys():
+		print "--> " + str(key) + " : " + str(property_map[key])
 
 
 def process(transaction):
@@ -170,17 +200,19 @@ def process(transaction):
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
-	omero_dataset_id = registrationProcess.requestOmeroDatasetId()
+	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 
 	# Find and parse metadata file content
 	metadataFile = findMetaDataFile(incomingPath)
+
+	property_names = getPropertyNames(metadataFile)
 	
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
 		# Get modality and other metadata from tsv here for one sample
 		properties = {}
 		
-		# Retrieve the image file name
+		# Retrieve the image file name, please no whitespace characters in filename!
 		fileName = getFileFromLine(line)
 
 		imageFile = os.path.join(incomingPath, fileName)
@@ -195,6 +227,16 @@ def process(transaction):
 		# We extract the metadata from this file.
 		#registrationProcess.extractMetadataFromTSV()
 
+		properties = getPropertyMap(line, property_names)
+		print "Metadata properties:\t"
+		printPropertyMap(properties)
+		
+		#one file can have many images, iterate over all img ids
+		for img_id in omero_image_ids:
+			registrationProcess.registerKeyValuePairs(img_id, properties)
+
+
+		####
 		# 6. In addition to the image registration and technical metadata storage, we want to add
 		# further experimental metadata in openBIS. This metadata contains information about the 
 		# imaging experiment itself, such as modality, imaged tissue and more. 
