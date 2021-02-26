@@ -40,6 +40,8 @@ openBIS.
 Formats:
 
 - [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+- [NGS single-end / paired-end data with metadata (deprecated)](#ngs-single-end--paired-end-data-with-metadata)
+- [Attachment Data](#attachment-data)
 - [Mass Spectrometry mzML conversion and registration](#mass-spectrometry-mzml-conversion-and-registration)
 
 ### NGS single-end / paired-end data
@@ -48,8 +50,17 @@ Formats:
 [QBiC-register-fastq-dropbox](drop-boxes/register-fastq-dropbox)
 
 **Resulting data model in openBIS**  
-Q_TEST_SAMPLE -> Q_NGS_RAW_DATA (with sample code) -> DataSet (directory
-with files contained)
+Q_TEST_SAMPLE -> Q_NGS_SINGLE_SAMPLE_RUN (with sample code) -> DataSet
+of type Q_NGS_RAW_DATA (directory with files contained)
+
+Example sample ids are:
+
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+NGSQABCD001AE (Sequencing result, Q_SINGLE_SAMPLE_RUN)
+
+If several runs are submitted with the same analyte id, then no new id
+for the run is generated, but a new dataset attached to the existing
+sequencing result id.
 
 **Description**  
 For paired-end sequencing reads in FASTQ format, the file structure
@@ -82,10 +93,104 @@ look like this:
     |-- <QBIC sample code>.fastq.gz.sha256sum
 ```
 
+
+### NGS single-end / paired-end data with metadata (deprecated)
+
+**Disclaimer!**  
+This data format is targeted for a single use case and should not be
+used for general data registration purposes. Please use the
+[NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+format for now.
+
+**Responsible dropbox:**
+[QBiC-register-imgag-dropbox](drop-boxes/register-imgag-dropbox)
+
+**Resulting data model in openBIS**  
+Q_TEST_SAMPLE -> Q_NGS_SINGLE_SAMPLE_RUN (with sample code) -> DataSet
+of type Q_NGS_RAW_DATA (directory with raw sequencing files contained)
+
+Example sample ids:
+
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+NGS[0-9]{2}QABCS001AE (Sequencing Result, Q_NGS_SINGLE_SAMPLE_RUN) where
+the running two-digit number is taken from the identifier suffix from
+the `genetics_id` in the metadata file.
+
+**Description**  
+For paired-end sequencing reads in FASTQ format, the file structure
+needs to look like this
+
+```
+<QBIC sample code> // Directory
+    |-- file1.fastq.gz
+    |-- file2.fastq.gz
+    |-- metadata
+    |- ...
+```
+
+**Expected metadata**  
+Additional metadata is required in this format case and expected to be
+noted in JSON in a file called `metadata` and following the
+[upload metadata schema](drop-boxes/register-imgag-dropbox/upload-metadata.schema.json).
+A valid JSON object can look like this:
+
+```
+{
+    "files": [
+        "reads.1.fastq.gz",
+        "reads.2.fastq.gz"
+    ],
+    "type": "dna_seq",
+    "sample1": {
+        "genome": "GRCh37",
+        "id_genetics": "GS000000_01",
+        "id_qbic": "QTEST002AE",
+        "processing_system": "Test system",
+        "tumor": "no"
+    }
+}
+```
+
+### Attachment Data
+
+**Responsible dropbox:**
+[QBiC-register-exp-proj-attachment](drop-boxes/register-attachments-dropbox)
+
+**openBIS structure:**
+
+Attachments are attached to the Q_PROJECT_DETAILS experiment type and its sample type Q_ATTACHMENT_SAMPLE.
+
+**Expected data structure**
+The data structure needs to be a root folder, containing a file `metadata.txt`.
+
+Incoming structure overview:
+
+```
+|-<anything> (top level folder name, normally a time stamp of upload time)
+    |
+    |- metadata.txt
+```
+
+**Expected metadata**
+Metadata is expected to be denoted in line-separated key-value pairs, where key and value are separated by a '='. The following structure/pairs are expected:
+
+```
+user=<the (optional) uploading user name>
+info=<short info about the file>
+barcode=<the sample code of the attachment sample>
+type=<the type of attachment: information or results>
+```
+The code of the attachment sample is built from the project code followed by three zeroes, conforming to the regular expression "Q[A-Z0-9]{4}000", e.g. QABCD000.
+
+See code examples:
+https://github.com/qbicsoftware/attachi-cli/blob/master/attachi/attachi.py#L63
+https://github.com/qbicsoftware/projectwizard-portlet/blob/9c86f500b26af4cf2613cfae32e470bf5d50bf78/src/main/java/life/qbic/projectwizard/io/AttachmentMover.java#L145
+
+
 ### Mass Spectrometry mzML conversion and registration
 
 **Responsible dropbox:**
-[/QBiC-convert-register-ms-vendor-format](drop-boxes/register-convert-ms-vendor-format)
+[QBiC-convert-register-ms-vendor-format](drop-boxes/register-convert-ms-vendor-format)
 
 **Resulting data model in openBIS**  
 ...Q_TEST_SAMPLE (-> Q_MHC_LIGAND_EXTRACT (Immunomics case)) -> Q_MS_RUN per data file --> 2 DataSets per data file, one for raw data, one converted to mzML
