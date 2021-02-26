@@ -94,7 +94,8 @@ look like this:
 ```
 
 
-### NGS single-end / paired-end data with metadata (deprecated)
+### NGS single-end / paired-end data with metadata
+(deprecated)
 
 **Disclaimer!**  
 This data format is targeted for a single use case and should not be
@@ -234,10 +235,17 @@ file1.raw	THERMO_QEXACTIVE	171010	10		QEX_TOP07_470MIN	DDA_Rep1	DDA
 ```
 
 Filename - one of the (e.g. raw) file names found in the incoming structure
+
 Q_MS_DEVICE - openBIS code from the vocabulary of Mass Spectrometry devices
+
 Q_MEASUREMENT_FINISH_DATE - Date in YYMMDD format (ISO 8601:2000)
+
 Q_EXTRACT_SHARE - the extract share
+
 Q_ADDITIONAL_INFO - any optional comments
+
 Q_MS_LCMS_METHODS - openBIS code from the vocabulary of LCMS methods
+
 technical_replicate - free text to denote replicates
+
 workflow_type - DDA or DIA
