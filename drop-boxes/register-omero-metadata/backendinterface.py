@@ -355,15 +355,10 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 from optparse import OptionParser
 
 ###OMERO server info
-#USERNAME = "usr"
-#PASSWORD = "pwd"
-#HOST = "host"
-#PORT = 4064
-USERNAME = "portal_usr_1"
-PASSWORD = "29tesT1ng_4ccez*_04/"
-HOST = "134.2.24.118"
+USERNAME = "usr"
+PASSWORD = "pwd"
+HOST = "host"
 PORT = 4064
-
 
 def get_args():
     parser = OptionParser()
