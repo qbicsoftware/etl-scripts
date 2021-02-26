@@ -19,7 +19,7 @@ QABCD102A5_20201229145526_20201014_CO_0976StSi_R05_.raw
 In this case, existing mass spectrometry metadata is expected to be already stored and the dataset will be attached.
 
 
-**Incoming structure overview for case for Immunomics data with metadata file:**
+**Incoming structure overview for the use case of Immunomics data with metadata file:**
 ```
 QABCD090B7
 |-- QABCD090B7
