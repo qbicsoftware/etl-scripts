@@ -1,0 +1,39 @@
+name: omero_env_0
+channels:
+  - bioconda
+  - sven1103
+  - hargup/label/pypi
+  - anaconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - bzip2=1.0.8=h7b6447c_0
+  - ca-certificates=2020.7.22=0
+  - certifi=2019.11.28=py27_0
+  - freetype=2.10.2=h5ab3b9f_0
+  - hashlib=20081119=py27_0
+  - jpeg=9b=habf39ab_1
+  - libedit=3.1.20191231=h14c3975_1
+  - libffi=3.3=he6710b0_2
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libpng=1.6.37=hbc83047_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - libtiff=4.1.0=h2733197_1
+  - lz4-c=1.9.2=he6710b0_1
+  - ncurses=6.2=he6710b0_1
+  - olefile=0.46=py27_0
+  - omero-importer-cli=v1.0.0=0
+  - openjdk=8.0.152=h7b6447c_3
+  - openssl=1.0.2u=h7b6447c_0
+  - pillow=6.2.1=py27h34e0f95_0
+  - pip=19.3.1=py27_0
+  - python=2.7.18=h15b4118_1
+  - readline=8.0=h7b6447c_0
+  - setuptools=44.0.0=py27_0
+  - sqlite=3.33.0=h62c20be_0
+  - tk=8.6.10=hbc83047_0
+  - wheel=0.33.6=py27_0
+  - xz=5.2.5=h7b6447c_0
+  - zeroc-ice=3.6.3=py27hd0a1c67_1
+  - zlib=1.2.11=h7b6447c_3
+  - zstd=1.4.4=h0b5b093_3
