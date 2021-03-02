@@ -54,16 +54,12 @@ def process(transaction):
 
         #Register logs
         wfSampleCode = nameSplit[-1]
+
+	sample_id = "/"+space+"/"+wfSampleCode
         if not experiment_id:
                 print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
 
-        ss = transaction.getSearchService()
-
-        sc = SearchCriteria()
-        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, wfSampleCode))
-        foundSamples = ss.searchForSamples(sc)
-        samplehit = foundSamples[0]
-        wfSample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
+        wfSample = transaction.getSampleForUpdate(sample_id)
         
         experiment = transaction.getExperimentForUpdate("/"+space+"/"+project+"/"+experiment_id)
 

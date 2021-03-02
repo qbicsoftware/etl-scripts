@@ -596,13 +596,14 @@ def process(transaction):
                 print rawFile
                 if rawFile.endswith("vcf") or rawFile.endswith("vcf.gz"):
                     vcfs.append(rawFile)
-                if rawFile.endswith("fastq") or rawFile.endswith("fastq.gz"):
+                elif rawFile.endswith("fastq") or rawFile.endswith("fastq.gz"):
                     fastqs.append(rawFile)
-                if rawFile.endswith("GSvar") or rawFile.endswith("GSvar.gz"):
+                elif rawFile.endswith("GSvar") or rawFile.endswith("GSvar.gz"):
                     gsvars.append(rawFile)
-                if rawFile.endswith("tsv") or rawFile.endswith("tsv.gz"):
+                elif rawFile.endswith("tsv") or rawFile.endswith("tsv.gz"):
                     tsvs.append(rawFile)
-
+                else:
+                    raise Exception(rawFile + " is of an unsupported format")
 
             #if rawFiles[0].endswith("vcf") or rawFiles[0].endswith("vcf.gz"):
             #	datasetSample = find_and_register_vcf(transaction, jsonContent)
@@ -663,7 +664,19 @@ def process(transaction):
 
             transaction.moveFile(vcfFolder, vcfDataSet)
     else:
-            find_and_register_ngs_without_metadata(transaction, parentCodes)
+        find_and_register_ngs_without_metadata(transaction, parentCodes)
     for code in parentCodes:
-            #sample tracking section
-            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(code)
+        #sample tracking section
+        wait_seconds = 1
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(code)
+                break
+            except:
+                print "Updating location for sample "+code+" failed on attempt "+str(attempt+1)
+                if attempt < max_attempts -1:
+                    time.sleep(wait_seconds)
+                    continue
+                else:
+                    raise

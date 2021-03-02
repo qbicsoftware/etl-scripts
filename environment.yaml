@@ -1,0 +1,39 @@
+name: etl
+channels:
+  - bioconda
+  - sven1103
+  - hargup/label/pypi
+  - anaconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1
+  - bzip2=1.0.8
+  - ca-certificates=2020.7.22
+  - certifi=2019.11.28
+  - freetype=2.10.2
+  - hashlib=20081119
+  - jpeg=9b
+  - libedit=3.1.20191231
+  - libffi=3.3
+  - libgcc-ng=9.1.0
+  - libpng=1.6.37
+  - libstdcxx-ng=9.1.0
+  - libtiff=4.1.0
+  - lz4-c=1.9.2
+  - ncurses=6.2
+  - olefile=0.46
+  - omero-importer-cli=v1.0.0
+  - openjdk=8.0.152
+  - openssl=1.0.2u
+  - pillow=6.2.1
+  - pip=19.3.1
+  - python=2.7.18
+  - readline=8.0
+  - setuptools=44.0.0
+  - sqlite=3.33.0
+  - tk=8.6.10
+  - wheel=0.33.6
+  - xz=5.2.5
+  - zeroc-ice=3.6.3
+  - zlib=1.2.11
+  - zstd=1.4.4

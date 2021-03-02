@@ -41,20 +41,14 @@ def process(transaction):
 	space = nameSplit[0]
 	project = pPattern.findall(nameSplit[1])[0]
 	experiment_id = ePattern.findall(nameSplit[2])[0]
-	#sample_id = experiment_id+'.'
 	sampleCode = nameSplit[-1]
+        sample_id = "/"+space+"/"+sampleCode
 	if not experiment_id:
 		print "The identifier matching the pattern Q\w{4}E\[0-9]+ was not found in the fileName "+name
 
-	ss = transaction.getSearchService()
+        sample = transaction.getSampleForUpdate(sample_id)
 
-	sc = SearchCriteria()
-	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
-	foundSamples = ss.searchForSamples(sc)
-	samplehit = foundSamples[0]
-	sample = transaction.getSampleForUpdate(samplehit.getSampleIdentifier())
-
-	parents = samplehit.getParentSampleIdentifiers()
+	parents = sample.getParentSampleIdentifiers()
 	if len(parents) > 6:
 		first = parents[0].split("/")[-1]
 		parentInfos = first+"_and_"+str(len(parents)-1)+"others"

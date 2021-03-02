@@ -8,6 +8,7 @@ sys.path.append('/home-link/qeana10/bin/')
 
 import checksum
 import re
+import time
 import os
 import shutil
 from datetime import datetime
@@ -226,12 +227,15 @@ def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, cu
 # moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
 def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, suffix):
     name = dataObject.getName()
+    # if pooled data, folder is named using barcode and needs to be adapted
+    if not "_" in name:
+        name = name + "_" + suffix
     relativePath = dataObject.getRelativePath()
     # the source path of the currently handled data object (e.g. fast5_fail folder)
     sourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
     checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
     # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
-    destination = os.path.join(destinationPath, name + "_" + suffix)
+    destination = os.path.join(destinationPath, name)
     os.rename(sourcePath, destination)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
@@ -288,7 +292,19 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     transaction.moveFile(absLogPath, logDataSet)
 
     # Updates the sample location of the measured sample
-    SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+    wait_seconds = 1
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+            break
+        except:
+            print "Updating location for sample "+parentSampleCode+" failed on attempt "+str(attempt+1)
+            if attempt < max_attempts -1:
+                time.sleep(wait_seconds)
+                continue
+            else:
+                 raise
 
 def process(transaction):
     """Main ETL routine entry point"""
