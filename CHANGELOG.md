@@ -3,6 +3,7 @@
 ## 1.4.0
 
 * Register unclassified pooling data of Nanopore experiments directly at the experiment level (no copies are added to sample-based datasets)
+* Add description for data of register-hlatyping-dropbox
 
 ## 1.3.1
 

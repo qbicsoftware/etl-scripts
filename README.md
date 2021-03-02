@@ -12,11 +12,7 @@ openBIS.
 Formats:
 
 - [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
-<<<<<<< HEAD
 - [HLA Typing data](#hla-typing-data)
-
-=======
->>>>>>> master
 
 ### NGS single-end / paired-end data
 
@@ -58,7 +54,6 @@ look like this:
     |-- <QBIC sample code>.fastq.gz.sha256sum
 ```
 
-<<<<<<< HEAD
 ### HLA Typing data
 **Responsible dropbox:**
 [QBiC-register-hlatyping-dropbox](drop-boxes/register-hlatyping-dropbox)
@@ -88,7 +83,4 @@ needs to look like this:
     |-- <QBIC sample code>.txt
     |-- <QBIC sample code>.txt.sha256sum
 ```
-
-=======
->>>>>>> master
 
