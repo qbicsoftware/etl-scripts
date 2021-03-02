@@ -31,7 +31,7 @@ QBIC_LOCATION = tracking_helper.get_qbic_location_json()
 ### We need this object to update the sample location later
 SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
 
-# ETL script for registration of VCF files
+# ETL script for registration of HLA Typing
 # expected:
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
