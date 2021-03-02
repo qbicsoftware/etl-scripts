@@ -40,6 +40,7 @@ openBIS.
 Formats:
 
 - [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+- [HLA Typing data](#hla-typing-data)
 - [NGS single-end / paired-end data with metadata (deprecated)](#ngs-single-end--paired-end-data-with-metadata)
 - [Attachment Data](#attachment-data)
 - [Mass Spectrometry mzML conversion and registration](#mass-spectrometry-mzml-conversion-and-registration)
@@ -93,6 +94,35 @@ look like this:
     |-- <QBIC sample code>.fastq.gz.sha256sum
 ```
 
+### HLA Typing data
+**Responsible dropbox:**
+[QBiC-register-hlatyping-dropbox](drop-boxes/register-hlatyping-dropbox)
+
+**Resulting data model in openBIS**  
+Q_TEST_SAMPLE -> Q_NGS_HLATYPING (with sample code) -> DataSet (directory
+with files contained)
+
+or
+
+Q_TEST_SAMPLE -> Q_NGS_SINGLE_SAMPLE_RUN (provided sample code) -> Q_NGS_HLATYPING -> DataSet (directory
+with files contained)
+
+Example sample ids are:
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+HLA1QABCD001AE (HLA-Typing result, Q_NGS_HLATYPING) for HLA MHC class I
+or
+HLA2QABCD001AE (HLA-Typing result, Q_NGS_HLATYPING) for HLA MHC class II
+
+
+**Description**  
+For HLA typing data in VCF format, the file structure
+needs to look like this:
+
+```
+<QBIC sample code> // Directory
+    |-- <QBIC sample code>.txt
+    |-- <QBIC sample code>.txt.sha256sum
+```
 
 ### NGS single-end / paired-end data with metadata
 (deprecated)
