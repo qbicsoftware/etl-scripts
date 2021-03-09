@@ -241,6 +241,10 @@ def process(transaction):
 		omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
 		print "Created OMERO image identifiers:\t" + str(omero_image_ids)
 
+		omero_failed = len(omero_image_ids) < 1
+		if omero_failed:
+			raise ValueError("Omero did not return expected image ids.")
+
 		# 5. Additional metadata is provided in an own metadata TSV file. 
 		# We extract the metadata from this file.
 		#registrationProcess.extractMetadataFromTSV()
