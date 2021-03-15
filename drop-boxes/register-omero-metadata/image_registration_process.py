@@ -14,6 +14,7 @@ class ImageRegistrationProcess:
 
         self._transaction = transaction
         self._incoming_file_name = transaction.getIncoming().getName()
+        self._search_service = transaction.getSearchService()
 
         self._project_code = project_code
         self._sample_code = sample_code
@@ -44,11 +45,11 @@ class ImageRegistrationProcess:
 
         return self._project_code, self._sample_code
 
-    def searchOpenBisSample(sample_code):
+    def searchOpenBisSample(self, sample_code):
         #find specific sample
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
-        foundSamples = search_service.searchForSamples(sc)
+        foundSamples = self._search_service.searchForSamples(sc)
         if len(foundSamples) == 0:
             raise SampleNotFoundError(sample_code, "Sample could not be found in openBIS.")
         sample = foundSamples[0]
