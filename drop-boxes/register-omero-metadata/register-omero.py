@@ -106,11 +106,6 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, prope
 			img_run.setPropertyValue(key, value)
 	return img_run
 
-#TODO Luis
-def callOmeroWithFilePath(file_path, sample_barcode):
-	list_of_omero_ids = ["1","2","3"]
-	return list_of_omero_ids
-
 def getFileFromLine(line):
 	return line.split("\t")[0]
 
@@ -189,6 +184,7 @@ def printPropertyMap(property_map):
 
 
 def process(transaction):
+	print "start transaction"
 	"""The main entry point.
 	
 	openBIS calls this method, when an incoming transaction is registered.
@@ -200,31 +196,52 @@ def process(transaction):
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
 
+	print incomingPath
+
 	# 1. Initialize the image registration process
 	registrationProcess = irp.ImageRegistrationProcess(transaction)
+
+	print "started reg process"
 	
 	# 2. We want to get the openBIS sample code from the incoming data
 	# This tells us to which biological sample the image data was aquired from.
 	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
 
+	print project_code
+	print sample_code
+
 	#find specific sample
 	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
 	space = tissueSample.getSpace()
+
+	print tissueSample
+	print space
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
+
+	print "calling omero"
 	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
+
+	print omero_dataset_id
 
 	# Find and parse metadata file content
 	metadataFile = findMetaDataFile(incomingPath)
 
+	print metadataFile
+
 	property_names = getPropertyNames(metadataFile)
+
+	print "property names:"
+	print property_names
 
 	#keep track of number of images for openBIS ID
 	image_number = 0
 	#Initialize openBIS imaging experiment
 	imagingExperiment = None
 	previousProps = {}
+
+	print "start reading metadata file"
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
 		# Get modality and other metadata from tsv here for one sample
