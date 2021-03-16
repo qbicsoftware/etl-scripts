@@ -56,12 +56,11 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 #####
 
 
-def createNewImagingExperiment(tr, space, project, properties):
+def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
 	search_service = tr.getSearchService()
 	experiment_property_map = {"IMAGING_MODALITY":"Q_BMI_MODALITY", "CAMERA_ACQUISITION_TIME":"Q_MEASUREMENT_FINISH_DATE", "INSTRUMENT_USER":"Q_INSTRUMENT_USER"}
 
-	existing_ids = []
 	existing_exps = search_service.listExperiments("/" + space + "/" + project)
 	for exp in existing_exps:
 		existing_ids.append(exp.getExperimentIdentifier())
@@ -72,6 +71,7 @@ def createNewImagingExperiment(tr, space, project, properties):
 		exp_num = len(existing_exps) + i
 		exp_id = '/' + space + '/' + project + '/' + project + 'E' + str(exp_num)
 	img_exp = tr.createNewExperiment(exp_id, IMAGING_EXP_TYPE)
+	existing_ids.append(exp_id)
 	for incoming_label in experiment_property_map:
 		if incoming_label in properties:
 			key = experiment_property_map[incoming_label]
@@ -96,7 +96,7 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, prope
 	# add additional offset for samples registered in this call of the ETL script, but before this sample
 	new_sample_id_with_offset = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(run+run_offset) + base_sample.getCode()
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
-	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier])
+	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier()])
 	img_run.setExperiment(exp)
 	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, omero_image_ids)
 	for incoming_label in sample_property_map:
@@ -240,6 +240,7 @@ def process(transaction):
 	#Initialize openBIS imaging experiment
 	imagingExperiment = None
 	previousProps = {}
+	existing_experiment_ids = []
 
 	print "start reading metadata file"
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
@@ -257,6 +258,7 @@ def process(transaction):
 		# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
 		omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
 		print "Created OMERO image identifiers:\t" + str(omero_image_ids)
+		omero_image_ids = [420,42]
 
 		omero_failed = len(omero_image_ids) < 1
 		if omero_failed:
@@ -290,7 +292,7 @@ def process(transaction):
 		fileBelongsToExistingExperiment = isSameExperimentMetadata(previousProps, properties)
 		previousProps = properties
 		if(not fileBelongsToExistingExperiment):
-			imagingExperiment = createNewImagingExperiment(transaction, space, project_code, properties)
+			imagingExperiment = createNewImagingExperiment(transaction, space, project_code, properties, existing_experiment_ids)
 		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, image_number, properties)
 		# increment id offset for next sample in this loop
 		image_number += 1
