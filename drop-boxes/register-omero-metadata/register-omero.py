@@ -266,7 +266,6 @@ def process(transaction):
 		# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
 		omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
 		print "Created OMERO image identifiers:\t" + str(omero_image_ids)
-		omero_image_ids = [420,42]
 
 		omero_failed = len(omero_image_ids) < 1
 		if omero_failed:
