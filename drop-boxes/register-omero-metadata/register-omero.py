@@ -11,6 +11,7 @@ import image_registration_process as irp
 #import sample_tracking_helper_qbic as thelper
 
 import checksum
+import datetime
 import re
 import os
 import urllib
@@ -55,6 +56,11 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 # and delete the data!
 #####
 
+INCOMING_DATE_FORMAT = '%d.%m.%Y'
+OPENBIS_DATE_FORMAT = '%Y-%m-%d'
+
+def mapDateString(date_string):
+	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
 
 def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
@@ -76,6 +82,8 @@ def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 		if incoming_label in properties:
 			key = experiment_property_map[incoming_label]
 			value = properties[incoming_label]
+			if key == "Q_MEASUREMENT_FINISH_DATE":
+				value = mapDateString(value)
 			img_exp.setPropertyValue(key, value)
 	return img_exp
 
