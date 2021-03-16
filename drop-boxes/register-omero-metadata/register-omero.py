@@ -59,7 +59,7 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
 	search_service = tr.getSearchService()
-	experiment_property_map = {"IMAGING_MODALITY":"Q_BMI_MODALITY", "CAMERA_ACQUISITION_TIME":"Q_MEASUREMENT_FINISH_DATE", "INSTRUMENT_USER":"Q_INSTRUMENT_USER"}
+	experiment_property_map = {"IMAGING_MODALITY":"Q_BMI_MODALITY", "IMAGING_DATE":"Q_MEASUREMENT_FINISH_DATE", "INSTRUMENT_USER":"Q_INSTRUMENT_USER"}
 
 	existing_exps = search_service.listExperiments("/" + space + "/" + project)
 	for exp in existing_exps:
