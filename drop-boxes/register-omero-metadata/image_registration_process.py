@@ -14,6 +14,7 @@ class ImageRegistrationProcess:
 
         self._transaction = transaction
         self._incoming_file_name = transaction.getIncoming().getName()
+        self._search_service = transaction.getSearchService()
 
         self._project_code = project_code
         self._sample_code = sample_code
@@ -43,7 +44,17 @@ class ImageRegistrationProcess:
             raise SampleCodeError(self._sample_code, "The sample code seems to be invalid, the checksum could not be confirmed.")
 
         return self._project_code, self._sample_code
-    
+
+    def searchOpenBisSample(self, sample_code):
+        #find specific sample
+        sc = SearchCriteria()
+        sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
+        foundSamples = self._search_service.searchForSamples(sc)
+        if len(foundSamples) == 0:
+            raise SampleNotFoundError(sample_code, "Sample could not be found in openBIS.")
+        sample = foundSamples[0]
+        return sample
+
     def _isValidSampleCode(self, sample_code):
         try:
             id = sample_code[0:9]
@@ -134,6 +145,16 @@ class ImageRegistrationProcess:
 
 
 class SampleCodeError(Exception):
+    
+    def __init__(self, sample_code, message):
+        self.sample_code = sample_code
+        self.message = message
+        super().__init__(self.message)
+
+    def test(self):
+        pass
+
+class SampleNotFoundError(Exception):
     
     def __init__(self, sample_code, message):
         self.sample_code = sample_code
