@@ -182,9 +182,7 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
     ds_id = dataset_id
 
     if ds_id != -1:
-
         cmd = "omero-importer -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
-
         proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -194,18 +192,14 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
         std_out, std_err = proc.communicate()
 
         if int(proc.returncode) == 0:
-
             for line in std_out.splitlines():
                 if line[:6] == "Image:":
                     image_ids = line[6:].split(',')
                     break
-
         else:
-            image_ids = -1
-
+            image_ids = []
     else:
-        image_ids = -1
-
+        image_ids = []
     return image_ids
 
 
@@ -353,12 +347,18 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 ##app
 
 from optparse import OptionParser
+import ConfigParser
+
+config = ConfigParser.RawConfigParser()
+config.read("imaging_config.properties")
+
 
 ###OMERO server info
-USERNAME = "usr"
-PASSWORD = "pwd"
-HOST = "host"
-PORT = 4064
+USERNAME = config.get('OmeroServerSection', 'omero.username')
+PASSWORD = config.get('OmeroServerSection', 'omero.password')
+HOST = config.get('OmeroServerSection', 'omero.host')
+PORT = int(config.get('OmeroServerSection', 'omero.port'))
+
 
 def get_args():
     parser = OptionParser()
@@ -410,4 +410,4 @@ if __name__ == '__main__':
 
         add_annotations_to_image(conn, str(args.image_id), key_value_data)
 
-        print "annotation done."
+        print "0"

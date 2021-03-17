@@ -106,7 +106,7 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, prope
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
 	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier()])
 	img_run.setExperiment(exp)
-	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, str(omero_image_ids))
+	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, '\n'.join(omero_image_ids))
 	for incoming_label in sample_property_map:
 		if incoming_label in properties:
 			key = sample_property_map[incoming_label]
@@ -163,8 +163,26 @@ def findMetaDataFile(incomingPath):
 def getPropertyNames(metadataFile):
 	"""Here we could add more complex behaviour later on.
 	"""
+	
+	property_names = metadataFile[0].split("\t")
+	for i in range(len(property_names)):
+		property_names[i] = property_names[i].strip().upper()
 
-	return metadataFile[0].split("\t")
+	return property_names
+
+def validatePropertyNames(property_names):
+	"""Validate metadata property names.
+	TODO: call the imaging metadata parser (with json schema).
+	"""
+
+	# fast validation without parser object.
+	required_names = ["IMAGE_FILE_NAME", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+
+	for name in required_names:
+		if not name in property_names:
+			return False
+
+	return True
 
 def getPropertyMap(line, property_names):
 	"""Build the property map. Here we could add more complex behaviour later on.
@@ -181,6 +199,21 @@ def getPropertyMap(line, property_names):
 		properties[name] = value
 
 	return properties
+
+def filterOmeroPropertyMap(property_map):
+	"""Filters map before ingestion into omero server
+	"""
+
+	#the blacklist, e.g. what is going to openBIS or is automatically added to omero (e.g. file name)
+	filter_list = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
+
+	new_props = {}
+	for key in property_map.keys():
+		if not key in filter_list:
+			new_props[key] = property_map[key]
+
+	return new_props
+
 
 def printPropertyMap(property_map):
 	"""Function to display metadata properties.
@@ -203,13 +236,15 @@ def process(transaction):
 
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
+	# Get the name of the incoming folder
+	folderName = transaction.getIncoming().getName()
 
 	print incomingPath
 
 	# 1. Initialize the image registration process
 	registrationProcess = irp.ImageRegistrationProcess(transaction)
 
-	print "started reg process"
+	print "started reg. process"
 	
 	# 2. We want to get the openBIS sample code from the incoming data
 	# This tells us to which biological sample the image data was aquired from.
@@ -228,20 +263,31 @@ def process(transaction):
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
 
-	print "calling omero"
+	print "calling omero..."
+	#returns -1 if operation failed
 	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 
+	print "omero dataset id:"
 	print omero_dataset_id
+
+	omero_failed = int(omero_dataset_id) < 0
+	if omero_failed:
+		raise ValueError("Omero did not return expected dataset id.")
 
 	# Find and parse metadata file content
 	metadataFile = findMetaDataFile(incomingPath)
 
+	print "metadataFile:"
 	print metadataFile
 
 	property_names = getPropertyNames(metadataFile)
 
 	print "property names:"
 	print property_names
+
+	valid_names = validatePropertyNames(property_names)
+	if not valid_names:
+		raise ValueError("Invalid Property Names.")
 
 	#keep track of number of images for openBIS ID
 	image_number = 0
@@ -258,8 +304,9 @@ def process(transaction):
 		
 		# Retrieve the image file name, please no whitespace characters in filename!
 		fileName = getFileFromLine(line)
-
-		imageFile = os.path.join(incomingPath, fileName)
+		# Due to the datahandler we need to add another subfolder of the same name to the path
+		imageFolder = os.path.join(incomingPath, folderName)
+		imageFile = os.path.join(imageFolder, fileName)
 		print "New incoming image file for OMERO registration:\t" + imageFile
 
 		# 4. After we have received the omero dataset id, we know where to attach the image to
@@ -281,7 +328,7 @@ def process(transaction):
 		
 		#one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
-			registrationProcess.registerKeyValuePairs(img_id, properties)
+			registrationProcess.registerKeyValuePairs(img_id, filterOmeroPropertyMap(properties))
 
 
 		####
