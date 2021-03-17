@@ -182,11 +182,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
     image_ids = []
 
     ds_id = dataset_id
-    logfile.write(str(file_path))
-    logfile.write("ds_id: "+str(ds_id))
-    logfile.write(str(usr))
-    logfile.write(str(host))
-    logfile.write(str(port))
+    logfile.write(str(file_path)+"\n")
+    logfile.write("ds_id: "+str(ds_id)+"\n")
+    logfile.write(str(usr)+"\n")
+    logfile.write(str(host)+"\n")
+    logfile.write(str(port)+"\n")
 
 
     if ds_id != -1:
@@ -200,11 +200,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
                             universal_newlines=True)
 
         std_out, std_err = proc.communicate()
-        logfile.write("code: "+proc.returncode)
-        logfile.write("out:")
-        logfile.write(std_out)
-        logfile.write("errors:")
-        logfile.write(std_err)
+        logfile.write("code: "+proc.returncode+"\n")
+        logfile.write("out:"+"\n")
+        logfile.write(std_out+"\n")
+        logfile.write("errors:"+"\n")
+        logfile.write(std_err+"\n")
 
         if int(proc.returncode) == 0:
 
@@ -218,7 +218,7 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
     else:
         image_ids = []
-
+    logfile.close()
     return image_ids
 
 
