@@ -190,15 +190,14 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
 
     if ds_id != -1:
-
+        logfile.write("ds_id != -1")
         cmd = "omero-importer -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
-
+        logfile.write("calling "+cmd)
         proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             shell=True,
                             universal_newlines=True)
-
         std_out, std_err = proc.communicate()
         logfile.write("code: "+proc.returncode+"\n")
         logfile.write("out:"+"\n")
@@ -218,6 +217,7 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
     else:
         image_ids = []
+    logfile.write(image_ids)
     logfile.close()
     return image_ids
 
