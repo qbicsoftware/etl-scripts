@@ -177,20 +177,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
     import subprocess
 
-    logfile = open("/tmp/log_for_dummies.txt", "w")  
-
     image_ids = []
 
     ds_id = dataset_id
-    logfile.write(str(file_path)+"\n")
-    logfile.write("ds_id: "+str(ds_id)+"\n")
-    logfile.write(str(usr)+"\n")
-    logfile.write(str(host)+"\n")
-    logfile.write(str(port)+"\n")
-
 
     if ds_id != -1:
-        logfile.write("ds_id != -1"+"\n")
         cmd = "omero-importer -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
         proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
@@ -201,20 +192,14 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
         std_out, std_err = proc.communicate()
 
         if int(proc.returncode) == 0:
-            logfile.write("process finished successfully"+"\n")
             for line in std_out.splitlines():
                 if line[:6] == "Image:":
                     image_ids = line[6:].split(',')
                     break
         else:
-            logfile.write("returncode != 0"+"\n")
             image_ids = []
     else:
-        logfile.write("ds_id == -1"+"\n")
         image_ids = []
-    logfile.write("resulting ids:"+"\n")
-    logfile.write(image_ids+"\n")
-    logfile.close()
     return image_ids
 
 
