@@ -103,6 +103,8 @@ class ImageRegistrationProcess:
     def registerImageFileInOmero(self, file_path, dataset_id):
         print "using file_path:"
         print file_path
+        print "ds id:"
+        print dataset_id
         cmd_list = list(self._init_cmd_list)
         cmd_list.append( "python backendinterface.py -f " + file_path + " -d " + str(dataset_id) )
 
