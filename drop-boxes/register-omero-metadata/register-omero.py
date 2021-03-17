@@ -204,7 +204,7 @@ def filterOmeroPropertyMap(property_map):
 	"""Filters map before ingestion into omero server
 	"""
 
-	#the blacklist, e.g. what is going to openBIS and not to omero
+	#the blacklist, e.g. what is going to openBIS or is automatically added to omero (e.g. file name)
 	filter_list = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 
 	new_props = {}
