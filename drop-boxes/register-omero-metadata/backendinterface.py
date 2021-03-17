@@ -197,15 +197,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
                             stderr=subprocess.PIPE,
                             shell=True,
                             universal_newlines=True)
-        for line in proc.stdout:
-            logfile.write(line)
+
         std_out, std_err = proc.communicate()
-        logfile.write("code: "+proc.returncode+"\n")
-        logfile.write("out:"+"\n")
-        logfile.write(std_out+"\n")
-        logfile.write("errors:"+"\n")
-        logfile.write(std_err+"\n")
+
         if int(proc.returncode) == 0:
+            logfile.write("process finished successfully"+"\n")
             for line in std_out.splitlines():
                 if line[:6] == "Image:":
                     image_ids = line[6:].split(',')
