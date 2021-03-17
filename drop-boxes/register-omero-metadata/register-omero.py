@@ -106,7 +106,7 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, prope
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
 	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier()])
 	img_run.setExperiment(exp)
-	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, str(omero_image_ids))
+	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, '\n'.join(omero_image_ids))
 	for incoming_label in sample_property_map:
 		if incoming_label in properties:
 			key = sample_property_map[incoming_label]
