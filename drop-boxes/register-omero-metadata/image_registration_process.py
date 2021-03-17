@@ -95,6 +95,9 @@ class ImageRegistrationProcess:
         out, err = process.communicate( commands )
 
         id_list = str(out).split()
+        for img_id in id_list:
+            if not img_id.isdigit():
+                return []
 
         return id_list
         
