@@ -199,24 +199,20 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
                             universal_newlines=True)
         for line in proc.stdout:
             logfile.write(line)
-        #std_out, std_err = proc.communicate()
+        std_out, std_err = proc.communicate()
         logfile.write("code: "+proc.returncode+"\n")
         logfile.write("out:"+"\n")
         logfile.write(std_out+"\n")
         logfile.write("errors:"+"\n")
         logfile.write(std_err+"\n")
-
         if int(proc.returncode) == 0:
-
             for line in std_out.splitlines():
                 if line[:6] == "Image:":
                     image_ids = line[6:].split(',')
                     break
-
         else:
             logfile.write("returncode != 0"+"\n")
             image_ids = []
-
     else:
         logfile.write("ds_id == -1"+"\n")
         image_ids = []
