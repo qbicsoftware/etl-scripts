@@ -236,6 +236,8 @@ def process(transaction):
 
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
+	# Get the name of the incoming folder
+	folderName = transaction.getIncoming().getName()
 
 	print incomingPath
 
@@ -302,8 +304,9 @@ def process(transaction):
 		
 		# Retrieve the image file name, please no whitespace characters in filename!
 		fileName = getFileFromLine(line)
-
-		imageFile = os.path.join(incomingPath, fileName)
+		# Due to the datahandler we need to add another subfolder of the same name to the path
+		imageFolder = os.path.join(incomingPath, folderName)
+		imageFile = os.path.join(imageFolder, fileName)
 		print "New incoming image file for OMERO registration:\t" + imageFile
 
 		# 4. After we have received the omero dataset id, we know where to attach the image to
