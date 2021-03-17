@@ -177,9 +177,17 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
     import subprocess
 
+    logfile = open("/tmp/log_for_dummies.txt", "w")  
+
     image_ids = []
 
     ds_id = dataset_id
+    logfile.write(str(file_path))
+    logfile.write("ds_id: "+str(ds_id))
+    logfile.write(str(usr))
+    logfile.write(str(host))
+    logfile.write(str(port))
+
 
     if ds_id != -1:
 
@@ -192,6 +200,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
                             universal_newlines=True)
 
         std_out, std_err = proc.communicate()
+        logfile.write("code: "+proc.returncode)
+        logfile.write("out:")
+        logfile.write(std_out)
+        logfile.write("errors:")
+        logfile.write(std_err)
 
         if int(proc.returncode) == 0:
 
