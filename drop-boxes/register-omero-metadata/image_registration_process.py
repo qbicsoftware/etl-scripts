@@ -7,10 +7,14 @@ import csv
 from subprocess import Popen, PIPE
 
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
+conda_home_path = "/home/qeana10/miniconda2/"
+omero_lib_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.py-5.4.10-ice36-b105"
+etl_home_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/"
+
 
 class ImageRegistrationProcess:
 
-    def __init__(self, transaction, env_name="omero_env_0", project_code="", sample_code=""):
+    def __init__(self, transaction, env_name="omero_env_0", project_code="", sample_code="", conda_path=None, omero_path=None, etl_path=None):
 
         self._transaction = transaction
         self._incoming_file_name = transaction.getIncoming().getName()
@@ -19,19 +23,32 @@ class ImageRegistrationProcess:
         self._project_code = project_code
         self._sample_code = sample_code
 
+        ###set env
+        self._conda_path = conda_home_path
+        if not conda_path is None:
+            self._conda_path = conda_path
+
+        self._omero_path = omero_lib_path
+        if not omero_path is None:
+            self._omero_path = omero_path
+
+        self._etl_path= etl_home_path
+        if not etl_path is None:
+            self._etl_path = etl_path
+
         self._init_cmd_list = []
-        self._init_cmd_list.append('eval "$(/home/qeana10/miniconda2/bin/conda shell.bash hook)"')
+        self._init_cmd_list.append('eval "$(' + self._conda_path + 'bin/conda shell.bash hook)"')
         self._init_cmd_list.append('conda activate ' + env_name)
 
-        self._init_cmd_list.append('export OMERO_PREFIX=/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.py-5.4.10-ice36-b105')
+        self._init_cmd_list.append('export OMERO_PREFIX=' + self._omero_path)
         self._init_cmd_list.append('export PYTHONPATH=$PYTHONPATH:$OMERO_PREFIX/lib/python')
         
         #now use the omero-importer app packaged in the conda env
         #self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.server-5.4.10-ice36-b105/bin')
-        self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/miniconda2/envs/' + env_name + '/bin')
+        self._init_cmd_list.append('export PATH=$PATH:' + self._conda_path + 'envs/' + env_name + '/bin')
 
-        #move to the dir where backendinterface.py lives
-        self._init_cmd_list.append('cd /home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/')
+        #move to the dir where backendinterface.py lives for exec.
+        self._init_cmd_list.append('cd ' + self._etl_path)
 
     def fetchOpenBisSampleCode(self):
         found = barcode_pattern.findall(self._incoming_file_name)
