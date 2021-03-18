@@ -261,8 +261,8 @@ The source_dropbox.txt currently has to indicate the source as one of the Immuno
 
 The `metadata.tsv` columns for the Immunomics case are tab-separated:
 ```
-Filename    Q_MS_DEVICE Q_MEASUREMENT_FINISH_DATE   Q_EXTRACT_SHARE Q_ADDITIONAL_INFO   Q_MS_LCMS_METHODS   technical_replicate workflow_type
-file1.raw   THERMO_QEXACTIVE    171010  10      QEX_TOP07_470MIN    DDA_Rep1    DDA
+Filename	Q_MS_DEVICE	Q_MEASUREMENT_FINISH_DATE	Q_EXTRACT_SHARE	Q_ADDITIONAL_INFO	Q_MS_LCMS_METHODS	technical_replicate	workflow_type
+file1.raw	THERMO_QEXACTIVE	171010	10		QEX_TOP07_470MIN	DDA_Rep1	DDA
 ```
 
 Filename - one of the (e.g. raw) file names found in the incoming structure

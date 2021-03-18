@@ -11,6 +11,11 @@
 * Fix for workflow result registration: fetch sample by identifier instead of search for robustness against indexing problems
 * Retry sample tracking updates twice and log failures that occur
 
+## 1.6.0 2021-01-22
+
+* Fix for workflow result registration: fetch sample by identifier instead of search for robustness against indexing problems
+* Retry sample tracking updates twice and log failures that occur
+
 ## 1.5.0 2020-11-03
 
 * New maintenance task: update missing checksum once, after dss starts.
@@ -28,6 +33,7 @@
   environment for the proper setup for the register-omero-metadata
   dropbox
 * Register unclassified pooling data of Nanopore experiments directly at the experiment level (no copies are added to sample-based datasets)
+* Add description for data of register-hlatyping-dropbox
 
 ## 1.3.1
 
