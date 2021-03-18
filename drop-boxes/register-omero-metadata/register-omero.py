@@ -352,4 +352,3 @@ def process(transaction):
 
 		# 7. Last but not least we create the open science file format for images which is
 		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
-		#registrationProcess.triggerOMETiffConversion()
