@@ -406,7 +406,6 @@ if __name__ == '__main__':
             key_value = pair.split("::")
             key_value_data.append(key_value)
 
-        #print("backend: key-value pairs: " + str(key_value_data))
 
         add_annotations_to_image(conn, str(args.image_id), key_value_data)
 
