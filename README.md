@@ -329,7 +329,6 @@ column name | description
 --------------|----------------
 `IMAGE_FILE_NAME`| one of the file names found in the incoming folder per line
 `IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). **Examples:** NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
-`IMAGING_MODALITY`|Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). **Examples:** NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
 `IMAGED_TISSUE` | the imaged tissue
 `INSTRUMENT_MANUFACTURER` | the imaging instrument manufacturer
 `INSTRUMENT_USER` | the person who measured the data file using the imaging instrument
