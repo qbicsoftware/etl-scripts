@@ -337,7 +337,6 @@ def process(transaction):
 		# imaging experiment itself, such as modality, imaged tissue and more. 
 		# We also want to connect this data with the previously created, corresponding OMERO image id t
 		# hat represents the result of this experiment in OMERO. 
-		#registrationProcess.registerExperimentDataInOpenBIS(omero_image_ids) # I did it myyy wayyyy
 
 		# we decide if new experiment is needed based on some pre-defined criteria.
 		# Normally, the most important criterium is collision of experiment type properties
