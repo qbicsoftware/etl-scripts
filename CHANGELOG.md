@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.0 2021-03-18
+
+* Provides fully tested functionality to register generic imaging data, with OMERO server support (v5.4.10)
+* Uses the first version of the openBIS-OMERO metadata model
 
 ## 1.6.0 2021-01-22
 
