@@ -288,6 +288,7 @@ workflow_type - DDA or DIA
 [QBiC-register-omero-metadata](drop-boxes/register-omero-metadata)
 
 **Resulting data model in openBIS**  
+For each tissue sample multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that tissue sample
 ...Q_BIOLOGICAL_SAMPLE -> one Q_BMI_GENERIC_IMAGING_RUN per data file
 
 **Expected data structure**
