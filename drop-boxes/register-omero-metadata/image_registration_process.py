@@ -152,7 +152,6 @@ class ImageRegistrationProcess:
         for key in property_map.keys(): 
             key_value_str = key_value_str + str(key) + "::" + str(property_map[key]) + "//"
         key_value_str = key_value_str[:len(key_value_str)-2] #remove last two chars
-        #print("irp str: " + key_value_str)
 
         cmd_list.append( "python backendinterface.py -i " + str(image_id) + " -a " + key_value_str )
 
@@ -186,4 +185,3 @@ class SampleNotFoundError(Exception):
 
     def test(self):
         pass
-
