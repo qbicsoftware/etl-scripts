@@ -44,7 +44,7 @@ Formats:
 - [NGS single-end / paired-end data with metadata (deprecated)](#ngs-single-end--paired-end-data-with-metadata)
 - [Attachment Data](#attachment-data)
 - [Mass Spectrometry mzML conversion and registration](#mass-spectrometry-mzml-conversion-and-registration)
-- [Imaging data with an OMERO server instance](#Imaging-data-with-an-OMERO-server-instance)
+- [Imaging data with an OMERO server instance](#imaging-data-with-an-omero-server-instance)
 
 ### NGS single-end / paired-end data
 
