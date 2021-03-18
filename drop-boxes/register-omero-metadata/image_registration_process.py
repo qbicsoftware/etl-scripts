@@ -163,7 +163,6 @@ class ImageRegistrationProcess:
         process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
         out, err = process.communicate( commands )
 
-        #print(out)
 
         return 0
 
@@ -187,5 +186,4 @@ class SampleNotFoundError(Exception):
 
     def test(self):
         pass
-
 
