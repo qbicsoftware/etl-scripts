@@ -288,7 +288,7 @@ workflow_type - DDA or DIA
 [QBiC-register-omero-metadata](drop-boxes/register-omero-metadata)
 
 **Resulting data model in openBIS**  
-...Q_BIOLOGICAL_SAMPLE -> Q_BMI_GENERIC_IMAGING_RUN per data file
+...Q_BIOLOGICAL_SAMPLE -> one Q_BMI_GENERIC_IMAGING_RUN per data file
 
 **Expected data structure**
 In every use case, the data structure needs to contain a top folder around the respective data in order to accommodate metadata files.
@@ -313,7 +313,7 @@ QABCD002A8_test_3/
 `-- source_dropbox.txt
 ```
 
-The metadata file, ending in `.tsv` columns is tab-separated:
+The metadata file, ending in `.tsv` has tab-separated columns:
 ```
 IMAGE_FILE_NAME  IMAGING_MODALITY  IMAGED_TISSUE  INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
 tomogram_x.mrc   NCIT_C18113       cell           FEI                      Dr. Horrible     01.03.2021
@@ -326,7 +326,7 @@ Image_2.czi      NCIT_C17753       leaf           Zeiss                    Max M
 
 IMAGE_FILE_NAME - one of the file names found in the incoming folder
 
-IMAGING_MODALITY - Ontology Identifier for the imaging modality, currently from the NCI Thesaurus (https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d).
+IMAGING_MODALITY - Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d).
 Examples: NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
 
 IMAGED_TISSUE - the imaged tissue
@@ -336,5 +336,3 @@ INSTRUMENT_MANUFACTURER - the imaging instrument manufacturer
 INSTRUMENT_USER - the person who measured the data file using the imaging instrument
 
 IMAGING_DATE - the date of the measurement in dd.mm.yyyy format
-
-workflow_type - DDA or DIA
