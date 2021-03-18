@@ -300,8 +300,8 @@ Valid files in the folder are any imaging files that can be handled by the OMERO
 
 **Incoming structure overview:**
 ```
-QABCD002A8_test_3/
-|-- QABCD002A8_test_3
+QABCD002A8
+|-- QABCD002A8
 |   |-- Est-B1a.lif
 |   |-- Image_1.czi
 |   |-- Image_2.czi
@@ -309,7 +309,7 @@ QABCD002A8_test_3/
 |   |-- metadata_3.tsv
 |   |-- rubisco_avg.mrc
 |   `-- tomogram_x.mrc
-|-- QABCD002A8_test_3.sha256sum
+|-- QABCD002A8.sha256sum
 `-- source_dropbox.txt
 ```
 
