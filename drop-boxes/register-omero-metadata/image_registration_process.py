@@ -141,6 +141,9 @@ class ImageRegistrationProcess:
         pass
 
     def registerOmeroKeyValuePairs(self, image_id, property_map):
+        """Registers the property map as key-value pairs in the OMERO server.
+        """
+        
         cmd_list = list(self._init_cmd_list)
 
         # string format: key1::value1//key2::value2//key3::value3//...
