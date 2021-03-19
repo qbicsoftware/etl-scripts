@@ -249,15 +249,9 @@ def process(transaction):
 	# This tells us to which biological sample the image data was aquired from.
 	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
 
-	#print project_code
-	#print sample_code
-
 	#find specific sample
 	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
 	space = tissueSample.getSpace()
-
-	#print tissueSample
-	#print space
 	
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
@@ -320,16 +314,11 @@ def process(transaction):
 
 		# 5. Additional metadata is provided in an own metadata TSV file. 
 		# We extract the metadata from this file.
-		#registrationProcess.extractMetadataFromTSV()
-
 		properties = getPropertyMap(line, property_names)
-		#print "Metadata properties:\t"
-		#printPropertyMap(properties)
 		
 		#one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
 			registrationProcess.registerKeyValuePairs(img_id, filterOmeroPropertyMap(properties))
-
 
 		####
 		# 6. In addition to the image registration and technical metadata storage, we want to add

@@ -23,7 +23,7 @@ class ImageRegistrationProcess:
         self._project_code = project_code
         self._sample_code = sample_code
 
-        ###set env
+        ### set exec. env
         self._conda_path = conda_home_path
         if not conda_path is None:
             self._conda_path = conda_path
@@ -43,11 +43,10 @@ class ImageRegistrationProcess:
         self._init_cmd_list.append('export OMERO_PREFIX=' + self._omero_path)
         self._init_cmd_list.append('export PYTHONPATH=$PYTHONPATH:$OMERO_PREFIX/lib/python')
         
-        #now use the omero-importer app packaged in the conda env
-        #self._init_cmd_list.append('export PATH=$PATH:/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.server-5.4.10-ice36-b105/bin')
+        # now use the omero-importer app packaged in the conda env
         self._init_cmd_list.append('export PATH=$PATH:' + self._conda_path + 'envs/' + env_name + '/bin')
 
-        #move to the dir where backendinterface.py lives for exec.
+        # move to the dir where backendinterface.py lives for exec.
         self._init_cmd_list.append('cd ' + self._etl_path)
 
     def fetchOpenBisSampleCode(self):
@@ -63,7 +62,7 @@ class ImageRegistrationProcess:
         return self._project_code, self._sample_code
 
     def searchOpenBisSample(self, sample_code):
-        #find specific sample
+        # find specific sample
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
         foundSamples = self._search_service.searchForSamples(sc)
@@ -123,7 +122,7 @@ class ImageRegistrationProcess:
     def triggerOMETiffConversion(self):
         pass
 
-    #ToDo Check if Metadata file is provided as was suggested in test.tsv provided by LK
+    #ToDo Check if Metadata file is provided as defined
     def extractMetadataFromTSV(self, tsv_file_path):
         tsvFileMap = {}
         try:
@@ -144,7 +143,7 @@ class ImageRegistrationProcess:
     def registerKeyValuePairs(self, image_id, property_map):
         cmd_list = list(self._init_cmd_list)
 
-        #string format: key1::value1//key2::value2//key3::value3//...
+        # string format: key1::value1//key2::value2//key3::value3//...
         key_value_str = ""
         for key in property_map.keys(): 
             key_value_str = key_value_str + str(key) + "::" + str(property_map[key]) + "//"

@@ -14,7 +14,6 @@ It contains the following functions:
     
 """
 
-
 def omero_connect(usr, pwd, host, port):
     """
     Connects to the OMERO Server with the provided username and password.
@@ -316,8 +315,6 @@ def get_image_array(conn, image_id):
 
     return hypercube
 
-################################
-
 def add_annotations_to_image(conn, image_id, key_value_data):
     """
     This function is used to add key-value pair annotations to an image
@@ -349,7 +346,6 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 
 
 #########################
-##app
 
 from optparse import OptionParser
 import ConfigParser
