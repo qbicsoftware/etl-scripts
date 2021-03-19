@@ -140,7 +140,7 @@ class ImageRegistrationProcess:
     def registerExperimentDataInOpenBIS(self):
         pass
 
-    def registerKeyValuePairs(self, image_id, property_map):
+    def registerOmeroKeyValuePairs(self, image_id, property_map):
         cmd_list = list(self._init_cmd_list)
 
         # string format: key1::value1//key2::value2//key3::value3//...
