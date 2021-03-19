@@ -200,12 +200,13 @@ def getPropertyMap(line, property_names):
 
 	return properties
 
-def filterOmeroPropertyMap(property_map):
+def filterOmeroPropertyMap(property_map, filter_list=None):
 	"""Filters map before ingestion into omero server
 	"""
 
 	#the blacklist, e.g. what is going to openBIS or is automatically added to omero (e.g. file name)
-	filter_list = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
+	if filter_list == None:
+		filter_list = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 
 	new_props = {}
 	for key in property_map.keys():
@@ -243,28 +244,27 @@ def process(transaction):
 
 	# 1. Initialize the image registration process
 	registrationProcess = irp.ImageRegistrationProcess(transaction)
-
-	print "started reg. process"
 	
 	# 2. We want to get the openBIS sample code from the incoming data
 	# This tells us to which biological sample the image data was aquired from.
 	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
 
-	print project_code
-	print sample_code
+	#print project_code
+	#print sample_code
 
 	#find specific sample
 	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
 	space = tissueSample.getSpace()
 
-	print tissueSample
-	print space
+	#print tissueSample
+	#print space
+	
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
 
-	print "calling omero..."
-	#returns -1 if operation failed
+	# Starts omero registration
+	# returns -1 if fetching dataset-id operation failed
 	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 
 	print "omero dataset id:"
@@ -323,8 +323,8 @@ def process(transaction):
 		#registrationProcess.extractMetadataFromTSV()
 
 		properties = getPropertyMap(line, property_names)
-		print "Metadata properties:\t"
-		printPropertyMap(properties)
+		#print "Metadata properties:\t"
+		#printPropertyMap(properties)
 		
 		#one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:

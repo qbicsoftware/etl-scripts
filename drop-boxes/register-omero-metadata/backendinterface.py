@@ -191,6 +191,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
         std_out, std_err = proc.communicate()
 
+        # the terminal output of the omero-importer tool provides a lot of information on the registration process 
+        # we are looking for a line with this format: "Image:id_1,1d_2,id_3,...,id_n"
+        # where id_1,...,id_n are a list of ints, which denote the unique OMERO image IDs for the image file
+        # (one file can have many images)
+
         if int(proc.returncode) == 0:
             for line in std_out.splitlines():
                 if line[:6] == "Image:":
