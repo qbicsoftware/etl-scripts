@@ -1,10 +1,11 @@
 # Changelog
 
-## 1.7.0 2021-03-18 ([PR](https://github.com/qbicsoftware/etl-scripts/pull/78))
+## 1.7.0 2021-03-19
 
 * Provides fully tested functionality to register generic imaging data, with OMERO server support (v5.4.10)
 * Uses an omero-importer-cli (with Bio-formats) for image file registration into an OMERO server instance
 * Uses an initial version of the openBIS-OMERO metadata model
+* Link to [PR](https://github.com/qbicsoftware/etl-scripts/pull/78)
 
 ## 1.6.0 2021-01-22
 
