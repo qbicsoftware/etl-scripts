@@ -11,6 +11,7 @@ import image_registration_process as irp
 #import sample_tracking_helper_qbic as thelper
 
 import checksum
+import datetime
 import re
 import os
 import urllib
@@ -19,7 +20,6 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-
 
 
 #class OmeroError(Error):
@@ -56,12 +56,20 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 #####
 
 
-def createNewImagingExperiment(tr, space, project, properties):
-	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
-	MODALITY_CODE = "Q_BMI_MODALITY"
-	search_service = tr.getSearchService()
+INCOMING_DATE_FORMAT = '%d.%m.%Y'
+OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
-	existing_ids = []
+PROPPERTY_FILTER_LIST = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
+
+
+def mapDateString(date_string):
+	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
+
+def createNewImagingExperiment(tr, space, project, properties, existing_ids):
+	IMAGING_EXP_TYPE = "Q_BMI_GENERIC_IMAGING"
+	search_service = tr.getSearchService()
+	experiment_property_map = {"IMAGING_MODALITY":"Q_BMI_MODALITY", "IMAGING_DATE":"Q_MEASUREMENT_FINISH_DATE", "INSTRUMENT_USER":"Q_INSTRUMENT_USER"}
+
 	existing_exps = search_service.listExperiments("/" + space + "/" + project)
 	for exp in existing_exps:
 		existing_ids.append(exp.getExperimentIdentifier())
@@ -71,52 +79,60 @@ def createNewImagingExperiment(tr, space, project, properties):
 		i += 1
 		exp_num = len(existing_exps) + i
 		exp_id = '/' + space + '/' + project + '/' + project + 'E' + str(exp_num)
-	exp = tr.createNewExperiment(exp_id, IMAGING_EXP_TYPE)
-	for key in properties.keys():
-		exp.setPropertyValue(key, properties[key])
-	return exp
+	img_exp = tr.createNewExperiment(exp_id, IMAGING_EXP_TYPE)
+	existing_ids.append(exp_id)
+	for incoming_label in experiment_property_map:
+		if incoming_label in properties:
+			key = experiment_property_map[incoming_label]
+			value = properties[incoming_label]
+			if key == "Q_MEASUREMENT_FINISH_DATE":
+				value = mapDateString(value)
+			img_exp.setPropertyValue(key, value)
+	return img_exp
 
-def createNewImagingRun(tr, base_sample, exp, omero_link, run_offset):
+def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, properties):
 	IMG_RUN_PREFIX = "IMG"
 	IMG_RUN_TYPE = "Q_BMI_GENERIC_IMAGING_RUN"
-	IMG_RUN_OMERO_PROPERTY_CODE = "Q_ADDITIONAL_INFO"
-	# TODO: can we use a prefix for imaging samples?
-	# otherwise creating new samples will be more complex
-	# on the other hand, replicates need to be numbered if we use IMG, e.g IMG1QABCD001AB
-	# IMG2QABCD001AB etc.
-	# talk to GG and LK
+	IMG_RUN_OMERO_PROPERTY_CODE = "Q_OMERO_IDS"
+	sample_property_map = {}#no specific properties from the metadata file yet
+
 	run = 0
 	exists = True
 	new_sample_id = None
+	# respect samples already in openbis
 	while exists:
 		run += 1
 		new_sample_id = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(run) + base_sample.getCode()
 		exists = tr.getSampleForUpdate(new_sample_id)
+	# add additional offset for samples registered in this call of the ETL script, but before this sample
 	new_sample_id_with_offset = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(run+run_offset) + base_sample.getCode()
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
-	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier])
+	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier()])
 	img_run.setExperiment(exp)
-	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, omero_link)
+	img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, '\n'.join(omero_image_ids))
+	for incoming_label in sample_property_map:
+		if incoming_label in properties:
+			key = sample_property_map[incoming_label]
+			value = properties[incoming_label]
+			img_run.setPropertyValue(key, value)
 	return img_run
-
-#TODO Luis
-def callOmeroWithFilePath(file_path, sample_barcode):
-	list_of_omero_ids = ["1","2","3"]
-	return list_of_omero_ids
 
 def getFileFromLine(line):
 	return line.split("\t")[0]
 
 def isSameExperimentMetadata(props1, props2):
 	"""dependent on metadata dictionaries of two different files (data model), decide if new openBIS experiment needs to be created
-	might be replaced by specific metadata properties, once we know more
 	"""
-	# initilization of tsv parser, always results in new experiment
-	if not props1 or not props2:
-		return False
-	else:
-		return True
-
+	relevantPropertyNames = ["IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+	for label in relevantPropertyNames:
+		if label in props1 and label in props2:
+			if props1[label] != props2[label]:
+				return False
+		if label in props1 and not label in props2:
+			return False
+		if label in props2 and not label in props1:
+			return False
+	return True
 
 def registerImageInOpenBIS(transaction):
 	search_service = transaction.getSearchService()
@@ -144,11 +160,74 @@ def findMetaDataFile(incomingPath):
 		for f in files:
 			stem, ext = os.path.splitext(f)
 			if ext.lower()=='.tsv':
-				with open(os.path.join(root, f), 'U') as fh: metadataFile = fh.readlines()
+				with open(os.path.join(root, f), 'U') as fh: metadataFileContent = fh.readlines()
 	return metadataFileContent
+
+def getPropertyNames(metadataFile):
+	"""Here we could add more complex behaviour later on.
+	"""
+	
+	property_names = metadataFile[0].split("\t")
+	for i in range(len(property_names)):
+		property_names[i] = property_names[i].strip().upper()
+
+	return property_names
+
+def validatePropertyNames(property_names):
+	"""Validate metadata property names.
+	TODO: call the imaging metadata parser (with json schema).
+	"""
+
+	# fast validation without parser object.
+	required_names = ["IMAGE_FILE_NAME", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+
+	for name in required_names:
+		if not name in property_names:
+			return False
+
+	return True
+
+def getPropertyMap(line, property_names):
+	"""Build the property map. Here we could add more complex behaviour later on.
+	"""
+
+	properties = {}
+	property_values = line.split("\t")
+
+	for i in range(1, len(property_names)): #exclude first col (filename)
+		##remove trailing newline, and replace space with underscore
+		name = property_names[i].rstrip('\n').replace(" ", "_")
+		value = property_values[i].rstrip('\n').replace(" ", "_")
+
+		properties[name] = value
+
+	return properties
+
+def filterOmeroPropertyMap(property_map, filter_list):
+	"""Filters map before ingestion into omero server
+
+	filter_list is a the blacklist, e.g. for what is going to openBIS or is automatically added to omero (e.g. file name)
+	"""
+
+	new_props = {}
+	for key in property_map.keys():
+		if not key in filter_list:
+			new_props[key] = property_map[key]
+
+	return new_props
+
+
+def printPropertyMap(property_map):
+	"""Function to display metadata properties.
+	"""
+
+	print("KEY : VALUE")
+	for key in property_map.keys():
+		print "--> " + str(key) + " : " + str(property_map[key])
 
 
 def process(transaction):
+	print "start transaction"
 	"""The main entry point.
 	
 	openBIS calls this method, when an incoming transaction is registered.
@@ -159,6 +238,10 @@ def process(transaction):
 
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
+	# Get the name of the incoming folder
+	folderName = transaction.getIncoming().getName()
+
+	print incomingPath
 
 	# 1. Initialize the image registration process
 	registrationProcess = irp.ImageRegistrationProcess(transaction)
@@ -167,23 +250,58 @@ def process(transaction):
 	# This tells us to which biological sample the image data was aquired from.
 	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
 
+	#find specific sample
+	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
+	space = tissueSample.getSpace()
+	
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
-	omero_dataset_id = registrationProcess.requestOmeroDatasetId()
+
+	# Starts omero registration
+	# returns -1 if fetching dataset-id operation failed
+	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
+
+	print "omero dataset id:"
+	print omero_dataset_id
+
+	omero_failed = int(omero_dataset_id) < 0
+	if omero_failed:
+		raise ValueError("Omero did not return expected dataset id.")
 
 	# Find and parse metadata file content
 	metadataFile = findMetaDataFile(incomingPath)
-	
+
+	print "metadataFile:"
+	print metadataFile
+
+	property_names = getPropertyNames(metadataFile)
+
+	print "property names:"
+	print property_names
+
+	valid_names = validatePropertyNames(property_names)
+	if not valid_names:
+		raise ValueError("Invalid Property Names.")
+
+	#keep track of number of images for openBIS ID
+	image_number = 0
+	#Initialize openBIS imaging experiment
+	imagingExperiment = None
+	previousProps = {}
+	existing_experiment_ids = []
+
+	print "start reading metadata file"
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
 		# Get modality and other metadata from tsv here for one sample
 		properties = {}
 		
-		# Retrieve the image file name
+		# Retrieve the image file name, please no whitespace characters in filename!
 		fileName = getFileFromLine(line)
-
-		imageFile = os.path.join(incomingPath, fileName)
+		# Due to the datahandler we need to add another subfolder of the same name to the path
+		imageFolder = os.path.join(incomingPath, folderName)
+		imageFile = os.path.join(imageFolder, fileName)
 		print "New incoming image file for OMERO registration:\t" + imageFile
 
 		# 4. After we have received the omero dataset id, we know where to attach the image to
@@ -191,36 +309,36 @@ def process(transaction):
 		omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
 		print "Created OMERO image identifiers:\t" + str(omero_image_ids)
 
+		omero_failed = len(omero_image_ids) < 1
+		if omero_failed:
+			raise ValueError("Omero did not return expected image ids.")
+
 		# 5. Additional metadata is provided in an own metadata TSV file. 
 		# We extract the metadata from this file.
-		#registrationProcess.extractMetadataFromTSV()
+		properties = getPropertyMap(line, property_names)
+		
+		#one file can have many images, iterate over all img ids
+		for img_id in omero_image_ids:
+			registrationProcess.registerOmeroKeyValuePairs(img_id, filterOmeroPropertyMap(properties, PROPPERTY_FILTER_LIST))
 
+		####
 		# 6. In addition to the image registration and technical metadata storage, we want to add
 		# further experimental metadata in openBIS. This metadata contains information about the 
 		# imaging experiment itself, such as modality, imaged tissue and more. 
 		# We also want to connect this data with the previously created, corresponding OMERO image id t
 		# hat represents the result of this experiment in OMERO. 
-		#registrationProcess.registerExperimentDataInOpenBIS(omero_image_ids)
 
-		# 7. Last but not least we create the open science file format for images which is
-		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
-		#registrationProcess.triggerOMETiffConversion()
-
-		####################
-
-		# TODO decide if new experiment is needed based on some pre-defined criteria.
+		# we decide if new experiment is needed based on some pre-defined criteria.
 		# Normally, the most important criterium is collision of experiment type properties
 		# between samples. E.g. two different imaging modalities need two experiments.
 		
-		#fileBelongsToExistingExperiment = isSameExperimentMetadata(previousProps, properties)
-		#previousProps = properties
-		#if(not fileBelongsToExistingExperiment):
-		#	exp = createNewImagingExperiment(transaction, space, project_code, properties)
-		#imagingSample = createNewImagingRun(transaction, sa, exp, list_of_omero_ids, offset)# maybe there are sample properties, too!
-		# register the actual data
-		#IMAGING_DATASET_CODE = Q_BMI_GENERIC_IMAGING_DATA # I guess
-		#dataset = transaction.createNewDataSet(IMAGING_DATASET_CODE)
-		#dataset.setSample(imagingSample)
-		#transaction.moveFile(imageFile, dataset)
-		# increment id offset for next sample in this loop - not sure anymore if this is needed
-		
+		fileBelongsToExistingExperiment = isSameExperimentMetadata(previousProps, properties)
+		previousProps = properties
+		if(not fileBelongsToExistingExperiment):
+			imagingExperiment = createNewImagingExperiment(transaction, space, project_code, properties, existing_experiment_ids)
+		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, image_number, properties)
+		# increment id offset for next sample in this loop
+		image_number += 1
+
+		# 7. Last but not least we create the open science file format for images which is
+		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.

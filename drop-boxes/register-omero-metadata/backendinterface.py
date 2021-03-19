@@ -14,7 +14,6 @@ It contains the following functions:
     
 """
 
-
 def omero_connect(usr, pwd, host, port):
     """
     Connects to the OMERO Server with the provided username and password.
@@ -182,9 +181,7 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
     ds_id = dataset_id
 
     if ds_id != -1:
-
         cmd = "omero-importer -s " + host + " -p " + str(port) + " -u " + usr + " -w " + pwd + " -d " + str(int(ds_id)) + " " + file_path
-
         proc = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -193,17 +190,20 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
         std_out, std_err = proc.communicate()
 
+        # the terminal output of the omero-importer tool provides a lot of information on the registration process 
+        # we are looking for a line with this format: "Image:id_1,1d_2,id_3,...,id_n"
+        # where id_1,...,id_n are a list of ints, which denote the unique OMERO image IDs for the image file
+        # (one file can have many images)
+
         if int(proc.returncode) == 0:
-
-            fist_line = std_out.splitlines()[0]
-            image_ids = fist_line[6:].split(',')
-
+            for line in std_out.splitlines():
+                if line[:6] == "Image:":
+                    image_ids = line[6:].split(',')
+                    break
         else:
-            image_ids = -1
-
+            image_ids = []
     else:
-        image_ids = -1
-
+        image_ids = []
     return image_ids
 
 
@@ -315,11 +315,18 @@ def get_image_array(conn, image_id):
 
     return hypercube
 
-################################
-
 def add_annotations_to_image(conn, image_id, key_value_data):
     """
-    TODO
+    This function is used to add key-value pair annotations to an image
+    Example:
+        key_value_data = [["Drug Name", "Monastrol"], ["Concentration", "5 mg/ml"]]
+        add_annotations_to_image(conn, image_id, key_value_data)
+    Args:
+        conn: Established Connection to the OMERO Server via a BlitzGateway
+        image_id (int): An OMERO image ID
+        key_value_data (list of lists): list of key-value pairs
+    Returns:
+        int: not relevant atm
     """
 
     import omero
@@ -339,15 +346,19 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 
 
 #########################
-##app
 
 from optparse import OptionParser
+import ConfigParser
+
+config = ConfigParser.RawConfigParser()
+config.read("imaging_config.properties")
+
 
 ###OMERO server info
-USERNAME = "usr"
-PASSWORD = "pwd"
-HOST = "host"
-PORT = 4064
+USERNAME = config.get('OmeroServerSection', 'omero.username')
+PASSWORD = config.get('OmeroServerSection', 'omero.password')
+HOST = config.get('OmeroServerSection', 'omero.host')
+PORT = int(config.get('OmeroServerSection', 'omero.port'))
 
 
 def get_args():
@@ -357,6 +368,10 @@ def get_args():
 
     parser.add_option('-p', '--project', dest='project_id', default="None", help='project id for dataset id retrieval')
     parser.add_option('-s', '--sample', dest='sample_id', default="None", help='sample id for dataset id retrieval')
+
+    parser.add_option('-i', '--image', dest='image_id', default="None", help='image id for key-value pair annotation')
+    parser.add_option('-a', '--annotation', dest='ann_str', default="None", help='annotation string')
+
 
     (options, args) = parser.parse_args()
     return options
@@ -373,9 +388,26 @@ if __name__ == '__main__':
             id_str = id_str + id_i + " "
 
         print id_str
-    else:
+
+    elif args.project_id != "None":
 
         conn = omero_connect(USERNAME, PASSWORD, HOST, str(PORT))
         ds_id = get_omero_dataset_id(conn, str(args.project_id), str(args.sample_id))
 
         print ds_id
+
+    elif args.image_id != "None":
+
+        conn = omero_connect(USERNAME, PASSWORD, HOST, str(PORT))
+
+        #string format: key1::value1//key2::value2//key3::value3//...
+        key_value_data = []
+        pair_list = args.ann_str.split("//")
+        for pair in pair_list:
+            key_value = pair.split("::")
+            key_value_data.append(key_value)
+
+
+        add_annotations_to_image(conn, str(args.image_id), key_value_data)
+
+        print "0"

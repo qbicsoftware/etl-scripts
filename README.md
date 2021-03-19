@@ -44,6 +44,7 @@ Formats:
 - [NGS single-end / paired-end data with metadata (deprecated)](#ngs-single-end--paired-end-data-with-metadata)
 - [Attachment Data](#attachment-data)
 - [Mass Spectrometry mzML conversion and registration](#mass-spectrometry-mzml-conversion-and-registration)
+- [Imaging data with an OMERO server instance](#imaging-data-with-an-omero-server-instance)
 
 ### NGS single-end / paired-end data
 
@@ -279,3 +280,56 @@ Q_MS_LCMS_METHODS - openBIS code from the vocabulary of LCMS methods
 technical_replicate - free text to denote replicates
 
 workflow_type - DDA or DIA
+
+
+### Imaging data with an OMERO server instance
+
+**Responsible dropbox:**
+[QBiC-register-omero-metadata](drop-boxes/register-omero-metadata)
+
+**Resulting data model in openBIS**  
+For each tissue sample multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that tissue sample
+...Q_BIOLOGICAL_SAMPLE -> one Q_BMI_GENERIC_IMAGING_RUN per data file
+
+**Expected data structure**
+In every use case, the data structure needs to contain a top folder around the respective data in order to accommodate metadata files.
+
+The sample code found in the top folder is of type `Q_BIOLOGICAL_SAMPLE` (tissue imaging).
+
+**Valid file types**:
+Valid files in the folder are any imaging files that can be handled by the OMERO server
+
+**Incoming structure overview:**
+```
+QABCD002A8
+|-- QABCD002A8
+|   |-- Est-B1a.lif
+|   |-- Image_1.czi
+|   |-- Image_2.czi
+|   |-- Image7246.tif
+|   |-- metadata_3.tsv
+|   |-- rubisco_avg.mrc
+|   `-- tomogram_x.mrc
+|-- QABCD002A8.sha256sum
+`-- source_dropbox.txt
+```
+
+The metadata file, ending in `.tsv` has tab-separated columns:
+```
+IMAGE_FILE_NAME  IMAGING_MODALITY  IMAGED_TISSUE  INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
+tomogram_x.mrc   NCIT_C18113       cell           FEI                      Dr. Horrible     01.03.2021
+rubisco_avg.mrc  NCIT_C18113       cell           FEI                      Max Mustermann   01.04.2021
+Image7246.tif    NCIT_C18216       leaf           Zeiss                    Max Mustermann   23.02.2021
+Est-B1a.lif      NCIT_C17753       root           Zeiss                    Max Mustermann   01.02.2021
+Image_1.czi      NCIT_C17753       leaf           Zeiss                    Max Mustermann   11.02.2021
+Image_2.czi      NCIT_C17753       leaf           Zeiss                    Max Mustermann   01.02.2021
+```
+
+column name | description
+--------------|----------------
+`IMAGE_FILE_NAME`| one of the file names found in the incoming folder per line
+`IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). **Examples:** NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
+`IMAGED_TISSUE` | the imaged tissue
+`INSTRUMENT_MANUFACTURER` | the imaging instrument manufacturer
+`INSTRUMENT_USER` | the person who measured the data file using the imaging instrument
+`IMAGING_DATE` | the date of the measurement in dd.mm.yyyy format (days and months with leading zeroes)
