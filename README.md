@@ -30,6 +30,11 @@ OpenBIS loads Java libararies on startup, if they are provided in a `lib` folder
 
 We decoupled some shared functionality in the [data-model-lib](https://github.com/qbicsoftware/data-model-lib) and the [core-utils-lib](https://github.com/qbicsoftware/core-utils-lib). Please make sure to deploy them as well in of the lib folders, such that the classes are loaded by the etlserver class loader and available during runtime.
 
+##4. Dependencies for the example dropbox written in pure Java/Groovy
+
+Just deploy the compiled JAR of the [Java openBIS dropbox](https://github
+.com/qbicsoftware/java-openbis-dropboxes) in the `lib` folder of the dropbox (`
+./register-example-java-dropbox/lib`).
 
 ## Data format guidelines
 
