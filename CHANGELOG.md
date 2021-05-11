@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.8.0 2021-05-11
+
+* Add example Java dropbox
+
 ## 1.6.0 2021-01-22
 
 * Fix for workflow result registration: fetch sample by identifier instead of search for robustness against indexing problems
