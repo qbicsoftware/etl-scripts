@@ -14,7 +14,6 @@ It contains the following functions:
     
 """
 
-
 def omero_connect(usr, pwd, host, port):
     """
     Connects to the OMERO Server with the provided username and password.
@@ -191,6 +190,11 @@ def register_image_file_with_dataset_id(file_path, dataset_id, usr, pwd, host, p
 
         std_out, std_err = proc.communicate()
 
+        # the terminal output of the omero-importer tool provides a lot of information on the registration process 
+        # we are looking for a line with this format: "Image:id_1,1d_2,id_3,...,id_n"
+        # where id_1,...,id_n are a list of ints, which denote the unique OMERO image IDs for the image file
+        # (one file can have many images)
+
         if int(proc.returncode) == 0:
             for line in std_out.splitlines():
                 if line[:6] == "Image:":
@@ -311,8 +315,6 @@ def get_image_array(conn, image_id):
 
     return hypercube
 
-################################
-
 def add_annotations_to_image(conn, image_id, key_value_data):
     """
     This function is used to add key-value pair annotations to an image
@@ -344,7 +346,6 @@ def add_annotations_to_image(conn, image_id, key_value_data):
 
 
 #########################
-##app
 
 from optparse import OptionParser
 import ConfigParser
@@ -405,8 +406,6 @@ if __name__ == '__main__':
         for pair in pair_list:
             key_value = pair.split("::")
             key_value_data.append(key_value)
-
-        #print("backend: key-value pairs: " + str(key_value_data))
 
         add_annotations_to_image(conn, str(args.image_id), key_value_data)
 

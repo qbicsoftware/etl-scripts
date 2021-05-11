@@ -22,7 +22,6 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
 
-
 #class OmeroError(Error):
 
 # ETL script for registration of Imaging files that need to end up in Omero.
@@ -58,6 +57,8 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 
 INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
+
+PROPPERTY_FILTER_LIST = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 
 def mapDateString(date_string):
 	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
@@ -200,12 +201,11 @@ def getPropertyMap(line, property_names):
 
 	return properties
 
-def filterOmeroPropertyMap(property_map):
+def filterOmeroPropertyMap(property_map, filter_list):
 	"""Filters map before ingestion into omero server
-	"""
 
-	#the blacklist, e.g. what is going to openBIS or is automatically added to omero (e.g. file name)
-	filter_list = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
+	filter_list is a the blacklist, e.g. for what is going to openBIS or is automatically added to omero (e.g. file name)
+	"""
 
 	new_props = {}
 	for key in property_map.keys():
@@ -250,21 +250,17 @@ def process(transaction):
 	# This tells us to which biological sample the image data was aquired from.
 	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
 
-	print project_code
-	print sample_code
-
 	#find specific sample
 	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
 	space = tissueSample.getSpace()
 
-	print tissueSample
-	print space
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
 
-	print "calling omero..."
-	#returns -1 if operation failed
+	# Starts omero registration
+	# returns -1 if fetching dataset-id operation failed
+
 	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 
 	print "omero dataset id:"
@@ -320,16 +316,11 @@ def process(transaction):
 
 		# 5. Additional metadata is provided in an own metadata TSV file. 
 		# We extract the metadata from this file.
-		#registrationProcess.extractMetadataFromTSV()
-
 		properties = getPropertyMap(line, property_names)
-		print "Metadata properties:\t"
-		printPropertyMap(properties)
 		
 		#one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
-			registrationProcess.registerKeyValuePairs(img_id, filterOmeroPropertyMap(properties))
-
+			registrationProcess.registerOmeroKeyValuePairs(img_id, filterOmeroPropertyMap(properties, PROPPERTY_FILTER_LIST))
 
 		####
 		# 6. In addition to the image registration and technical metadata storage, we want to add
@@ -337,7 +328,6 @@ def process(transaction):
 		# imaging experiment itself, such as modality, imaged tissue and more. 
 		# We also want to connect this data with the previously created, corresponding OMERO image id t
 		# hat represents the result of this experiment in OMERO. 
-		#registrationProcess.registerExperimentDataInOpenBIS(omero_image_ids) # I did it myyy wayyyy
 
 		# we decide if new experiment is needed based on some pre-defined criteria.
 		# Normally, the most important criterium is collision of experiment type properties
@@ -353,4 +343,4 @@ def process(transaction):
 
 		# 7. Last but not least we create the open science file format for images which is
 		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
-		#registrationProcess.triggerOMETiffConversion()
+
