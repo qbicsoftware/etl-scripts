@@ -21,6 +21,7 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
+from life.qbic.utils import ImagingMetadataValidator
 
 #class OmeroError(Error):
 
@@ -58,7 +59,7 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
-PROPPERTY_FILTER_LIST = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
+PROPPERTY_FILTER_LIST = ["IMAGE_FILENAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 
 def mapDateString(date_string):
 	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
@@ -177,7 +178,7 @@ def validatePropertyNames(property_names):
 	"""
 
 	# fast validation without parser object.
-	required_names = ["IMAGE_FILE_NAME", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+	required_names = ["IMAGE_FILENAME", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
 
 	for name in required_names:
 		if not name in property_names:
@@ -200,6 +201,15 @@ def getPropertyMap(line, property_names):
 		properties[name] = value
 
 	return properties
+
+def lowerKeys(properties):
+	"""Lowercases the keys of the property map.
+	"""
+	
+	new_properties = {}
+	for key in properties.keys():
+		new_properties[key.lower()] = properties[key]
+	return new_properties
 
 def filterOmeroPropertyMap(property_map, filter_list):
 	"""Filters map before ingestion into omero server
@@ -317,6 +327,9 @@ def process(transaction):
 		# 5. Additional metadata is provided in an own metadata TSV file. 
 		# We extract the metadata from this file.
 		properties = getPropertyMap(line, property_names)
+
+		# 5.1 Validate metadata for image file
+		ImagingMetadataValidator.validateImagingProperties(lowerKeys(properties))
 		
 		#one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
