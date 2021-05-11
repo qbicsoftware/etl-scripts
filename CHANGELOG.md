@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.0 2021-05-11
+
+* Provides metadata validation for imaging data (OMERO etl). [PR](https://github.com/qbicsoftware/etl-scripts/pull/83)
+
 ## 1.7.0 2021-03-19
 
 * Provides fully tested functionality to register generic imaging data, with OMERO server support (v5.4.10). [Link to PR](https://github.com/qbicsoftware/etl-scripts/pull/78)
