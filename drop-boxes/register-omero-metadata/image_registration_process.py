@@ -24,6 +24,7 @@ class ImageRegistrationProcess:
         self._sample_code = sample_code
 
         ### set exec. env
+
         self._conda_path = conda_home_path
         if not conda_path is None:
             self._conda_path = conda_path
@@ -47,6 +48,7 @@ class ImageRegistrationProcess:
         self._init_cmd_list.append('export PATH=$PATH:' + self._conda_path + 'envs/' + env_name + '/bin')
 
         # move to the dir where backendinterface.py lives for exec.
+
         self._init_cmd_list.append('cd ' + self._etl_path)
 
     def fetchOpenBisSampleCode(self):
@@ -63,6 +65,7 @@ class ImageRegistrationProcess:
 
     def searchOpenBisSample(self, sample_code):
         # find specific sample
+
         sc = SearchCriteria()
         sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sample_code))
         foundSamples = self._search_service.searchForSamples(sc)
@@ -100,7 +103,7 @@ class ImageRegistrationProcess:
         return ds_id
 
     def registerImageFileInOmero(self, file_path, dataset_id):
-        
+
         cmd_list = list(self._init_cmd_list)
         cmd_list.append( "python backendinterface.py -f " + file_path + " -d " + str(dataset_id) )
 
@@ -123,6 +126,7 @@ class ImageRegistrationProcess:
         pass
 
     #ToDo Check if Metadata file is provided as defined
+
     def extractMetadataFromTSV(self, tsv_file_path):
         tsvFileMap = {}
         try:
@@ -147,6 +151,7 @@ class ImageRegistrationProcess:
         cmd_list = list(self._init_cmd_list)
 
         # string format: key1::value1//key2::value2//key3::value3//...
+
         key_value_str = ""
         for key in property_map.keys(): 
             key_value_str = key_value_str + str(key) + "::" + str(property_map[key]) + "//"
@@ -160,7 +165,6 @@ class ImageRegistrationProcess:
 
         process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
         out, err = process.communicate( commands )
-
 
         return 0
 

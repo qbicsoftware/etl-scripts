@@ -55,12 +55,10 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 # and delete the data!
 #####
 
-
 INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
 PROPPERTY_FILTER_LIST = ["IMAGE_FILE_NAME", "INSTRUMENT_USER", "IMAGING_DATE"]
-
 
 def mapDateString(date_string):
 	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
@@ -245,6 +243,8 @@ def process(transaction):
 
 	# 1. Initialize the image registration process
 	registrationProcess = irp.ImageRegistrationProcess(transaction)
+
+	print "started reg. process"
 	
 	# 2. We want to get the openBIS sample code from the incoming data
 	# This tells us to which biological sample the image data was aquired from.
@@ -253,13 +253,14 @@ def process(transaction):
 	#find specific sample
 	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
 	space = tissueSample.getSpace()
-	
+
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
 	# happened during the experimental design registration with the projectwizard.
 
 	# Starts omero registration
 	# returns -1 if fetching dataset-id operation failed
+
 	omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 
 	print "omero dataset id:"
@@ -342,3 +343,4 @@ def process(transaction):
 
 		# 7. Last but not least we create the open science file format for images which is
 		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
+
