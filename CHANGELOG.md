@@ -6,6 +6,10 @@
 * Uses an omero-importer-cli (with Bio-formats) for image file registration into an OMERO server instance
 * Uses an initial version of the openBIS-OMERO metadata model
 
+## 1.8.0 2021-05-11
+
+* Add example Java dropbox
+
 ## 1.6.0 2021-01-22
 
 * Fix for workflow result registration: fetch sample by identifier instead of search for robustness against indexing problems
