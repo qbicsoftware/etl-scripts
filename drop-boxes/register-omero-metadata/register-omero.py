@@ -193,7 +193,7 @@ def getPropertyMap(line, property_names):
 	properties = {}
 	property_values = line.split("\t")
 
-	for i in range(1, len(property_names)): #exclude first col (filename)
+	for i in range(0, len(property_names)): #do not exclude first col (filename), the schema checks for it
 		##remove trailing newline, and replace space with underscore
 		name = property_names[i].rstrip('\n').replace(" ", "_")
 		value = property_values[i].rstrip('\n').replace(" ", "_")
