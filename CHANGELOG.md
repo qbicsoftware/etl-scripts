@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.0 2021-05-18
+
+* Provides metadata validation for imaging data (OMERO etl). [PR](https://github.com/qbicsoftware/etl-scripts/pull/83)
+
 ## 1.8.0 2021-05-11
 
 * Add example Java dropbox
