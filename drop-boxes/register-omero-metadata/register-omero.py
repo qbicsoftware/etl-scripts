@@ -202,13 +202,36 @@ def getPropertyMap(line, property_names):
 
 	return properties
 
-def lowerKeys(properties):
-	"""Lowercases the keys of the property map.
+def isFloat(value):
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False
+
+def isInt(value):
+	try:
+		int(value)
+		return True
+	except ValueError:
+		return False
+
+def getValidationMap(properties):
+	"""Builds a map for property validation.
+	Lowercases the keys of the property map, and checks value types.
 	"""
 	
 	new_properties = {}
 	for key in properties.keys():
-		new_properties[key.lower()] = properties[key]
+		
+		value = properties[key]
+		if isInt(value):
+			value = int(value)
+		elif isFloat(value):
+			value = float(value)
+
+		new_properties[key.lower()] = value
+
 	return new_properties
 
 def filterOmeroPropertyMap(property_map, filter_list):
@@ -329,7 +352,7 @@ def process(transaction):
 		properties = getPropertyMap(line, property_names)
 
 		# 5.1 Validate metadata for image file
-		ImagingMetadataValidator.validateImagingProperties(lowerKeys(properties))
+		ImagingMetadataValidator.validateImagingProperties(getValidationMap(properties))
 		
 		#one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
