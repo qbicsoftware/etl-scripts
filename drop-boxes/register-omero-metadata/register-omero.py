@@ -61,7 +61,6 @@ OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
 PROPPERTY_FILTER_LIST = ["IMAGE_FILENAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 
-
 def mapDateString(date_string):
 	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
 
@@ -380,4 +379,3 @@ def process(transaction):
 
 		# 7. Last but not least we create the open science file format for images which is
 		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
-

@@ -5,7 +5,7 @@ Please find the source code of the ETL routine that this article is referring to
 
 ## Installation
 
-Please provide the Java binaries as JAR from the [Java openBIS dropbox](https://github.com/qbicsoftware/java-openbis-dropboxes) in this directories
+Please provide the Java binaries as JAR from the [Java openBIS dropbox](https://github.com/qbicsoftware/java-openbis-dropboxes) in this repositories
 folder `./lib`.
 
 The DSS needs to be restarted in order to activate this dropbox.
