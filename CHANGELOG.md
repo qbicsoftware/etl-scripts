@@ -2,8 +2,8 @@
 
 # 1.10.0 2021-06-25
 
-* Provides new ETL routine written in Java, that will replace all Jython scripts at some poing
-* Support for nf-core pipeline result registration
+* Provides new ETL routine written in Java, that will replace all Jython scripts at some point [PR](https://github.com/qbicsoftware/etl-scripts/pull/85)
+* Support for nf-core pipeline result registration [PR](https://github.com/qbicsoftware/etl-scripts/pull/85)
 
 ## 1.9.0 2021-05-18
 
