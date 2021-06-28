@@ -61,6 +61,7 @@ OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
 PROPPERTY_FILTER_LIST = ["IMAGE_FILENAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 
+
 def mapDateString(date_string):
 	return datetime.datetime.strptime(date_string, INCOMING_DATE_FORMAT).strftime(OPENBIS_DATE_FORMAT)
 
