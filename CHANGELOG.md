@@ -1,5 +1,11 @@
 # Changelog
 
+# 1.9.0 2021-06-28
+
+* Provides new ETL routine written in Java, that will replace all Jython scripts at some point [(#85)](https://github.com/qbicsoftware/etl-scripts/pull/85)
+* Support for nf-core pipeline result registration [(#85)](https://github.com/qbicsoftware/etl-scripts/pull/85)
+* Provides metadata validation for imaging data (OMERO etl). [(#85)](https://github.com/qbicsoftware/etl-scripts/pull/83)
+
 ## 1.8.0 2021-05-11
 
 * Add example Java dropbox
