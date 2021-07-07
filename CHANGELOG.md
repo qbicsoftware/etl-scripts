@@ -2,7 +2,7 @@
 
 # 2.0.0
 
-* Provides new ETL for MTB project data that are not supposed to be stored in QUK17
+* Provides new ETL for MTB project data that are not supposed to be stored in QUK17 [(#89)](https://github.com/qbicsoftware/etl-scripts/pull/89)
 
 # 1.9.0 2021-06-28
 
