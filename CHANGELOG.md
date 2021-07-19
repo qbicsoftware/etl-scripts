@@ -1,5 +1,9 @@
 # Changelog
 
+# 2.0.0
+
+* Allow multiple sequencing lanes for MTB data
+
 # 1.9.0 2021-06-28
 
 * Provides new ETL routine written in Java, that will replace all Jython scripts at some point [(#85)](https://github.com/qbicsoftware/etl-scripts/pull/85)
