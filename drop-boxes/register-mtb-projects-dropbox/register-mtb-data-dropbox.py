@@ -271,14 +271,18 @@ def get_last_exp_id(experiments):
     return exp_ids[-1]
 
 
-def getNextFreeBarcode(projectcode, numberOfBarcodes):
+def getNextFreeBarcode(projectcode, numberOfBarcodes, transaction):
     letters = string.ascii_uppercase
-    numberOfBarcodes += 1
-
-    currentLetter = letters[numberOfBarcodes / 999]
-    currentNumber = numberOfBarcodes % 999
-    code = projectcode + str(currentNumber).zfill(3) + currentLetter
-    return code + checksum.checksum(code)
+    sampleExists = True
+    newSampleCode = None
+    while sampleExists:
+        numberOfBarcodes += 1
+        currentLetter = letters[numberOfBarcodes / 999]
+        currentNumber = numberOfBarcodes % 999
+        code = projectcode + str(currentNumber).zfill(3) + currentLetter
+        newSampleCode = code + checksum.checksum(code)
+        sampleExists = transaction.getSampleForUpdate(newSampleCode)
+    return newSampleCode
 
 
 def register_rnaseq(rna_seq_files, transaction):
