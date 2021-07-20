@@ -108,6 +108,8 @@ QCODE_REG = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
 
 # Regex matching the RNAseq sample file naming specification
 RNASEQ_REG = re.compile(r'.*tumor_rna.[1,2]{1}.fastq.gz')
+# Update from 2021-07-06: Support lanes, indicated with a three digit number
+RNASEQ_REG_LANES = re.compile(r'.*tumor_rna_[0-9]{3}.[1,2]{1}.fastq.gz')
 
 # Path to the openBIS properties file
 PROPERTIES = '/etc/openbis.properties'
@@ -214,7 +216,7 @@ def process(transaction):
     for in_file in file_list:
         if in_file.endswith('origlabfilename') or in_file.endswith('sha256sum') or 'source_dropbox.txt' in in_file:
             continue
-        if RNASEQ_REG.findall(in_file):
+        if RNASEQ_REG.findall(in_file) or RNASEQ_REG_LANES.findall(in_file):
             rna_seq_files.append(in_file)
         elif 'fastq' in in_file:
             if 'normal' in in_file:
@@ -253,8 +255,10 @@ def execute_vcf_registration(vcf_files, transaction):
 
 
 def execute_fastq_registration(fastqs_normal, fastqs_tumor, transaction):
-   if len(fastqs_tumor) != 2 or len(fastqs_normal) != 2:
+   if len(fastqs_tumor) < 2 or len(fastqs_normal) < 2:
         raise mtbutils.MTBdropboxerror("Tumor/normal fastq dataset was not complete. Please check.")
+   elif len(fastqs_tumor) != len(fastqs_normal):
+        raise mtbutils.MTBdropboxerror("Tumor/normal fastq dataset dont have the same number of files. Are all lanes provided?")
    else:
         proc_fastq(fastqs_tumor, transaction)
         proc_fastq(fastqs_normal, transaction)
@@ -300,7 +304,8 @@ def register_rnaseq(rna_seq_files, transaction):
                         the reason for the failure.
     """
     print(mtbutils.log_stardate('Registering incoming MTB RNAseq data {}'.format(rna_seq_files)))
-    assert len(rna_seq_files) == 2
+    # Check if dataset files are paired end and complete
+    assert len(rna_seq_files) % 2 == 0
     file1 = os.path.basename(rna_seq_files[0])
     file2 = os.path.basename(rna_seq_files[1])
     assert len(set(QCODE_REG.findall(file1))) == 1
@@ -454,7 +459,7 @@ def proc_fastq(fastq_file, transaction):
     """Register fastq as dataset in openBIS"""
 
     # Check, if there are file pairs present (paired-end data!)
-    if len(fastq_file) != 2:
+    if len(fastq_file) % 2 != 0:
         raise mtbutils.MTBdropboxerror('Expecting paired end reads files, found only {}'
             .format(len(fastq_file)))
     qbiccode_f1 = QCODE_REG.findall(os.path.basename(fastq_file[0]))
