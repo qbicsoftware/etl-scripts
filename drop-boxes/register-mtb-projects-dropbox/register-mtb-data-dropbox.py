@@ -17,9 +17,9 @@ Basically handles to types of incoming data:
 The sequencing facilities CeGaT and the human genetics department at UKT only see the QBiC barcode
 of the tumor sample. However, as part of the whole MTB process, during patient registration in openBIS
 an additional sample for PBMC is generated and attached as sample to the patient. It carries
-an unique barcode, that is different from the tumor's one.
+a unique barcode, that is different from the tumor's one.
 
-So in this dropbox we query the patient to whome the tumor sample barcode belongs and can access the
+So in this dropbox we query the patient to whom the tumor sample barcode belongs and can access the
 PBMC barcode from there. 
 
 The incoming FASTQ file specification for CeGaT and human genetics for the MTB project (only!) is:
@@ -759,4 +759,3 @@ def getsamplev3(qcode):
         raise mtbutils.MTBdropboxerror('More than one sample found with identifier {}'.format(qcode))
     return samples[0]
     
-
