@@ -1,5 +1,10 @@
 # Changelog
 
+# 1.10.0 2021-07-26
+
+* Provides new ETL for MTB project data that are not supposed to be stored in QUK17 [(#89)](https://github.com/qbicsoftware/etl-scripts/pull/89)
+* Allow multiple sequencing lanes for MTB data
+
 # 1.9.0 2021-06-28
 
 * Provides new ETL routine written in Java, that will replace all Jython scripts at some point [(#85)](https://github.com/qbicsoftware/etl-scripts/pull/85)
