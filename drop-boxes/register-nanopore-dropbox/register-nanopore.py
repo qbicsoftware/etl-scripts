@@ -109,8 +109,8 @@ def copyLogFilesTo(logFiles, filePath, targetFolderPath, facilityName):
     # return list of files to remove for this facility or empty list
     blacklist = blacklistedByFacility.get(facilityName, [])
     numberOfFiles = len(logFiles)
-    for logFile in filesToCopy:
-        fileType = logfile.__class__.__name__
+    for logFile in logFiles:
+        fileType = logFile.__class__.__name__
         if fileType in blacklist:
             numberOfFiles-=1
         else :
