@@ -58,6 +58,9 @@ usedSampleIdentifiers = set()
 usedExperimentIdentifiers = set()
 checksumMap = {}
 
+# facilities that want us to remove certain log files
+blacklistedByFacility = {"qeana03-imgagdna": ["DutyTimeLog", "FinalSummaryLog", "ReportMdLog", "ReportPDFLog", "ThroughputLog", "DriftCorrectionLog", "MuxScanDataLog"]}
+
 def createNewSample(transaction, space, parentSampleCode):
     run = 0
     sampleExists = True
@@ -101,14 +104,22 @@ def getTimeStamp():
     return ts
 
 # copies log files from a folder that may contain other files to another path
-def copyLogFilesTo(logFiles, filePath, targetFolderPath):
-    for logFile in logFiles:
-        sourcePath = os.path.join(filePath, logFile.getName())
-        shutil.copy2(sourcePath, targetFolderPath)
-        src = os.path.join(filePath, logFile.getName())
-        shutil.copy2(src, targetFolderPath)
+# log files that are blacklisted are not copied and thus not registered (after metadata extraction)
+def copyLogFilesTo(logFiles, filePath, targetFolderPath, facilityName):
+    # return list of files to remove for this facility or empty list
+    blacklist = blacklistedByFacility.get(facilityName, [])
+    numberOfFiles = len(logFiles)
+    for logFile in filesToCopy:
+        fileType = logfile.__class__.__name__
+        if fileType in blacklist:
+            numberOfFiles-=1
+        else :
+            sourcePath = os.path.join(filePath, logFile.getName())
+            shutil.copy2(sourcePath, targetFolderPath)
+            src = os.path.join(filePath, logFile.getName())
+            shutil.copy2(src, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
-    if len(copiedContent) != len(logFiles):
+    if len(copiedContent) != len(numberOfFiles):
         raise AssertionError("Not all log files have been copied successfully to target log folder.")
 
 def createLogFolder(targetPath):
@@ -116,6 +127,9 @@ def createLogFolder(targetPath):
     newLogFolder = os.path.join(targetPath, os.path.join(ts, "logs"))
     os.makedirs(newLogFolder)
     return newLogFolder
+
+def containsUnclassifiedData(unclassifiedMap):
+    return not all(v is None for v in unclassifiedMap.values())
 
 def createExperimentFromMeasurement(transaction, currentPath, space, project, measurement, origin, rawDataPerSample):
     """ Register the experiment with samples in openBIS.
@@ -162,10 +176,10 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         datamap = rawDataPerSample.get(barcode)
         newLogFolder = createLogFolder(currentPath)
         # 3.) Aggregate all log files into an own log folder per measurement
-        copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder)
+        copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder, origin)
         createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
     unclassifiedMap = measurement.getUnclassifiedData()
-    if len(unclassifiedMap) > 0:
+    if containsUnclassifiedData(unclassifiedMap):
         registerUnclassifiedData(transaction, unclassifiedMap, runExperiment, currentPath, measurement.getFlowcellId())
 
 # fills the global dictionary containing all checksums for paths from the global checksum file
