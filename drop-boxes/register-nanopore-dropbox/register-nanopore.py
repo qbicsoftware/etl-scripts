@@ -103,23 +103,26 @@ def getTimeStamp():
     ts = str(now.minute)+str(now.second)+str(now.microsecond)
     return ts
 
+def copyFileTo(file, filePath, targetFolderPath):
+    sourcePath = os.path.join(filePath, file.getName())
+    shutil.copy2(sourcePath, targetFolderPath)
+    src = os.path.join(filePath, file.getName())
+    shutil.copy2(src, targetFolderPath)
+
 # copies log files from a folder that may contain other files to another path
 # log files that are blacklisted are not copied and thus not registered (after metadata extraction)
 def copyLogFilesTo(logFiles, filePath, targetFolderPath, facilityName):
     # return list of files to remove for this facility or empty list
     blacklist = blacklistedByFacility.get(facilityName, [])
-    numberOfFiles = len(logFiles)
+    numIgnoredFiles = 0
     for logFile in logFiles:
         fileType = logFile.__class__.__name__
         if fileType in blacklist:
-            numberOfFiles-=1
+            numIgnoredFiles += 1
         else :
-            sourcePath = os.path.join(filePath, logFile.getName())
-            shutil.copy2(sourcePath, targetFolderPath)
-            src = os.path.join(filePath, logFile.getName())
-            shutil.copy2(src, targetFolderPath)
+            copyFileTo(logFile, filePath, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
-    if len(copiedContent) != len(numberOfFiles):
+    if len(copiedContent) + len(numIgnoredFiles) != len(logFiles):
         raise AssertionError("Not all log files have been copied successfully to target log folder.")
 
 def createLogFolder(targetPath):
