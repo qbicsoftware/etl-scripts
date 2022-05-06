@@ -122,7 +122,7 @@ def copyLogFilesTo(logFiles, filePath, targetFolderPath, facilityName):
         else :
             copyFileTo(logFile, filePath, targetFolderPath)
     copiedContent = os.listdir(targetFolderPath)
-    if len(copiedContent) + len(numIgnoredFiles) != len(logFiles):
+    if len(copiedContent) + numIgnoredFiles != len(logFiles):
         raise AssertionError("Not all log files have been copied successfully to target log folder.")
 
 def createLogFolder(targetPath):
