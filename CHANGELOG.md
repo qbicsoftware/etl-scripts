@@ -2,10 +2,10 @@
 
 # 1.11.0 2022-05-09
 
-* nanopore data: introduces map to remove log files that should not be saved dependent on different datamover origins
-* nanopore data: allows new result structure with barcode alignment file and 'other reports' folder
-* fix for nanopore data: handle data without unclassified reads correctly
-* ptx mass spec data: change msconvert server
+* Nanopore data: allows new result structure with barcode alignment file and 'other reports' folder (requires core-utils-lib 1.11.0 or later)
+* Nanopore data: introduces map to remove log files that should not be saved dependent on different datamover origins
+* Fix for nanopore: data without unclassified reads does not lead to error upon registration
+* Ptx mass spec data: change msconvert server
 
 # 1.10.0 2021-07-26
 
