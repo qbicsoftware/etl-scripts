@@ -1,5 +1,12 @@
 # Changelog
 
+# 1.11.0 2022-05-09
+
+* Nanopore data: allows new result structure with barcode alignment file and 'other reports' folder (requires core-utils-lib 1.11.0 or later)
+* Nanopore data: introduces map to remove log files that should not be saved dependent on different datamover origins
+* Fix for nanopore: data without unclassified reads does not lead to error upon registration
+* Ptx mass spec data: change msconvert server
+
 # 1.10.0 2021-07-26
 
 * Provides new ETL for MTB project data that are not supposed to be stored in QUK17 [(#89)](https://github.com/qbicsoftware/etl-scripts/pull/89)
