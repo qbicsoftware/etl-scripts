@@ -75,7 +75,7 @@ def register_wiff_pairs(transaction, wiff_pairs, qbic_id):
     """
     space, project = space_and_project(transaction, qbic_id)
     experiments = transaction.getSearchService().listExperiments('/{}/{}'.format(space, project))
-    exp_ids = [int(re.search(r'Q\w{4}E(\d+)', oid.getExperimentIdentifier()).group(0)) for oid in experiments if re.search(r'Q\w{4}E(\d+)', oid.getExperimentIdentifier())]
+    exp_ids = [int(re.search(r'Q\w{4}E(\d+)', oid.getExperimentIdentifier()).group(1)) for oid in experiments if re.search(r'Q\w{4}E(\d+)', oid.getExperimentIdentifier())]
     exp_ids.sort()
     last_exp_id = exp_ids[-1]
 
