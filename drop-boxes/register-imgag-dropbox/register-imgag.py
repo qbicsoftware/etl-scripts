@@ -87,6 +87,7 @@ def get_space_from_project(transaction, project):
     return space
 
 def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#varcode example: GS130715_03-GS130717_03 (verified in startup.log)
+    # if no fastq files are in the dataset, the parentCodeSet is empty, here
     qbicBarcodes = []
     geneticIDS = []
     sampleSource = []
@@ -216,6 +217,12 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
                                 print(testParentID)
                                 print(testParentIdentifiers)
 
+    if len(testParentIdentifiers) != len(geneticIDS):
+        print("Referenced sample identifiers do not fit the amount of known samples:")
+        print("Genetics Identifiers: " + geneticIDS)
+        print("Related sample ids in openBIS: " + testParentIdentifiers)
+        raise AssertionError("Referenced samples do not match metadata found in openBIS. Sequencing data might not be registered or indexed yet. Rerunning registration later might solve this problem.")
+
     numberOfExperiments += 1
     existingExperimentIDs = []
     existingExperiments = search_service.listExperiments("/" + space + "/" + project)
@@ -230,16 +237,11 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
         newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
         
     newVCExp = transaction.createNewExperiment(newExpID, "Q_NGS_VARIANT_CALLING")
-    identString = varcode # not used atm
-    #for genID in geneticIDS:
-    #	identString += genID.split('_')[-1]
 
-    identString2 = ''
-    print(testParentIdentifiers)
-    identString2 = '_'.join([tpi.split('/')[-1] for tpi in testParentIdentifiers])
+    print('test sample parent identifiers: ' + testParentIdentifiers)
+    identString = '_'.join([tpi.split('/')[-1] for tpi in testParentIdentifiers])
 
-    print('identstring ' + identString2)
-
+    print('id string for vcf sample: ' + identString)
 
     existingSampleIDs = []
         
