@@ -260,12 +260,6 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
     newVCSample.setParentSampleIdentifiers(parentIdentifiers)
     newVCSample.setExperiment(newVCExp)
 
-    #additionalInfo = ""
-    #secName = ""
-    #for i, parentBarcode in enumerate(qbicBarcodes):
-#		additionalInfo += '%s %s Tumor: %s \n' % (qbicBarcodes[i], geneticIDS[i], sampleSource[i])
-#		secName += '%s ' % (geneticIDS[i])
-
     secName = secName.strip()
     #additionalInfo = '%s %s Tumor: %s \n %s %s Tumor: %s' % (qbicBarcodes[0], geneticIDS[0], sampleSource[0], qbicBarcodes[1], geneticIDS[1], sampleSource[1])
 
