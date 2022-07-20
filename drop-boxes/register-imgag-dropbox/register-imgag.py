@@ -604,20 +604,6 @@ def process(transaction):
                     tsvs.append(rawFile)
                 else:
                     raise Exception(rawFile + " is of an unsupported format")
-
-            #if rawFiles[0].endswith("vcf") or rawFiles[0].endswith("vcf.gz"):
-            #	datasetSample = find_and_register_vcf(transaction, jsonContent)
-            #
-            #	dataSet = transaction.createNewDataSet("Q_NGS_VARIANT_CALLING_DATA")
-            #	dataSet.setSample(datasetSample)
-
-            #elif rawFiles[0].endswith("fastq") or rawFiles[0].endswith("fastq.gz"):
-            #	datasetSample = find_and_register_ngs(transaction, jsonContent)
-
-            #	dataSet = transaction.createNewDataSet("Q_NGS_RAW_DATA")
-                #	dataSet.setSample(datasetSample)
-
-                #os.remove(os.path.realpath(os.path.join(os.path.join(incomingPath,name),f)))
         else:
             pass
     folder = os.path.join(incomingPath, name)
