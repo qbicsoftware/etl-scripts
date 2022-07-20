@@ -42,7 +42,7 @@ SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SER
 
 # Data import and registration
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
-pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
+pattern = re.compile('Q\w{4}[0-9]{3}[a-xA-X]\w')
 typesDict = {'dna_seq': 'DNA', 'rna_seq': 'RNA', 'dna_seq_somatic': 'DNA'}
 
 def parse_metadata_file(filePath):
