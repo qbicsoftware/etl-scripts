@@ -27,10 +27,10 @@ SERVICE_CREDENTIALS = ServiceCredentials()
 SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
 SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
 SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-QBIC_LOCATION = tracking_helper.get_qbic_location_json()
+DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
 
-### We need this object to update the sample location later
-SAMPLE_TRACKER = SampleTracker.createQBiCSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, QBIC_LOCATION)
+### We need this object to update the sample status later
+SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, DATA_AVAILABLE_JSON)
 
 # ETL script for registration of VCF files
 # expected:
