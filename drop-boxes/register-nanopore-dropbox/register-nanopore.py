@@ -313,7 +313,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(parentSampleCode)
+            SAMPLE_TRACKER.updateSampleStatus(parentSampleCode)
             break
         except:
             print "Updating location for sample "+parentSampleCode+" failed on attempt "+str(attempt+1)

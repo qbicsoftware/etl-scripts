@@ -484,4 +484,4 @@ def process(transaction):
     transaction.moveFile(incomingPath, dataSet)
 
     # Update Sample Status
-    sampleTracker.updateSampleLocationToCurrentLocation(code)
+    sampleTracker.updateSampleStatus(code)

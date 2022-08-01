@@ -112,7 +112,7 @@ def register_wiff_pairs(transaction, wiff_pairs, qbic_id):
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(qbic_id)
+            SAMPLE_TRACKER.updateSampleStatus(qbic_id)
             break
         except:
             print("Updating location for sample "+qbic_id+" failed on attempt "+str(attempt+1))

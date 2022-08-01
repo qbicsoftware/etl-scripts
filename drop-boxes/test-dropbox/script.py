@@ -77,7 +77,7 @@ def process(transaction):
         print qbicLocation
 
         # Update Sample Location
-        sampleTracker.updateSampleLocationToCurrentLocation(sampleID)
+        sampleTracker.updateSampleStatus(sampleID)
 
         raise TestError("Test if data was registered!")
         

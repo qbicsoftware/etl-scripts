@@ -171,7 +171,7 @@ def update_sample_location_to_qbic(sampleId):
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(sampleId)
+            SAMPLE_TRACKER.updateSampleStatus(sampleId)
             break
         except:
             print("Updating location for sample " + sampleId + " failed on attempt "+str(attempt+1))

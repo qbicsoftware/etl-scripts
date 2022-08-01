@@ -488,7 +488,7 @@ def handleSampleTracking(barcode):
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            SAMPLE_TRACKER.updateSampleLocationToCurrentLocation(barcode)
+            SAMPLE_TRACKER.updateSampleStatus(barcode)
             break
         except:
             print "Updating location for sample "+barcode+" failed on attempt "+str(attempt+1)
