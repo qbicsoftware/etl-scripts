@@ -22,17 +22,6 @@ from life.qbic.sampletracking import SampleTracker
 from life.qbic.sampletracking import ServiceCredentials
 from java.net import URL
 
-import sample_tracking_helper_qbic as tracking_helper
-#### Setup Sample Tracking service
-SERVICE_CREDENTIALS = ServiceCredentials()
-SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
-SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
-SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
-
-### We need this object to update the sample status later
-SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, DATA_AVAILABLE_JSON)
-
 # Data import and registration
 # expected:
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
