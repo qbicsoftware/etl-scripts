@@ -41,7 +41,7 @@ SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
 DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
 
 ### We need this object to update the sample status later
-SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, DATA_AVAILABLE_JSON)
+SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
 
 #############################################################################
 #
@@ -112,7 +112,7 @@ def register_wiff_pairs(transaction, wiff_pairs, qbic_id):
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            SAMPLE_TRACKER.updateSampleStatus(qbic_id)
+            SAMPLE_TRACKER.updateSampleStatus(qbic_id, DATA_AVAILABLE_JSON)
             break
         except:
             print("Updating location for sample "+qbic_id+" failed on attempt "+str(attempt+1))

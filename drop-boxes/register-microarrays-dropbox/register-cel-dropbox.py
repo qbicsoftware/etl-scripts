@@ -29,7 +29,7 @@ SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
 DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
 
 ### We need this object to update the sample status later
-SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS, DATA_AVAILABLE_JSON)
+SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
 
 # *Q[Project Code]^4[Sample No.]^3[Sample Type][Checksum]*.*
 pattern = re.compile('Q\w{4}[0-9]{3}[a-zA-Z]\w')
@@ -197,7 +197,7 @@ def process(transaction):
                 max_attempts = 3
                 for attempt in range(max_attempts):
                         try:
-                                SAMPLE_TRACKER.updateSampleStatus(code)
+                                SAMPLE_TRACKER.updateSampleStatus(code, DATA_AVAILABLE_JSON)
                                 break
                         except:
                                 print "Updating location for sample "+code+" failed on attempt "+str(attempt+1)
