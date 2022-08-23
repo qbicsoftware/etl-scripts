@@ -31,9 +31,10 @@ serviceCredentials = ServiceCredentials()
 serviceCredentials.user = tracking_helper.get_service_user()
 serviceCredentials.password = tracking_helper.get_service_password()
 serviceUrl = URL(tracking_helper.get_service_reg_url())
-qbicLocation = tracking_helper.get_qbic_location_json()
+DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
 
-sampleTracker = SampleTracker.createQBiCSampleTracker(serviceUrl, serviceCredentials, qbicLocation)
+### We need this object to update the sample status later
+SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
 
 # Data import and registration
 # expected:
@@ -77,7 +78,7 @@ def process(transaction):
         print qbicLocation
 
         # Update Sample Location
-        sampleTracker.updateSampleLocationToCurrentLocation(sampleID)
+        sampleTracker.updateSampleStatus(sampleID, DATA_AVAILABLE_JSON)
 
         raise TestError("Test if data was registered!")
         
