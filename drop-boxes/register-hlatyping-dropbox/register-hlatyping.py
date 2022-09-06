@@ -95,9 +95,6 @@ def process(transaction):
         numberOfExperiments += 1 
         newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
 
-    newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
-    newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
-
     if os.path.isdir(incomingPath):
         for root, subFolders, files in os.walk(incomingPath):
             if subFolders:
@@ -118,12 +115,13 @@ def process(transaction):
         mhcClass = "MHC_CLASS_I"
         mhcSuffix = "1"
     # does HLA sample of this class already exist?
-    hlaCode = 'HLA' + mhcSuffix + parentCode
-    hlaSampleID = "/"+space+"/"+hlaCode
-    HLATypingSample = transaction.getSampleForUpdate(hlaSampleID)
-    if not hlaSample:
-        HLATypingSample = transaction.createNewSample('/' + space + '/' + hlaCode, "Q_NGS_HLATYPING")
+    HLASampleID = "/"+space+"/"+'HLA' + mhcSuffix + parentCode
+    HLATypingSample = transaction.getSampleForUpdate(HLASampleID)
+    if not HLATypingSample:
+        HLATypingSample = transaction.createNewSample(HLASampleID, "Q_NGS_HLATYPING")
         HLATypingSample.setParentSampleIdentifiers([parentSampleIdentifier])
+        newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
+        newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
         HLATypingSample.setExperiment(newHLATypingExperiment)
         HLATypingSample.setPropertyValue("Q_HLA_CLASS", mhcClass)
 
