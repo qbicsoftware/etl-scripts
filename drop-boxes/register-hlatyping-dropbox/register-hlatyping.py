@@ -67,11 +67,11 @@ def process(transaction):
         print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
         
     search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    pc = SearchCriteria()
-    pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-    sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-    foundSamples = search_service.searchForSamples(sc)
+    searchCriteria = SearchCriteria()
+    projectCriteria = SearchCriteria()
+    projectCriteria.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    searchCriteria.addSubCriteria(SearchSubCriteria.createExperimentCriteria(projectCriteria))
+    foundSamples = search_service.searchForSamples(searchCriteria)
     if len(foundSamples) > 0:
         space = foundSamples[0].getSpace()
         parentSampleIdentifier = "/"+space+"/"+parentCode
