@@ -67,27 +67,18 @@ def process(transaction):
         print "The identifier "+identifier+" did not match the pattern Q[A-Z]{4}\d{3}\w{2} or checksum"
         
     search_service = transaction.getSearchService()
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, parentCode))
-    foundSamples = search_service.searchForSamples(sc)
+    searchCriteria = SearchCriteria()
+    projectCriteria = SearchCriteria()
+    projectCriteria.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
+    searchCriteria.addSubCriteria(SearchSubCriteria.createExperimentCriteria(projectCriteria))
+    foundSamples = search_service.searchForSamples(searchCriteria)
     if len(foundSamples) > 0:
-        parentSampleIdentifier = foundSamples[0].getSampleIdentifier()
         space = foundSamples[0].getSpace()
+        parentSampleIdentifier = "/"+space+"/"+parentCode
     else:
-        search_service = transaction.getSearchService()
-        sc = SearchCriteria()
-        pc = SearchCriteria()
-        pc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.PROJECT, project));
-        sc.addSubCriteria(SearchSubCriteria.createExperimentCriteria(pc))
-        foundSamples = search_service.searchForSamples(sc)
-        if len(foundSamples) > 0:
-            space = foundSamples[0].getSpace()
-            parentSampleIdentifier = "/"+space+"/"+parentCode
-        else:
-            # no sample found in this project, they are probably not indexed yet. try parsing space from file name instead
-            space = name.split("_"+parentCode)[0]
-            parentSampleIdentifier = "/"+space+"/"+parentCode
-    sa = transaction.getSampleForUpdate(parentSampleIdentifier)
+        # no sample found in this project, they are probably not indexed yet. try parsing space from file name instead
+        space = name.split("_"+parentCode)[0]
+        parentSampleIdentifier = "/"+space+"/"+parentCode
 
     # register new experiment and sample
     existingExperimentIDs = []
@@ -103,9 +94,6 @@ def process(transaction):
     while newExpID in existingExperimentIDs:
         numberOfExperiments += 1 
         newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
-
-    newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
-    newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
 
     if os.path.isdir(incomingPath):
         for root, subFolders, files in os.walk(incomingPath):
@@ -127,25 +115,22 @@ def process(transaction):
         mhcClass = "MHC_CLASS_I"
         mhcSuffix = "1"
     # does HLA sample of this class already exist?
-    hlaCode = 'HLA' + mhcSuffix + parentCode
-    sc = SearchCriteria()
-    sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(
-        SearchCriteria.MatchClauseAttribute.CODE, hlaCode))
-    foundSamples = search_service.searchForSamples(sc)
-    if len(foundSamples) < 1:
-        newHLATypingSample = transaction.createNewSample('/' + space + '/' + hlaCode, "Q_NGS_HLATYPING")
-        newHLATypingSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
-        newHLATypingSample.setExperiment(newHLATypingExperiment)
-        newHLATypingSample.setPropertyValue("Q_HLA_CLASS", mhcClass)
-    else:
-        newHLATypingSample = transaction.getSampleForUpdate(foundSamples[0].getSampleIdentifier())
+    HLASampleID = "/"+space+"/"+'HLA' + mhcSuffix + parentCode
+    HLATypingSample = transaction.getSampleForUpdate(HLASampleID)
+    if not HLATypingSample:
+        HLATypingSample = transaction.createNewSample(HLASampleID, "Q_NGS_HLATYPING")
+        HLATypingSample.setParentSampleIdentifiers([parentSampleIdentifier])
+        newHLATypingExperiment = transaction.createNewExperiment(newExpID, "Q_NGS_HLATYPING")
+        newHLATypingExperiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
+        HLATypingSample.setExperiment(newHLATypingExperiment)
+        HLATypingSample.setPropertyValue("Q_HLA_CLASS", mhcClass)
 
-    newHLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
+    HLATypingSample.setPropertyValue("Q_HLA_TYPING", resultContent)
 
     # create new dataset 
     dataSet = transaction.createNewDataSet("Q_NGS_HLATYPING_DATA")
     dataSet.setMeasuredData(False)
-    dataSet.setSample(newHLATypingSample)
+    dataSet.setSample(HLATypingSample)
 
     transaction.moveFile(resultPath, dataSet)
 
