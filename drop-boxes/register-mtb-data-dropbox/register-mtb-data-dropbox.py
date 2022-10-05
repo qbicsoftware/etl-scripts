@@ -235,6 +235,9 @@ def execute_vcf_registration(vcf_files, transaction):
         register_vcf(vcf, transaction)
 
 
+def log_duplicate_removal():
+    print(mtbutils.log_stardate('This sample and its data already exist. Removing incoming duplicate.'))
+
 def execute_fastq_registration(fastqs_normal, fastqs_tumor, transaction):
    if len(fastqs_tumor) < 2 or len(fastqs_normal) < 2:
         raise mtbutils.MTBdropboxerror("Tumor/normal fastq dataset was not complete. Please check.")
@@ -394,6 +397,12 @@ def register_vcf(in_file, transaction):
         space=space, project=project, barcode=tumor_dna_sample_id)
     print(mtbutils.log_stardate('Preparing sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
+
+    # If this sample already exists, we log this to startup.log and return, removing the data
+    if transaction.getSampleForUpdate(new_sample_id):
+        log_duplicate_removal()
+        return
+
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, NGS_VARIANT_CALL)
     new_ngs_experiment.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
     new_ngs_sample = transaction.createNewSample(new_sample_id, NGS_VARIANT_CALL)
@@ -538,6 +547,11 @@ def registermtb(archive, transaction):
         space=space, project=project, barcode=tumor_dna_sample_id)
     print(mtbutils.log_stardate('Preparing MTB sample and experiment creation for {sample} and {experiment}'
         .format(sample=new_sample_id, experiment=new_exp_id)))
+
+    # If this sample already exists, we log this to startup.log and return, removing the data
+    if transaction.getSampleForUpdate(new_sample_id):
+        log_duplicate_removal()
+        return
     new_ngs_experiment = transaction.createNewExperiment(new_exp_id, MTB_EXP_TYPE)
     new_ngs_sample = transaction.createNewSample(new_sample_id, MTB_SAMPLE_TYPE)
     new_ngs_sample.setParentSampleIdentifiers([tumor_dna_sample_id])
@@ -553,7 +567,6 @@ def registermtb(archive, transaction):
 
     # Update sample location
     update_sample_location_to_qbic(tumor_dna_sample_id)
-
 
 def submit(archive, transaction):
     """Handles the archive parsing and submition
