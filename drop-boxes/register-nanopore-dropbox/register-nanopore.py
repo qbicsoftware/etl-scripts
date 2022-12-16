@@ -241,7 +241,7 @@ def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, cu
     transaction.moveFile(topFolderFast5, fast5DataSet)
     transaction.moveFile(topFolderFastq, fastQDataSet)
 
-# moves a subset of nanopore data to a new target path, needed to add fastq and fast5 subfolders to the same dataset
+# moves a subset of nanopore data to a new target path, needed to add fail and pass subfolders to the same dataset
 def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, suffix):
     name = dataObject.getName()
     # if pooled data, folder is named using barcode and needs to be adapted
@@ -254,6 +254,14 @@ def prepareDataFolder(incomingPath, currentPath, destinationPath, dataObject, su
     # destination path containing data type (fastq or fast5), as well as the parent sample code, so pooled samples can be handled
     destination = os.path.join(destinationPath, name)
     os.rename(sourcePath, destination)
+
+# creates checksums file in the basecalling folder, returns full path
+def prepareBasecallingFolder(incomingPath, currentPath, dataObject):
+    relativePath = dataObject.getRelativePath()
+    # the source path of the currently handled data object (e.g. fast5_fail folder)
+    sourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
+    checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
+    return sourcePath
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     """ Aggregates all measurement related files and registers them in openBIS.
@@ -307,6 +315,14 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     logDataSet = transaction.createNewDataSet(NANOPORE_LOG_CODE)
     logDataSet.setSample(sample)
     transaction.moveFile(absLogPath, logDataSet)
+
+    # Check if extra basecalling folder exists and handle it
+    basecalling = mapWithDataForSample.get("basecalling")
+    if basecalling:
+        basecallingFolder = prepareBasecallingFolder(incomingPath, currentPath, basecalling)
+        basecallingDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
+        basecallingDataSet.setSample(sample)
+        transaction.moveFile(basecallingFolder, basecallingDataSet)
 
     # Updates the sample location of the measured sample
     wait_seconds = 1

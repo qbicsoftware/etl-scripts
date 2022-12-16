@@ -321,7 +321,7 @@ QABCD002A8
 
 The metadata file, ending in `.tsv` has tab-separated columns:
 ```
-IMAGE_FILE_NAME  IMAGING_MODALITY  IMAGED_TISSUE  INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
+IMAGE_FILENAME  IMAGING_MODALITY  IMAGED_TISSUE  INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
 tomogram_x.mrc   NCIT_C18113       cell           FEI                      Dr. Horrible     01.03.2021
 rubisco_avg.mrc  NCIT_C18113       cell           FEI                      Max Mustermann   01.04.2021
 Image7246.tif    NCIT_C18216       leaf           Zeiss                    Max Mustermann   23.02.2021
@@ -332,7 +332,7 @@ Image_2.czi      NCIT_C17753       leaf           Zeiss                    Max M
 
 column name | description
 --------------|----------------
-`IMAGE_FILE_NAME`| one of the file names found in the incoming folder per line
+`IMAGE_FILENAME`| one of the file names found in the incoming folder per line
 `IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). **Examples:** NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
 `IMAGED_TISSUE` | the imaged tissue
 `INSTRUMENT_MANUFACTURER` | the imaging instrument manufacturer
