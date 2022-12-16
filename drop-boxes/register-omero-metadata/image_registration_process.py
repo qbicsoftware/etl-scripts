@@ -174,7 +174,7 @@ class SampleCodeError(Exception):
     def __init__(self, sample_code, message):
         self.sample_code = sample_code
         self.message = message
-        super().__init__(self.message)
+        super(SampleCodeError, self).__init__(message)
 
     def test(self):
         pass
@@ -184,7 +184,7 @@ class SampleNotFoundError(Exception):
     def __init__(self, sample_code, message):
         self.sample_code = sample_code
         self.message = message
-        super().__init__(self.message)
+        super(SampleNotFoundError, self).__init__(message)
 
     def test(self):
         pass
