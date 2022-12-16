@@ -321,6 +321,7 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     if basecalling:
         basecallingFolder = prepareBasecallingFolder(incomingPath, currentPath, basecalling)
         basecallingDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
+        basecallingDataSet.setSample(sample)
         transaction.moveFile(basecallingFolder, basecallingDataSet)
 
     # Updates the sample location of the measured sample
