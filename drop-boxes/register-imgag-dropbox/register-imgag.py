@@ -250,12 +250,12 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
 
     found = False
     freeID = "01"#varcode.split('_')[-1]""
-    newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
+    newVCFID = '/' + space + '/' + 'VC'+ freeID + identString
     while newVCFID in existingSampleIDs or found:
         existingSampleIDs.append(newVCFID)
         freeID = str(int(freeID) + 1).zfill(len(freeID))
         print('new id test: ' + newVCFID)
-        newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
+        newVCFID = '/' + space + '/' + 'VC'+ freeID + identString
         found = transaction.getSampleForUpdate(newVCFID)
 
     newVCSample = transaction.createNewSample(newVCFID, "Q_NGS_VARIANT_CALLING")
