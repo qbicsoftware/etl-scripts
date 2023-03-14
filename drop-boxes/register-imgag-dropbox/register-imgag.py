@@ -219,8 +219,8 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
 
     if len(testParentIdentifiers) != len(geneticIDS):
         print("Referenced sample identifiers do not fit the amount of known samples:")
-        print("Genetics Identifiers: " + geneticIDS)
-        print("Related sample ids in openBIS: " + testParentIdentifiers)
+        print("Genetics Identifiers: " + str(geneticIDS))
+        print("Related sample ids in openBIS: " + str(testParentIdentifiers))
         raise AssertionError("Referenced samples do not match metadata found in openBIS. Sequencing data might not be registered or indexed yet. Rerunning registration later might solve this problem.")
 
     numberOfExperiments += 1
@@ -238,7 +238,7 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
         
     newVCExp = transaction.createNewExperiment(newExpID, "Q_NGS_VARIANT_CALLING")
 
-    print('test sample parent identifiers: ' + testParentIdentifiers)
+    print('test sample parent identifiers: ' + str(testParentIdentifiers))
     identString = '_'.join([tpi.split('/')[-1] for tpi in testParentIdentifiers])
 
     print('id string for vcf sample: ' + identString)
@@ -250,12 +250,12 @@ def find_and_register_vcf(transaction, jsonContent, varcode, parentCodeSet):#var
 
     found = False
     freeID = "01"#varcode.split('_')[-1]""
-    newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
+    newVCFID = '/' + space + '/' + 'VC'+ freeID + identString
     while newVCFID in existingSampleIDs or found:
         existingSampleIDs.append(newVCFID)
         freeID = str(int(freeID) + 1).zfill(len(freeID))
-        print('new id test: '+newVCFID)
-        newVCFID = '/' + space + '/' + 'VC'+ freeID + identString2
+        print('new id test: ' + newVCFID)
+        newVCFID = '/' + space + '/' + 'VC'+ freeID + identString
         found = transaction.getSampleForUpdate(newVCFID)
 
     newVCSample = transaction.createNewSample(newVCFID, "Q_NGS_VARIANT_CALLING")
