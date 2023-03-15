@@ -16,87 +16,166 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
+import smtplib
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.mime.text import MIMEText
+from email import Encoders
+
 # ETL script for registration of arbitrary files that should be seen on the project or experiment level
 # they are attached to specific samples, e.g. QBBBB000 for the project, QBBBBE1-000 for experiments
 # expected:
 # *Q[Project Code]^4000*.*
 # *Q[Project Code]^4E[Experiment Number]-000*
 # IMPORTANT: ONLY PROJECT LEVEL WORKING RIGHT NOW
-ppattern = re.compile('Q\w{4}000')
+#ppattern = re.compile('Q\w{4}000')
 #epattern = re.compile('Q\w{4}E[1-9][0-9]*')
 
+MAIL_HOST = "uni-tuebingen.de"
+MAIL_SERVER = "smtpserv.uni-tuebingen.de"
+MAIL_FROM = "notification_service@qbis.qbic.uni-tuebingen.de"
+
+def get_user_email(user):
+	# TODO: LDAP connection
+	return user+"@"+MAIL_HOST
+
+def send_email(recipient, project, helpful_error_message):
+	fromA = MAIL_FROM
+	subject = "Error storing project attachment uploaded for "+project
+	toA = recipient
+
+	text = "Error description:\n"+helpful_error_message+"\n\n"
+	text += "Please see the openBIS log for the original error message.\n"
+	
+	msg = MIMEMultipart()
+	msg['From'] = fromA
+	msg['To'] = toA
+	msg['Subject'] = subject
+	#msg['reply-to'] = "info at qbic dot uni-tuebingen dot de"
+
+	msg.attach(MIMEText(text))
+
+	smtpServer = smtplib.SMTP(MAIL_SERVER)
+	smtpServer.sendmail(fromA, toA, msg.as_string())
+	smtpServer.close()
+
+class MetadataFormattingException(Exception):
+	"Thrown when metadata file cannot be successfully parsed."
+	pass
+
+class MissingProjectContextException(Exception):
+	"Thrown when sample cannot be found in openBIS."
+	pass
+
+class CouldNotCreateException(Exception):
+	"Thrown when necessary experiment or sample could not be created."
+	pass
+
 def process(transaction):
+	error = None
+	originalError = None
 	context = transaction.getRegistrationContext().getPersistentMap()
 
 	# Get the incoming path of the transaction
 	incomingPath = transaction.getIncoming().getAbsolutePath()
 
-	key = context.get("RETRY_COUNT")
-	if (key == None):
-		key = 1
+	try:
+		#read in the metadata file
+		for f in os.listdir(incomingPath):
+			if f == "metadata.txt":
+				metadata = open(os.path.join(incomingPath, f))
+				fileInfo = dict()
+				for line in metadata:
+					try:
+						pair = line.strip().split('=')
+						fileInfo[pair[0]] = pair[1]
+					except IndexError as exception:
+						originalError = exception
+						error = MetadataFormattingException("Metadata file not correctly formatted. Check for additional line breaks.")
+						continue
+				metadata.close()
+				try:
+					user = fileInfo["user"]
+				except:
+					user = None
+				secname = fileInfo["info"]
+				code = fileInfo["barcode"]
+				datasetType = fileInfo["type"]
+			else:
+				name = f
 
-	#read in the metadata file
-	for f in os.listdir(incomingPath):
-		if f == "metadata.txt":
-			metadata = open(os.path.join(incomingPath, f))
-			fileInfo = dict(line.strip().split('=') for line in metadata)
-			metadata.close()
-			try:
-				user = fileInfo["user"]
-			except:
-				user = None
-			secname = fileInfo["info"]
-			code = fileInfo["barcode"]
-			datasetType = fileInfo["type"]
-		else:
-			name = f
+		project = code[:5]
+		type = "INFORMATION"
+		if "Results" in datasetType:
+			type = "RESULT"
+		if error:
+			raise error
+		if user:
+			transaction.setUserId(user)
 
-	project = code[:5]
-	type = "INFORMATION"
-	if "Results" in datasetType:
-		type = "RESULT"
+		inputFile = os.path.join(incomingPath, name)
+		newname = urllib.unquote(name)
+		dataFile = os.path.join(incomingPath, newname)
+		print "renaming "+inputFile+" to "+dataFile
+		os.rename(inputFile, dataFile)
 
-	if user:
-		transaction.setUserId(user)
-
-	inputFile = os.path.join(incomingPath, name)
-	newname = urllib.unquote(name)
-	dataFile = os.path.join(incomingPath, newname)
-	print "renaming "+inputFile+" to "+dataFile
-	os.rename(inputFile, dataFile)
-
-	search_service = transaction.getSearchService()
-	sc = SearchCriteria()
-	sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
-	foundSamples = search_service.searchForSamples(sc)
-	sample = None
-	space = None
-	sa = None
-	attachmentReady = True
-
-	if len(foundSamples) == 0:
-		attachmentReady = False
+		search_service = transaction.getSearchService()
 		sc = SearchCriteria()
-		sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, project+"ENTITY-1"))
+		sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
 		foundSamples = search_service.searchForSamples(sc)
-	sample = foundSamples[0]
-	sampleID = sample.getSampleIdentifier()
-	sa = transaction.getSampleForUpdate(sampleID)
-	space = sa.getSpace()
-	if not attachmentReady:
-		infoSampleID = "/"+space+"/"+code
-		sa = transaction.getSampleForUpdate(infoSampleID)
-	if not sa:
-		exp = transaction.createNewExperiment('/' + space + '/' + project + '/'+ project+'_INFO', "Q_PROJECT_DETAILS")
-		sa = transaction.createNewSample('/' + space + '/'+ code, "Q_ATTACHMENT_SAMPLE")
-		sa.setExperiment(exp)
-	info = None
+		sample = None
+		space = None
+		sa = None
+		attachmentSampleFound = True
 
-	dataSet = transaction.createNewDataSet("Q_PROJECT_DATA")
-	dataSet.setMeasuredData(False)
-	dataSet.setPropertyValue("Q_SECONDARY_NAME", secname)
-	dataSet.setPropertyValue("Q_ATTACHMENT_TYPE", type)
-	dataSet.setSample(sa)
-	transaction.moveFile(dataFile, dataSet)
+		if len(foundSamples) == 0:
+			attachmentSampleFound = False
+			sc = SearchCriteria()
+			sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, project+"ENTITY-1"))
+			foundSamples = search_service.searchForSamples(sc)
+		try:
+			sample = foundSamples[0]
+		except IndexError as exception:
+			originalError = exception
+			error = MissingProjectContextException("No sample could be found for this project.")
+		sampleID = sample.getSampleIdentifier()
+		sa = transaction.getSampleForUpdate(sampleID)
+		space = sa.getSpace()
+		if not attachmentSampleFound:
+			# fetch it by name
+			infoSampleID = "/"+space+"/"+code+"000"
+			sa = transaction.getSampleForUpdate(infoSampleID)
+		if not sa:
+			# create necessary objects if sample really doesn't exist
+			try:
+				experimentID = '/' + space + '/' + project + '/'+ project+'_INFO'
+				exp = transaction.createNewExperiment(experimentID, "Q_PROJECT_DETAILS")
+			except Exception as exception:
+				originalError = exception
+				error = CouldNotCreateException("Experiment "+experimentID+" could not be created.")
+			try:
+				sa = transaction.createNewSample(infoSampleID, "Q_ATTACHMENT_SAMPLE")
+			except Exception as exception:
+				originalError = exception
+				error = CouldNotCreateException("Sample "+infoSampleID+" was not found and could not be created.")
+			sa.setExperiment(exp)
 
-
+		dataSet = transaction.createNewDataSet("Q_PROJECT_DATA")
+		dataSet.setMeasuredData(False)
+		dataSet.setPropertyValue("Q_SECONDARY_NAME", secname)
+		dataSet.setPropertyValue("Q_ATTACHMENT_TYPE", type)
+		dataSet.setSample(sa)
+		transaction.moveFile(dataFile, dataSet)
+	# catch other, unknown exceptions
+	except Exception as exception:
+		originalError = exception
+		if not error:
+			error = Exception("Unknown exception occured: "+str(exception))
+	if originalError:
+		# if there is a problem sending the email, we log this and raise the original exception
+		try:
+			send_email(get_user_email(user), project, str(error))
+		except Exception as mailException:
+			print "Could not send error email: "+str(mailException)
+			pass
+		raise originalError
