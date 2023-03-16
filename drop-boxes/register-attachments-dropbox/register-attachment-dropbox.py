@@ -38,7 +38,7 @@ class MetadataFormattingException(Exception):
 	"Thrown when metadata file cannot be successfully parsed."
 	pass
 
-class MissingProjectContextException(Exception):
+class NoSamplesFoundForProjectException(Exception):
 	"Thrown when sample cannot be found in openBIS."
 	pass
 
@@ -116,7 +116,7 @@ def process(transaction):
 			sample = foundSamples[0]
 		except IndexError as exception:
 			originalError = exception
-			error = MissingProjectContextException("No sample could be found for this project.")
+			error = NoSamplesFoundForProjectException("No sample could be found for this project.")
 		sampleID = sample.getSampleIdentifier()
 		sa = transaction.getSampleForUpdate(sampleID)
 		space = sa.getSpace()
