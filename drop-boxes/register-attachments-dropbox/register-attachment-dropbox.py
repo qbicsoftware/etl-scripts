@@ -31,33 +31,8 @@ from email import Encoders
 #ppattern = re.compile('Q\w{4}000')
 #epattern = re.compile('Q\w{4}E[1-9][0-9]*')
 
-MAIL_HOST = "uni-tuebingen.de"
-MAIL_SERVER = "smtpserv.uni-tuebingen.de"
-MAIL_FROM = "notification_service@qbis.qbic.uni-tuebingen.de"
-
-def get_user_email(user):
-	# TODO: LDAP connection
-	return user+"@"+MAIL_HOST
-
-def send_email(recipient, project, helpful_error_message):
-	fromA = MAIL_FROM
-	subject = "Error storing project attachment uploaded for "+project
-	toA = recipient
-
-	text = "Error description:\n"+helpful_error_message+"\n\n"
-	text += "Please see the openBIS log for the original error message.\n"
-	
-	msg = MIMEMultipart()
-	msg['From'] = fromA
-	msg['To'] = toA
-	msg['Subject'] = subject
-	#msg['reply-to'] = "info at qbic dot uni-tuebingen dot de"
-
-	msg.attach(MIMEText(text))
-
-	smtpServer = smtplib.SMTP(MAIL_SERVER)
-	smtpServer.sendmail(fromA, toA, msg.as_string())
-	smtpServer.close()
+import email_helper_qbic as email_helper
+import etl_mailer
 
 class MetadataFormattingException(Exception):
 	"Thrown when metadata file cannot be successfully parsed."
@@ -143,7 +118,7 @@ def process(transaction):
 		space = sa.getSpace()
 		if not attachmentSampleFound:
 			# fetch it by name
-			infoSampleID = "/"+space+"/"+code+"000"
+			infoSampleID = "/"+space+"/"+code
 			sa = transaction.getSampleForUpdate(infoSampleID)
 		if not sa:
 			# create necessary objects if sample really doesn't exist
@@ -174,7 +149,12 @@ def process(transaction):
 	if originalError:
 		# if there is a problem sending the email, we log this and raise the original exception
 		try:
-			send_email(get_user_email(user), project, str(error))
+			mailFactory = etl_mailer.EmailFactory()
+			etlMailer = etl_mailer.ETLMailer(email_helper.get_mail_host(), email_helper.get_mail_server(), email_helper.get_mail_from())
+			
+			subject = "Error storing project attachment uploaded for "+project
+			content = mailFactory.formatRegistrationErrorContent(str(error))
+			etlMailer.send_email([user], subject, content)
 		except Exception as mailException:
 			print "Could not send error email: "+str(mailException)
 			pass
