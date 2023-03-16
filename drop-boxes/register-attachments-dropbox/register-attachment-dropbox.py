@@ -46,6 +46,10 @@ class CouldNotCreateException(Exception):
 	"Thrown when necessary experiment or sample could not be created."
 	pass
 
+def getInfoExperimentIdentifier(space, project):
+	experimentID = '/' + space + '/' + project + '/'+ project+'_INFO'
+	return experimentID
+
 def process(transaction):
 	error = None
 	originalError = None
@@ -123,7 +127,7 @@ def process(transaction):
 		if not sa:
 			# create necessary objects if sample really doesn't exist
 			try:
-				experimentID = '/' + space + '/' + project + '/'+ project+'_INFO'
+				experimentID = getInfoExperimentIdentifier(space, project)
 				exp = transaction.createNewExperiment(experimentID, "Q_PROJECT_DETAILS")
 			except Exception as exception:
 				originalError = exception
