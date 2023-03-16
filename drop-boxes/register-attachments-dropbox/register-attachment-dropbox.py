@@ -16,12 +16,6 @@ from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 
-import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.mime.text import MIMEText
-from email import Encoders
-
 # ETL script for registration of arbitrary files that should be seen on the project or experiment level
 # they are attached to specific samples, e.g. QBBBB000 for the project, QBBBBE1-000 for experiments
 # expected:
@@ -49,6 +43,9 @@ class CouldNotCreateException(Exception):
 def getInfoExperimentIdentifier(space, project):
 	experimentID = '/' + space + '/' + project + '/'+ project+'_INFO'
 	return experimentID
+
+def extractProjectCode(sampleCode):
+	return sampleCode[:5]
 
 def process(transaction):
 	error = None
@@ -78,12 +75,12 @@ def process(transaction):
 				except:
 					user = None
 				secname = fileInfo["info"]
-				code = fileInfo["barcode"]
+				sampleCode = fileInfo["barcode"]
 				datasetType = fileInfo["type"]
 			else:
 				name = f
 
-		project = code[:5]
+		project = extractProjectCode(sampleCode)
 		type = "INFORMATION"
 		if "Results" in datasetType:
 			type = "RESULT"
@@ -100,7 +97,7 @@ def process(transaction):
 
 		search_service = transaction.getSearchService()
 		sc = SearchCriteria()
-		sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, code))
+		sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, sampleCode))
 		foundSamples = search_service.searchForSamples(sc)
 		sample = None
 		space = None
@@ -122,7 +119,7 @@ def process(transaction):
 		space = sa.getSpace()
 		if not attachmentSampleFound:
 			# fetch it by name
-			infoSampleID = "/"+space+"/"+code
+			infoSampleID = "/"+space+"/"+sampleCode
 			sa = transaction.getSampleForUpdate(infoSampleID)
 		if not sa:
 			# create necessary objects if sample really doesn't exist
