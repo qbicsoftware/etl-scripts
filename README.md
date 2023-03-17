@@ -212,11 +212,15 @@ Incoming structure overview:
 Metadata is expected to be denoted in line-separated key-value pairs, where key and value are separated by a '='. The following structure/pairs are expected:
 
 ```
-user=<the (optional) uploading user name>
+user=<the (optional) uploading user name.>
 info=<short info about the file>
 barcode=<the sample code of the attachment sample>
 type=<the type of attachment: information or results>
 ```
+If a university user name is provided and the registration of data fails, the user will receive an email containing the error.
+
+The info field must not contain line breaks, as each line in the metadata file must contain a key-value pair.
+
 The code of the attachment sample is built from the project code followed by three zeroes, conforming to the regular expression "Q[A-Z0-9]{4}000", e.g. QABCD000.
 
 See code examples:
