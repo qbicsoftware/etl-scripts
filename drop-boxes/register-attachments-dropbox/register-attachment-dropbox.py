@@ -25,7 +25,9 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 #ppattern = re.compile('Q\w{4}000')
 #epattern = re.compile('Q\w{4}E[1-9][0-9]*')
 
+# contains properties used to send emails, e.g. the mail server and the "from" address to use
 import email_helper_qbic as email_helper
+# provides functionality used to send emails, e.g. about registration errors
 import etl_mailer
 
 class MetadataFormattingException(Exception):
@@ -68,7 +70,6 @@ def process(transaction):
 					except IndexError as exception:
 						originalError = exception
 						error = MetadataFormattingException("Metadata file not correctly formatted. Check for additional line breaks.")
-						continue
 				metadata.close()
 				try:
 					user = fileInfo["user"]
