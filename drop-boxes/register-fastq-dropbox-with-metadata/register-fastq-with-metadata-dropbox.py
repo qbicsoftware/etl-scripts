@@ -147,7 +147,7 @@ def process(transaction):
             if metadata_json:
                 set_meta_data(ngsExperiment, metadata_json)
             else:
-                ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
+                ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_SEQUENCER") #change this
             newID = 'NGS'+identifier
             ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
             ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])

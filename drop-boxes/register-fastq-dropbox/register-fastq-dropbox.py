@@ -109,7 +109,7 @@ def process(transaction):
                     expID = '/' + space + '/' + project + \
                         '/' + project + 'E' + str(expNum)
                 ngsExperiment = transaction.createNewExperiment(expID, expType)
-                ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_HISEQ_2500") #change this
+                ngsExperiment.setPropertyValue('Q_SEQUENCER_DEVICE',"UNSPECIFIED_ILLUMINA_SEQUENCER") #change this
                 newID = 'NGS'+identifier
                 ngsSample = transaction.createNewSample('/' + space + '/' + newID, sampleType)
                 ngsSample.setParentSampleIdentifiers([sa.getSampleIdentifier()])
