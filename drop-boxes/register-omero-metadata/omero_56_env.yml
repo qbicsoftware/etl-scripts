@@ -1,0 +1,15 @@
+name: etl-omero-bifrost
+channels:
+  - ome
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.8
+  - zeroc-ice36-python=3.6.5
+  - omero-py=5.15.0
+  - pip:
+    - typer==0.9.0
+    - rich==13.5.2
+    - omero-upload==0.4.0
+    - omero-bifrost==0.0.3

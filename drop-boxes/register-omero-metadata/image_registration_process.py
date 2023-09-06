@@ -5,16 +5,17 @@ from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
 import csv
 from subprocess import Popen, PIPE
+import xml.etree.ElementTree as ET
 
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
-conda_home_path = "/home/qeana10/miniconda2/"
+conda_home_path = "/home/qeana10/miniconda3/"
 omero_lib_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.py-5.4.10-ice36-b105"
 etl_home_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/"
 
 
 class ImageRegistrationProcess:
 
-    def __init__(self, transaction, env_name="omero_env_0", project_code="", sample_code="", conda_path=None, omero_path=None, etl_path=None):
+    def __init__(self, transaction, env_name="etl-omero-bifrost", project_code="", sample_code="", conda_path=None, omero_path=None, etl_path=None):
 
         self._transaction = transaction
         self._incoming_file_name = transaction.getIncoming().getName()
@@ -41,11 +42,11 @@ class ImageRegistrationProcess:
         self._init_cmd_list.append('eval "$(' + self._conda_path + 'bin/conda shell.bash hook)"')
         self._init_cmd_list.append('conda activate ' + env_name)
 
-        self._init_cmd_list.append('export OMERO_PREFIX=' + self._omero_path)
-        self._init_cmd_list.append('export PYTHONPATH=$PYTHONPATH:$OMERO_PREFIX/lib/python')
+        #self._init_cmd_list.append('export OMERO_PREFIX=' + self._omero_path)
+        #self._init_cmd_list.append('export PYTHONPATH=$PYTHONPATH:$OMERO_PREFIX/lib/python')
         
         # now use the omero-importer app packaged in the conda env
-        self._init_cmd_list.append('export PATH=$PATH:' + self._conda_path + 'envs/' + env_name + '/bin')
+        #self._init_cmd_list.append('export PATH=$PATH:' + self._conda_path + 'envs/' + env_name + '/bin')
 
         # move to the dir where backendinterface.py lives for exec.
 
@@ -89,7 +90,7 @@ class ImageRegistrationProcess:
             sample_code = self._sample_code
 
         cmd_list = list(self._init_cmd_list)
-        cmd_list.append( "python backendinterface.py -p " + str(project_code) + " -s " + str(sample_code) )
+        cmd_list.append( "omero-bifrost query dataset-id " + str(project_code) + " " + str(sample_code) + " --to-xml" )
 
         commands = ""
         for cmd in cmd_list:
@@ -98,14 +99,19 @@ class ImageRegistrationProcess:
         process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
         out, err = process.communicate( commands )
 
-        ds_id = str(out)
+        ds_id = -1
+        output_xml = ET.fromstring(str(out))
+        for output_item in output_xml:
+            # print "---> " + str(output_item.tag) + " - " + str(output_item.attrib)
+            ds_id = int(output_item.attrib["id"])
+            break
 
         return ds_id
 
     def registerImageFileInOmero(self, file_path, dataset_id):
 
         cmd_list = list(self._init_cmd_list)
-        cmd_list.append( "python backendinterface.py -f " + file_path + " -d " + str(dataset_id) )
+        cmd_list.append( "omero-bifrost push image " + file_path + " " + str(dataset_id) + " --to-xml" )
 
         commands = ""
         for cmd in cmd_list:
@@ -114,9 +120,13 @@ class ImageRegistrationProcess:
         process = Popen( "/bin/bash", shell=False, universal_newlines=True, stdin=PIPE, stdout=PIPE, stderr=PIPE )
         out, err = process.communicate( commands )
 
-        id_list = str(out).split()
-        for img_id in id_list:
-            if not img_id.isdigit():
+        id_list = []
+        output_xml = ET.fromstring(str(out))
+        for output_item in output_xml:
+            img_id = output_item.attrib["id"]
+            if img_id.isdigit():
+                id_list.append(img_id)
+            else:
                 return []
 
         return id_list
@@ -150,14 +160,12 @@ class ImageRegistrationProcess:
         
         cmd_list = list(self._init_cmd_list)
 
-        # string format: key1::value1//key2::value2//key3::value3//...
-
         key_value_str = ""
         for key in property_map.keys(): 
-            key_value_str = key_value_str + str(key) + "::" + str(property_map[key]) + "//"
+            key_value_str = key_value_str + "--kv-pair " + str(key) + ":" + str(property_map[key]) + " "
         key_value_str = key_value_str[:len(key_value_str)-2] #remove last two chars
 
-        cmd_list.append( "python backendinterface.py -i " + str(image_id) + " -a " + key_value_str )
+        cmd_list.append( "omero-bifrost push key-value " + str(image_id) + " " + key_value_str )
 
         commands = ""
         for cmd in cmd_list:
