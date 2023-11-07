@@ -285,8 +285,8 @@ def registerDataOfType(transaction, incomingPath, currentPath, file_extension, p
     if skipData:
         prepareDataFolder(incomingPath, currentPath, topFolder, skipData, "skip")
     if hasData:
-        dataset = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT[file_extension])
-        dataset.setSample(sample)
+        dataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT[file_extension])
+        dataSet.setSample(sample)
         transaction.moveFile(topFolder, dataSet)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
