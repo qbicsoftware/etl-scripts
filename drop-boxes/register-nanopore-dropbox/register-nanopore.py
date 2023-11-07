@@ -49,9 +49,13 @@ alt_pattern = re.compile('Q\w{4}ENTITY-[1-9][0-9]*')
 NANOPORE_EXP_TYPE_CODE = "Q_NGS_NANOPORE_RUN"
 NANOPORE_SAMPLE_TYPE_CODE = "Q_NGS_NANOPORE_SINGLE_SAMPLE_RUN"
 NANOPORE_LOG_CODE = "Q_NGS_NANOPORE_RUN_LOGS"
-NANOPORE_FASTQ_CODE = "Q_NGS_NANOPORE_RUN_FASTQ"
-NANOPORE_FAST5_CODE = "Q_NGS_NANOPORE_RUN_FAST5"
 NANOPORE_SAMPLE_PREFIX = "NGS"
+
+NANOPORE_DATASET_CODE_DICT = {
+  "fast5": "Q_NGS_NANOPORE_RUN_FAST5", 
+  "fastq": "Q_NGS_NANOPORE_RUN_FASTQ", 
+  "pod5": "Q_NGS_NANOPORE_RUN_POD5"
+}
 
 # needed for pooled samples with multiple measurements
 usedSampleIdentifiers = set()
@@ -234,8 +238,8 @@ def registerUnclassifiedData(transaction, unclassifiedDataMap, runExperiment, cu
     prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5fail"), currentPath, os.path.join(topFolderFast5, "fast5_fail"))
     prepareUnclassifiedData(transaction, unclassifiedDataMap.get("fast5pass"), currentPath, os.path.join(topFolderFast5, "fast5_pass"))
 
-    fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
-    fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
+    fast5DataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT["fast5"])
+    fastQDataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT["fastq"])
     fast5DataSet.setExperiment(runExperiment)
     fastQDataSet.setExperiment(runExperiment)
     transaction.moveFile(topFolderFast5, fast5DataSet)
@@ -262,6 +266,28 @@ def prepareBasecallingFolder(incomingPath, currentPath, dataObject):
     sourcePath = os.path.join(os.path.dirname(currentPath), relativePath)
     checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
     return sourcePath
+
+# test if data contains certain sequencing format, consolidate in top folder and move to destination
+def registerDataOfType(transaction, incomingPath, currentPath, file_extension, parentSampleCode, sample, mapWithDataForSample):
+    failData = mapWithDataForSample.get(file_extension+"fail")
+    passData = mapWithDataForSample.get(file_extension+"pass")
+    skipData = mapWithDataForSample.get(file_extension+"skip")
+    hasData = failData or passData or skipData
+
+    if hasData:
+        topFolder = os.path.join(currentPath, parentSampleCode+"_"+file_extension)
+        os.makedirs(topFolder)
+
+    if failData:
+        prepareDataFolder(incomingPath, currentPath, topFolder, failData, "fail")
+    if passData:
+        prepareDataFolder(incomingPath, currentPath, topFolder, passData, "pass")
+    if skipData:
+        prepareDataFolder(incomingPath, currentPath, topFolder, skipData, "skip")
+    if hasData:
+        dataset = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT[file_extension])
+        dataset.setSample(sample)
+        transaction.moveFile(topFolder, dataSet)
 
 def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSample, openbisExperiment, currentPath, absLogPath):
     """ Aggregates all measurement related files and registers them in openBIS.
@@ -296,31 +322,25 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     fastqPass = mapWithDataForSample.get("fastqpass")
     prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, "pass")
 
-    # Aggregate the folders fast5fail and fast5pass under a common folder "<sample code>_fast5"
-    topFolderFast5 = os.path.join(currentPath, parentSampleCode+"_fast5")
-    os.makedirs(topFolderFast5)
-
-    fast5Fail = mapWithDataForSample.get("fast5fail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Fail, "fail")
-    fast5Pass = mapWithDataForSample.get("fast5pass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFast5, fast5Pass, "pass")
-
-    fast5DataSet = transaction.createNewDataSet(NANOPORE_FAST5_CODE)
-    fastQDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
-    fast5DataSet.setSample(sample)
+    fastQDataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT["fastq"])
     fastQDataSet.setSample(sample)
-    transaction.moveFile(topFolderFast5, fast5DataSet)
     transaction.moveFile(topFolderFastq, fastQDataSet)
+
+    # If fast5 files were transfered, aggregate the folders fast5fail and fast5pass and fast5_skip under a common folder "<sample code>_fast5"
+    registerDataOfType(transaction, incomingPath, currentPath, "fast5", parentSampleCode, sample, mapWithDataForSample)
+    # If pod5 files were transfered, aggregate the folders pod5fail and pod5pass and pod5_skip under a common folder "<sample code>_fast5"
+    registerDataOfType(transaction, incomingPath, currentPath, "pod5", parentSampleCode, sample, mapWithDataForSample)
+
 
     logDataSet = transaction.createNewDataSet(NANOPORE_LOG_CODE)
     logDataSet.setSample(sample)
     transaction.moveFile(absLogPath, logDataSet)
 
-    # Check if extra basecalling folder exists and handle it
+    # Check if extra basecalling folder exists and handle it. basecalling is always fastq
     basecalling = mapWithDataForSample.get("basecalling")
     if basecalling:
         basecallingFolder = prepareBasecallingFolder(incomingPath, currentPath, basecalling)
-        basecallingDataSet = transaction.createNewDataSet(NANOPORE_FASTQ_CODE)
+        basecallingDataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT["fastq"])
         basecallingDataSet.setSample(sample)
         transaction.moveFile(basecallingFolder, basecallingDataSet)
 
