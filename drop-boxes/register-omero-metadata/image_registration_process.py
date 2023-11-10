@@ -157,19 +157,6 @@ class ImageRegistrationProcess:
 
         return 0
 
-    # TODO: clean following functions
-
-    def scanImageFolder(self, image_folder_path):
-        """Scans folder for image files and returns list of file paths
-        """
-
-        for root, subFolders, files in os.walk(image_folder_path):
-            for f in files:
-                stem, ext = os.path.splitext(f)
-                if ext.lower() =='.tsv':
-                    with open(os.path.join(root, f), 'U') as fh: metadataFileContent = fh.readlines()
-        return metadataFileContent
-
     def triggerOMETiffConversion(self):
         pass
 
