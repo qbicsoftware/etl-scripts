@@ -316,7 +316,8 @@ def process(transaction):
 	default_omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 	omero_dataset_id = default_omero_dataset_id
 
-	log_print("Default omero dataset id: " + str(default_omero_dataset_id))
+	log_print("Default OMERO dataset name: " + str(sample_code))
+	log_print("Default OMERO dataset id: " + str(default_omero_dataset_id))
 
 	omero_failed = int(omero_dataset_id) < 0
 	if omero_failed:
@@ -337,7 +338,7 @@ def process(transaction):
 		raise ValueError("Invalid Property Names.")
 
 	#keep track of number of images for openBIS ID
-	image_number = 0
+	dataset_number = 0
 	#Initialize openBIS imaging experiment
 	imagingExperiment = None
 	previousProps = {}
@@ -348,7 +349,7 @@ def process(transaction):
 	for line in metadataFile[1:]:  # (Exclude header)
 
 		log_print("++++++++++++++++++++++++++++++")
-		log_print("Starting table entry iteration")
+		log_print("Metadata table iteration: " + str(dataset_number))
 
 		# Get modality and other metadata from tsv.
 		# Additional metadata is provided in an own metadata TSV file. 
@@ -382,12 +383,13 @@ def process(transaction):
 			if len(properties["SAMPLE_ID"]) == 10:
 				line_project_code = properties["SAMPLE_ID"][:5]
 				line_sample_code = properties["SAMPLE_ID"]
+				log_print("Iteration OMERO dataset name: " + line_sample_code)
 				omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=line_project_code, sample_code=line_sample_code)
 			else:
 				omero_dataset_id = default_omero_dataset_id
 		else:
 			omero_dataset_id = default_omero_dataset_id
-		log_print("Iteration omero dataset id: " + str(omero_dataset_id))
+		log_print("Iteration OMERO dataset id: " + str(omero_dataset_id))
 
 
 		# 4. After we have received the omero dataset id, we know where to import the images in OMERO.
@@ -430,8 +432,8 @@ def process(transaction):
 		previousProps = properties
 		if(not fileBelongsToExistingExperiment):
 			imagingExperiment = createNewImagingExperiment(transaction, space, project_code, properties, existing_experiment_ids)
-		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, image_number, properties)
+		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, dataset_number, properties)
 		# increment id offset for next sample in this loop
-		image_number += 1
-		
+		dataset_number += 1
+
 	log_print("Successfully finished ETL process")
