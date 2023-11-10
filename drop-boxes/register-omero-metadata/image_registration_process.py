@@ -73,7 +73,6 @@ class ImageRegistrationProcess:
         ds_id = -1
         output_xml = ET.fromstring(str(out))
         for output_item in output_xml:
-            # print "---> " + str(output_item.tag) + " - " + str(output_item.attrib)
             ds_id = int(output_item.attrib["id"])
             break
 
