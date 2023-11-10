@@ -309,16 +309,22 @@ The sample code found in the top folder is of type `Q_BIOLOGICAL_SAMPLE` (tissue
 Valid files in the folder are any imaging files that can be handled by the OMERO server
 
 **Incoming structure overview:**
+
 ```
 QABCD002A8
 |-- QABCD002A8
 |   |-- Est-B1a.lif
 |   |-- Image_1.czi
-|   |-- Image_2.czi
-|   |-- Image7246.tif
-|   |-- metadata_3.tsv
-|   |-- rubisco_avg.mrc
-|   `-- tomogram_x.mrc
+|   |-- dataset_1
+|   |   |-- Est-B1a.lif
+|   |   |-- Image_2.czi
+|   |   |-- sub_tomo_1.mrc
+|   |-- dataset_2
+|   |   |-- Est-B1a.lif
+|   |   |-- Image_2.czi
+|   |   |-- sub_tomo_1.mrc
+|   |-- tissue_x_marker_1.ome.tiff
+|   `-- metadata_table.tsv
 |-- QABCD002A8.sha256sum
 `-- source_dropbox.txt
 ```
