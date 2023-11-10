@@ -149,7 +149,7 @@ class ImageRegistrationProcess:
         key_value_str = ""
         for key in property_map.keys(): 
             key_value_str = key_value_str + "--kv-pair " + str(key) + ":" + str(property_map[key]) + " "
-        key_value_str = key_value_str[:len(key_value_str)-2] #remove last two chars
+        key_value_str = key_value_str[:len(key_value_str)-1] # remove last white space from string
 
         cmd_list.append( "omero-bifrost push key-value " + str(image_id) + " " + key_value_str )
 
