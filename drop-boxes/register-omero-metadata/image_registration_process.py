@@ -157,11 +157,6 @@ class ImageRegistrationProcess:
 
         return 0
 
-    def triggerOMETiffConversion(self):
-        pass
-
-    #TODO: Check if Metadata file is provided as defined
-
     def extractMetadataFromTSV(self, tsv_file_path):
         tsvFileMap = {}
         try:

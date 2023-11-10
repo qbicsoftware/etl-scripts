@@ -12,6 +12,7 @@ import image_registration_process as irp
 
 import checksum
 import datetime
+import time
 import re
 import os
 import urllib
@@ -60,11 +61,11 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
-#PROPPERTY_FILTER_LIST = ["IMAGE_FILENAME", "INSTRUMENT_USER", "IMAGING_DATE"]
 PROPPERTY_FILTER_LIST = ["IMAGE_FOLDER_PATH", "INSTRUMENT_USER", "IMAGING_DATE", "SAMPLE_ID", "OMERO_TAGS", "ETL_TAG"]
+# Property value placeholder, to indicate that this property has no valid value in a TSV line (for a datafolder)
+PROPPERTY_PLACEHOLDER = "*"
 
 def log_print(msg_string):
-	import time
 
 	dt_string = time.strftime('%Y-%m-%d %H:%M:%S')
 	full_string = "[BIOIMAGE-ETL " + dt_string + "] " + msg_string
@@ -102,7 +103,7 @@ def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, properties):
 	IMG_RUN_PREFIX = "IMG"
 	IMG_RUN_TYPE = "Q_BMI_GENERIC_IMAGING_RUN"
-	# IMG_RUN_OMERO_PROPERTY_CODE = "Q_OMERO_IDS"
+	
 	sample_property_map = {}#no specific properties from the metadata file yet
 
 	run = 0
@@ -118,16 +119,13 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, prope
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
 	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier()])
 	img_run.setExperiment(exp)
-	# img_run.setPropertyValue(IMG_RUN_OMERO_PROPERTY_CODE, '\n'.join(omero_image_ids))
+	
 	for incoming_label in sample_property_map:
 		if incoming_label in properties:
 			key = sample_property_map[incoming_label]
 			value = properties[incoming_label]
 			img_run.setPropertyValue(key, value)
 	return img_run
-
-def getFileFromLine(line):
-	return line.split("\t")[0]
 
 def getImageFolderPathFromLine(line):
 	return line.split("\t")[0]
@@ -190,8 +188,7 @@ def validatePropertyNames(property_names):
 	TODO: call the imaging metadata parser (with json schema).
 	"""
 
-	# fast validation without parser object.
-	# required_names = ["IMAGE_FILENAME", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+	# fast validation without parser object
 	required_names = ["IMAGE_FOLDER_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
 
 	for name in required_names:
@@ -208,12 +205,14 @@ def getPropertyMap(line, property_names):
 	property_values = line.split("\t")
 
 	for i in range(0, len(property_names)): #do not exclude first col (filename), the schema checks for it
-		## remove trailing newline, and replace space with underscore
+		
+		# remove trailing newline, and replace space with underscore. This is needed to clean the strings from the TSV.
+		# TODO: Try to wrap in method with documentation, to make it more expressive and easier to understand
 		name = property_names[i].rstrip('\n').replace(" ", "_")
 		value = property_values[i].rstrip('\n').replace(" ", "_")
 
 		# look for placeholder symbol to skip property ("*")
-		if value == "*":
+		if value == PROPPERTY_PLACEHOLDER:
 			continue
 
 		properties[name] = value
@@ -356,7 +355,6 @@ def process(transaction):
 		# We extract the metadata from this file.
 		properties = {}
 		properties = getPropertyMap(line, property_names)
-		# log_print("Line props: " + str(properties))
 
 		# Look for ETL_TAG in line/property map
 		if "ETL_TAG" in properties.keys():
@@ -365,12 +363,6 @@ def process(transaction):
 		else:
 			registrationProcess = defaultRegistrationProcess
 		
-		# # Retrieve the image file name, please no whitespace characters in filename!
-		# fileName = getFileFromLine(line)
-		# # Due to the datahandler we need to add another subfolder of the same name to the path
-		# imageFolder = os.path.join(incomingPath, folderName)
-		# imageFile = os.path.join(imageFolder, fileName)
-		# log_print("New incoming image file for OMERO registration:\t" + imageFile)
 
 		# Retrieve the image folder path, please no whitespace characters in filename!
 		# The string "./" is set to point to the relative root folder
@@ -398,9 +390,8 @@ def process(transaction):
 		log_print("Iteration omero dataset id: " + str(omero_dataset_id))
 
 
-		# 4. After we have received the omero dataset id, we know where to attach the image to
-		# in OMERO. We pass the omero dataset id and trigger the image registration process in OMERO.
-		# omero_image_ids = registrationProcess.registerImageFileInOmero(imageFile, omero_dataset_id)
+		# 4. After we have received the omero dataset id, we know where to import the images in OMERO.
+		# We pass the omero dataset id and trigger the image registration process in OMERO.
 		omero_image_ids = registrationProcess.registerImageFolder(imageFolderPath, omero_dataset_id)
 		
 		log_print("Created OMERO image identifiers: " + str(omero_image_ids))
@@ -442,8 +433,5 @@ def process(transaction):
 		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, image_number, properties)
 		# increment id offset for next sample in this loop
 		image_number += 1
-
-		# 7. Last but not least we create the open science file format for images which is
-		# OMERO-Tiff and store it in OMERO next to the proprierary vendor format.
-
+		
 	log_print("Successfully finished ETL process")
