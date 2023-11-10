@@ -55,7 +55,6 @@ def extract_barcode(filename):
     contains a qbic barcode with an invalid checksum, raise
     a RuntimeError.
 
-    TODO rewrite
     """
     try:
         code = barcode[0:-1]
@@ -109,11 +108,12 @@ def parse_timestamp_from_mzml(mzml_path):
     return time
 
 def createSimilarMSExperiment(tr, space, project, existing):
+    ID_STRING = "/{space}/{project}/{project}E{number}"
     numberOfExperiments = len(existing)
-    newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+    newExpID = ID_STRING.format(space = space, project = project, number = numberOfExperiments)
     while newExpID in existing:
         numberOfExperiments += 1 
-        newExpID = '/' + space + '/' + project + '/' + project + 'E' +str(numberOfExperiments)
+        newExpID = ID_STRING.format(space = space, project = project, number = numberOfExperiments)
     existing.append(newExpID)
     newExp = tr.createNewExperiment(newExpID, "Q_MS_MEASUREMENT")
     newExp.setPropertyValue('Q_CURRENT_STATUS', 'FINISHED')
@@ -121,6 +121,7 @@ def createSimilarMSExperiment(tr, space, project, existing):
     return newExp
 
 def createSimilarMSSample(tr, space, exp, properties, parents):
+    ID_STRING = "/{space}/MS{run}{code}"
     code = None
     for p in parents:
         code = p.split("/")[2]
@@ -129,7 +130,7 @@ def createSimilarMSSample(tr, space, exp, properties, parents):
     newSampleID = None
     while sampleExists:
         run += 1
-        newSampleID = '/' + space + '/' + 'MS'+ str(run) + code
+        newSampleID = ID_STRING.format(space = space, run = run, code = code)
         sampleExists = tr.getSampleForUpdate(newSampleID)
     newMSSample = tr.createNewSample(newSampleID, "Q_MS_RUN")
     newMSSample.setParentSampleIdentifiers(parents)
@@ -231,7 +232,6 @@ def process(transaction):
                 openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
     if not raw_path or not mzml_path:
         raise ValueError("Did not find pair of raw data and mzML data - make sure both are contained in the folder")
-    # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
     prefixes = ms_prefix_pattern.findall(name)
     if prefixes:
         prefix = prefixes[0]
@@ -240,7 +240,6 @@ def process(transaction):
                 prefix = p
         ms_code = prefix+code
     else:
-        # workaround, keep?
         ms_code = "MS"+code
     sc = SearchCriteria()
     sc.addMatchClause(SearchCriteria.MatchClause.createAttributeMatch(SearchCriteria.MatchClauseAttribute.CODE, ms_code))
