@@ -341,12 +341,12 @@ The `SAMPLE_ID` field is used to override the target sample ID for a specific da
 
 column name | description
 --------------|----------------
-`IMAGE_FOLDER_PATH`| The path to one of the folders found in the incoming folder (one data folder per line)
+`IMAGE_FOLDER_PATH`| The path to one of the data folders found in the incoming folder (one data folder per line)
 `IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). For example: NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
 `IMAGED_TISSUE` | The imaged tissue or cell type
 `INSTRUMENT_MANUFACTURER` | The imaging instrument manufacturer
 `INSTRUMENT_USER` | The person who measured the data file using the imaging instrument
-`IMAGING_DATE` | The date of the measurement in dd.mm.yyyy format (days and months with leading zeroes)
+`IMAGING_DATE` | The date of the measurement in **dd.mm.yyyy** format (days and months with leading zeroes)
 `SAMPLE_ID` | Optional, override the sample ID for a specific data folder
 `OMERO_TAGS` | Optional, used to specify OMERO tags, this will annotate all images in the data folder
 `ETL_TAG` | Optional, used to specify a modality-specific subprocess (e.g. DICOM data, CODEX/MACSima, light-sheet microscopy)
