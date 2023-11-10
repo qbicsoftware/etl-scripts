@@ -329,7 +329,7 @@ QABCD002A8
 `-- source_dropbox.txt
 ```
 
-The metadata file, ending in `.tsv` has tab-separated columns, to create the following table:
+The metadata file, ending in `.tsv`, has tab-separated columns that create the following table structure:
 ```
 IMAGE_FOLDER_PATH  IMAGING_MODALITY    IMAGED_TISSUE   SAMPLE_ID      OMERO_TAGS      ETL_TAG      INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
 ./                  NCIT_C18113         cell            *              tag-x,tag-y     *            FEI                        Dr. Horrible       01.03.2021
