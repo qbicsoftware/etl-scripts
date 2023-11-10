@@ -165,7 +165,6 @@ def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
 
 def GZipAndMoveMZMLDataSet(transaction, filepath, sample, file_exists = False):
     mzmlDataSet = transaction.createNewDataSet("Q_MS_MZML_DATA")
-    #TODO more properties from mzml?
     time_stamp = parse_timestamp_easy(filepath)
 
     mzmlDataSet.setMeasuredData(False)
