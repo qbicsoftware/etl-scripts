@@ -329,24 +329,24 @@ QABCD002A8
 `-- source_dropbox.txt
 ```
 
-The metadata file, ending in `.tsv` has tab-separated columns:
+The metadata file, ending in `.tsv` has tab-separated columns, to create the following table:
 ```
-IMAGE_FOLDER_PATH  IMAGING_MODALITY  IMAGED_TISSUE   SAMPLE_ID    OMERO_TAGS    ETL_TAG    INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
-./                  NCIT_C18113       cell            *            tag-x,tag-y   *          FEI                      Dr. Horrible     01.03.2021
-dataset_1/          NCIT_C18113       cell            *            tag-y         *          FEI                      Max Mustermann   01.04.2021
-dataset_2/          NCIT_C18216       leaf            QABCD002F5   *             dicom-vol  Zeiss                    Max Mustermann   23.02.2021
+IMAGE_FOLDER_PATH  IMAGING_MODALITY    IMAGED_TISSUE   SAMPLE_ID      OMERO_TAGS      ETL_TAG      INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
+./                  NCIT_C18113         cell            *              tag-x,tag-y     *            FEI                        Dr. Horrible       01.03.2021
+dataset_1/          NCIT_C18113         cell            *              tag-y           *            FEI                        Max Mustermann     01.04.2021
+dataset_2/          NCIT_C18216         leaf            QABCD002F5     *               dicom-vol    Zeiss                      Max Mustermann     23.02.2021
 ```
 
-The `SAMPLE_ID` field is used to override the sample ID for a specific data folder. The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the tag values. The `ETL_TAG` field is used to specify a modality-specific subprocess (e.g. transform DICOM fileset into NIfTI file). The placeholder `*` for a property value is used to indicate that this property has no valid value in a TSV line (for a datafolder). Additionally, if the value `./` is provided for `IMAGE_FOLDER_PATH`, the relative root directory will be asumed.
+The `SAMPLE_ID` field is used to override the target sample ID for a specific data folder (row in metadata table). The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the tags (tag values separated by `,`). The `ETL_TAG` field is used to specify a modality-specific subprocess (e.g. transform DICOM fileset into NIfTI file). The placeholder `*` for a property value is used to indicate that this property has no valid value in a TSV line (for a datafolder). Additionally, if the value `./` is provided for `IMAGE_FOLDER_PATH`, the relative root directory will be asumed.
 
 column name | description
 --------------|----------------
-`IMAGE_FOLDER_PATH`| the path to one of the folders found in the incoming folder (per line)
-`IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). **Examples:** NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
-`IMAGED_TISSUE` | the imaged tissue
-`INSTRUMENT_MANUFACTURER` | the imaging instrument manufacturer
-`INSTRUMENT_USER` | the person who measured the data file using the imaging instrument
-`IMAGING_DATE` | the date of the measurement in dd.mm.yyyy format (days and months with leading zeroes)
-`SAMPLE_ID` | optional, override the sample ID for a specific data folder
-`OMERO_TAGS` | optional, used to specify OMERO tags, this will annotate all images in the data folder
-`ETL_TAG` | optional, used to specify a modality-specific subprocess (e.g. DICOM data, CODEX/MACSima, light-sheet microscopy)
+`IMAGE_FOLDER_PATH`| The path to one of the folders found in the incoming folder (one data folder per line)
+`IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). For example: NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
+`IMAGED_TISSUE` | The imaged tissue or cell type
+`INSTRUMENT_MANUFACTURER` | The imaging instrument manufacturer
+`INSTRUMENT_USER` | The person who measured the data file using the imaging instrument
+`IMAGING_DATE` | The date of the measurement in dd.mm.yyyy format (days and months with leading zeroes)
+`SAMPLE_ID` | Optional, override the sample ID for a specific data folder
+`OMERO_TAGS` | Optional, used to specify OMERO tags, this will annotate all images in the data folder
+`ETL_TAG` | Optional, used to specify a modality-specific subprocess (e.g. DICOM data, CODEX/MACSima, light-sheet microscopy)
