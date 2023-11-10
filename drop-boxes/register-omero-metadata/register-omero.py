@@ -410,6 +410,7 @@ def process(transaction):
 			raise ValueError("Omero did not return expected image ids.")
 
 		# 5.1 Validate metadata for image file
+		# Temporaly disabled, pending REMBI alignment and ETL logic modifications
 		# ImagingMetadataValidator.validateImagingProperties(getValidationMap(properties))
 		
 		# Annotate with metadata, using OMERO key-value pairs and tags 
