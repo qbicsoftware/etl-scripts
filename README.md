@@ -331,14 +331,17 @@ QABCD002A8
 
 The metadata file, ending in `.tsv` has tab-separated columns:
 ```
-IMAGE_FILENAME  IMAGING_MODALITY  IMAGED_TISSUE  INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
-tomogram_x.mrc   NCIT_C18113       cell           FEI                      Dr. Horrible     01.03.2021
-rubisco_avg.mrc  NCIT_C18113       cell           FEI                      Max Mustermann   01.04.2021
-Image7246.tif    NCIT_C18216       leaf           Zeiss                    Max Mustermann   23.02.2021
-Est-B1a.lif      NCIT_C17753       root           Zeiss                    Max Mustermann   01.02.2021
-Image_1.czi      NCIT_C17753       leaf           Zeiss                    Max Mustermann   11.02.2021
-Image_2.czi      NCIT_C17753       leaf           Zeiss                    Max Mustermann   01.02.2021
+IMAGE_FOLDER_PATH  IMAGING_MODALITY  IMAGED_TISSUE   SAMPLE_ID    OMERO_TAGS    ETL_TAG    INSTRUMENT_MANUFACTURER  INSTRUMENT_USER  IMAGING_DATE
+./                  NCIT_C18113       cell            *            tag-x,tag-y   *          FEI                      Dr. Horrible     01.03.2021
+dataset_1/          NCIT_C18113       cell            *            tag-y         *          FEI                      Max Mustermann   01.04.2021
+dataset_2/          NCIT_C18216       leaf            QABCD002F5   *             dicom-vol  Zeiss                    Max Mustermann   23.02.2021
 ```
+
+The `SAMPLE_ID` field is used to override the sample ID for a specific data folder.
+The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the tag values.
+The `ETL_TAG` field is used to specify a modality-specific subprocess (e.g. transform DICOM fileset into NIfTI file).
+
+
 
 column name | description
 --------------|----------------

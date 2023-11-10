@@ -301,10 +301,14 @@ def process(transaction):
 	# 2. We want to get the openBIS sample code from the incoming data
 	# This tells us to which biological sample the image data was aquired from.
 	project_code, sample_code = registrationProcess.fetchOpenBisSampleCode()
+	default_project_code = project_code
+	default_sample_code = sample_code
 
 	#find specific sample
 	tissueSample = registrationProcess.searchOpenBisSample(sample_code)
+	default_tissueSample = tissueSample
 	space = tissueSample.getSpace()
+	default_space = space
 
 	# 3. We now request the associated omero dataset id for the openBIS sample code.
 	# Each dataset in OMERO contains the associated openBIS biological sample id, which
@@ -384,10 +388,24 @@ def process(transaction):
 				line_project_code = properties["SAMPLE_ID"][:5]
 				line_sample_code = properties["SAMPLE_ID"]
 				log_print("Iteration OMERO dataset name: " + line_sample_code)
-				omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=line_project_code, sample_code=line_sample_code)
+				project_code = line_project_code
+				sample_code = line_sample_code
+				# find specific sample
+				tissueSample = registrationProcess.searchOpenBisSample(sample_code)
+				space = tissueSample.getSpace()
+				# request OMERO dataset ID
+				omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
 			else:
+				project_code = default_project_code
+				sample_code = default_sample_code
+				tissueSample = default_tissueSample
+				space = default_space
 				omero_dataset_id = default_omero_dataset_id
 		else:
+			project_code = default_project_code
+			sample_code = default_sample_code
+			tissueSample = default_tissueSample
+			space = default_space
 			omero_dataset_id = default_omero_dataset_id
 		log_print("Iteration OMERO dataset id: " + str(omero_dataset_id))
 
