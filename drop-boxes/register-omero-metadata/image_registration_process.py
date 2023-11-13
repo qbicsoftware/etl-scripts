@@ -12,13 +12,12 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 
 # TODO: avoid hardcoding paths, try environment variables or parameters
 conda_home_path = "/home/qeana10/miniconda3/"
-omero_lib_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/OMERO.py-5.4.10-ice36-b105"
 etl_home_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/"
 
 
 class ImageRegistrationProcess:
 
-    def __init__(self, transaction, env_name="etl-omero-bifrost", project_code="", sample_code="", conda_path=None, omero_path=None, etl_path=None):
+    def __init__(self, transaction, env_name="etl-omero-bifrost", project_code="", sample_code="", conda_path=None, etl_path=None):
 
         self._transaction = transaction
         self._incoming_file_name = transaction.getIncoming().getName()
@@ -31,10 +30,6 @@ class ImageRegistrationProcess:
         self._conda_path = conda_home_path
         if not conda_path is None:
             self._conda_path = conda_path
-
-        self._omero_path = omero_lib_path
-        if not omero_path is None:
-            self._omero_path = omero_path
 
         self._etl_path= etl_home_path
         if not etl_path is None:
