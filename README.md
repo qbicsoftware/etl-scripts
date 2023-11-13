@@ -329,7 +329,7 @@ QABCD002A8
 `-- source_dropbox.txt
 ```
 
-The metadata annotations are specified in the TSV file `metadata_table.tsv` file. This file ends in `.tsv`, it has tab-separated columns that create the following table structure:
+The metadata annotations are specified in the TSV file `metadata_table.tsv`. This file ends in `.tsv`, it has tab-separated columns that create the following table structure:
 
 ```
 IMAGE_FOLDER_PATH  IMAGING_MODALITY    IMAGED_TISSUE   SAMPLE_ID      OMERO_TAGS      ETL_TAG      INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
