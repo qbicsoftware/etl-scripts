@@ -329,7 +329,7 @@ QABCD002A8
 `-- source_dropbox.txt
 ```
 
-The metadata annotations are specified in the file `metadata_table.tsv` file. This file ends in `.tsv`, it has tab-separated columns that create the following table structure:
+The metadata annotations are specified in the TSV file `metadata_table.tsv` file. This file ends in `.tsv`, it has tab-separated columns that create the following table structure:
 
 ```
 IMAGE_FOLDER_PATH  IMAGING_MODALITY    IMAGED_TISSUE   SAMPLE_ID      OMERO_TAGS      ETL_TAG      INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
@@ -338,7 +338,7 @@ dataset_1/          NCIT_C18113         cell            *              tag-y    
 dataset_2/          NCIT_C18216         leaf            QABCD002F5     *               dicom-vol    Zeiss                      Max Mustermann     23.02.2021
 ```
 
-The `SAMPLE_ID` field is used to override the target sample ID for a specific data folder (row in metadata table). The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the tags (tag values separated by `,`). The `ETL_TAG` field is used to specify a modality-specific subprocess (e.g. transform DICOM fileset into NIfTI file). The placeholder `*` for a property value is used to indicate that this property has no valid value in a TSV line (for a datafolder). Additionally, if the value `./` is provided for `IMAGE_FOLDER_PATH`, the relative root directory will be asumed.
+The `SAMPLE_ID` field is used to override the target sample ID for a specific data folder (row in the metadata table). The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the specified tags in the OMERO server (tag values separated by the character `,`). The `ETL_TAG` field is used to specify a modality-specific subprocess within the ETL process. Modality-specific subprocesses aim to provide additional support for specialized data processing in a range of bioimaging modalities (e.g. transform DICOM fileset into NIfTI file). The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). Additionally, if the value `./` is provided for `IMAGE_FOLDER_PATH`, the relative root directory will be asumed.
 
 column name | description
 --------------|----------------
@@ -348,6 +348,6 @@ column name | description
 `INSTRUMENT_MANUFACTURER` | The imaging instrument manufacturer
 `INSTRUMENT_USER` | The person who measured the data file using the imaging instrument
 `IMAGING_DATE` | The date of the measurement in **dd.mm.yyyy** format (days and months with leading zeroes)
-`SAMPLE_ID` | Optional, override the sample ID for a specific data folder
-`OMERO_TAGS` | Optional, used to specify OMERO tags, this will annotate all images in the data folder
-`ETL_TAG` | Optional, used to specify a modality-specific subprocess (e.g. DICOM data, CODEX/MACSima, light-sheet microscopy)
+`SAMPLE_ID` | Overrides the sample ID for a specific data folder (Optional)
+`OMERO_TAGS` | Used to specify OMERO tags, this will annotate all images in the data folder (Optional)
+`ETL_TAG` | Used to specify a modality-specific subprocess (e.g. for DICOM data, CODEX/MACSima, or light-sheet microscopy) (Optional)
