@@ -11,7 +11,7 @@ import os
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 
 # TODO: avoid hardcoding paths, try environment variables or parameters
-conda_home_path = "/home/qeana10/miniconda3/"
+conda_home_path = "/home/qeana10/bin/miniconda3/"
 etl_home_path = "/home/qeana10/openbis/servers/core-plugins/QBIC/1/dss/drop-boxes/register-omero-metadata/"
 
 
