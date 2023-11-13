@@ -216,7 +216,7 @@ def process(transaction):
     mzml_path = None
     openbis_format_code = None
     for root, subFolders, files in os.walk(incomingPath):
-        if s in subFolders:
+        for s in subFolders:
             stem, ext = os.path.splitext(s)
             if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
                 if raw_path:
