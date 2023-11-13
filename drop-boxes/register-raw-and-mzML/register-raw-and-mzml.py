@@ -89,7 +89,7 @@ def parse_instrument_accession(mzml_path):
                     if "accession=" in token:
                         accession = token.split('"')[1]
                 break
-        print "accession for "+mzml_path+": "+accession
+        print "accession for "+mzml_path+": "+str(accession)
         return accession
 
 def parse_timestamp_from_mzml(mzml_path):
@@ -216,8 +216,13 @@ def process(transaction):
     mzml_path = None
     openbis_format_code = None
     for root, subFolders, files in os.walk(incomingPath):
-        if subFolders:
-            subFolder = subFolders[0]
+        for s in subFolders:
+            stem, ext = os.path.splitext(s)
+            if ext.lower() in VENDOR_FORMAT_EXTENSIONS:
+                if raw_path:
+                    raise ValueError("More than one raw file found. Only one pair of raw data and mzML can be registered at a time")
+                raw_path = s
+                openbis_format_code = VENDOR_FORMAT_EXTENSIONS[ext.lower()]
         for f in files:
             stem, ext = os.path.splitext(f)
             if ext.lower()=='.mzml':
