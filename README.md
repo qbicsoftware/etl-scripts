@@ -122,7 +122,7 @@ sequencing result id.
 
 **Description**  
 To be recognized as PacBio sequencing data by the script, at least one bam,
-the pacbio bam index (.bam.pbi) and the xml file.
+the pacbio bam index (.bam.pbi) and the pacbio xml file needs to be contained:
 
 ```
 <QBIC sample code>_<anything>_pacbio // Directory
@@ -330,10 +330,10 @@ workflow_type - DDA or DIA
 [register-raw-and-mzml.py](drop-boxes/register-convert-ms-vendor-format)
 
 **Resulting data model in openBIS**  
-...Q_TEST_SAMPLE -> Q_MS_RUN per data file --> 2 DataSets per data file, one for raw data, one converted to mzML
+...Q_TEST_SAMPLE -> Q_MS_RUN per data file --> 2 DataSets per data file, one for raw data, one for the provided mzML
 
 **Expected data structure**
-In every use case, the data structure needs to contain a top folder around the respective data in order to accommodate both the raw and the converted file.
+The data structure needs to contain a top folder around the respective files in order to accommodate both the raw and the converted file.
 
 The sample code found in the top folder can be of type `Q_TEST_SAMPLE` or `Q_MS_RUN`. In the former case, a new sample of type `Q_MS_RUN` is created and attached as child to the test sample.
 
