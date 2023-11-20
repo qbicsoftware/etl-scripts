@@ -44,14 +44,16 @@ openBIS.
 
 Formats:
 
-- [NGS single-end / paired-end data](#ngs-single-end--paired-end-data)
+- [Illumina NGS single-end / paired-end data](#illumina-ngs-single-end--paired-end-data)
+- [PacBio NGS data](#pacbio-ngs-data)
 - [HLA Typing data](#hla-typing-data)
 - [NGS single-end / paired-end data with metadata (deprecated)](#ngs-single-end--paired-end-data-with-metadata)
 - [Attachment Data](#attachment-data)
 - [Mass Spectrometry mzML conversion and registration](#mass-spectrometry-mzml-conversion-and-registration)
+- [Mass Spectrometry with preconverted mzML](#mass-spectrometry-with-preconverted-mzml)
 - [Imaging data with an OMERO server instance](#imaging-data-with-an-omero-server-instance)
 
-### NGS single-end / paired-end data
+### Illumina NGS single-end / paired-end data
 
 **Responsible dropbox:**
 [QBiC-register-fastq-dropbox](drop-boxes/register-fastq-dropbox)
@@ -98,6 +100,37 @@ look like this:
 <QBIC sample code>.fastq.gz // Directory
     |-- <QBIC sample code>.fastq.gz
     |-- <QBIC sample code>.fastq.gz.sha256sum
+```
+
+### PacBio NGS data
+
+**Responsible dropbox:**
+[QBiC-register-pacbio](drop-boxes/register-pacbio-dropbox)
+
+**Resulting data model in openBIS**  
+Q_TEST_SAMPLE -> Q_NGS_PACBIO_RUN" (with sample code) -> DataSet
+of type Q_NGS_PACBIO_DATA (directory with files contained)
+
+Example sample ids are:
+
+QABCD001AE (Analyte, Q_TEST_SAMPLE)  
+NGSQABCD001AE (Sequencing result, Q_NGS_PACBIO_RUN)
+
+If several runs are submitted with the same analyte id, then no new id
+for the run is generated, but a new dataset attached to the existing
+sequencing result id.
+
+**Description**  
+To be recognized as PacBio sequencing data by the script, at least one bam,
+the pacbio bam index (.bam.pbi) and the pacbio xml file needs to be contained:
+
+```
+<QBIC sample code>_<anything>_pacbio // Directory
+    |-- <anyname1>.xml
+    |-- <anyname2>.bam.pbi
+    |-- <anybam1>.bam
+    |-- <anybam2>.bam
+    ...
 ```
 
 ### HLA Typing data
@@ -270,8 +303,8 @@ The source_dropbox.txt currently has to indicate the source as one of the Immuno
 
 The `metadata.tsv` columns for the Immunomics case are tab-separated:
 ```
-Filename	Q_MS_DEVICE	Q_MEASUREMENT_FINISH_DATE	Q_EXTRACT_SHARE	Q_ADDITIONAL_INFO	Q_MS_LCMS_METHODS	technical_replicate	workflow_type
-file1.raw	THERMO_QEXACTIVE	171010	10		QEX_TOP07_470MIN	DDA_Rep1	DDA
+Filename    Q_MS_DEVICE Q_MEASUREMENT_FINISH_DATE   Q_EXTRACT_SHARE Q_ADDITIONAL_INFO   Q_MS_LCMS_METHODS   technical_replicate workflow_type
+file1.raw   THERMO_QEXACTIVE    171010  10      QEX_TOP07_470MIN    DDA_Rep1    DDA
 ```
 
 Filename - one of the (e.g. raw) file names found in the incoming structure
@@ -289,6 +322,33 @@ Q_MS_LCMS_METHODS - openBIS code from the vocabulary of LCMS methods
 technical_replicate - free text to denote replicates
 
 workflow_type - DDA or DIA
+
+
+### Mass Spectrometry with preconverted mzML
+
+**Responsible dropbox:**
+[register-raw-and-mzml.py](drop-boxes/register-convert-ms-vendor-format)
+
+**Resulting data model in openBIS**  
+...Q_TEST_SAMPLE -> Q_MS_RUN per data file --> 2 DataSets per data file, one for raw data, one for the provided mzML
+
+**Expected data structure**
+The data structure needs to contain a top folder around the respective files in order to accommodate both the raw and the converted file.
+
+The sample code found in the top folder can be of type `Q_TEST_SAMPLE` or `Q_MS_RUN`. In the former case, a new sample of type `Q_MS_RUN` is created and attached as child to the test sample.
+
+**Valid folder/file types**:
+- Thermo Fisher Raw file format
+- Waters Raw folder
+- Bruker .d folder
+
+**Incoming structure overview:**
+```
+QABCD102A5_20201229145526_20201014_CO_0976StSi_R05
+|-- QABCD102A5_20201229145526_20201014_CO_0976StSi_R05.raw
+|-- QABCD102A5_20201229145526_20201014_CO_0976StSi_R05.mzML
+```
+In this case, existing mass spectrometry metadata is expected to be already stored and the dataset will be attached.
 
 
 ### Imaging data with an OMERO server instance
