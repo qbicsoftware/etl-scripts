@@ -435,6 +435,6 @@ column name | description
 `INSTRUMENT_MANUFACTURER` | The imaging instrument manufacturer
 `INSTRUMENT_USER` | The person who measured the data file using the imaging instrument
 `IMAGING_DATE` | The date of the measurement in **dd.mm.yyyy** format (days and months with leading zeroes)
-`SAMPLE_ID` | Overrides the sample ID for a specific data folder (Optional)
-`OMERO_TAGS` | Used to specify OMERO tags, this will annotate all images in the data folder (Optional)
-`ETL_TAG` | Used to specify a modality-specific subprocess (e.g. for DICOM data, CODEX/MACSima, or light-sheet microscopy) (Optional)
+`SAMPLE_ID` | Overrides the sample ID for a specific data folder **(Optional)**
+`OMERO_TAGS` | Used to specify OMERO tags, this will annotate all images in the data folder **(Optional)**
+`ETL_TAG` | Used to specify a modality-specific subprocess (e.g. for DICOM data, CODEX/MACSima, or light-sheet microscopy) **(Optional)**
