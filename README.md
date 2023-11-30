@@ -356,13 +356,13 @@ In this case, existing mass spectrometry metadata is expected to be already stor
 **Responsible dropbox:**
 [QBiC-register-omero-metadata](drop-boxes/register-omero-metadata)
 
-**Resulting data model in openBIS**  
+**Resulting data model in openBIS:**  
 For each biological sample, multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that biological sample, `Q_BIOLOGICAL_SAMPLE` -> one `Q_BMI_GENERIC_IMAGING_RUN` per data target (e.g. an image file, or folder containing image files).
 
-**Expected data structure**
+**Expected data structure:**
 The structure of the input data needs to contain a top (root) folder, named after the corresponding biological sample code, this code (ID) is of type `Q_BIOLOGICAL_SAMPLE`. This data folder must contain a `metadata_table.tsv` file to specify image-level metadata, by defining a table where each row indicates an image data target, i.e. a path to an image file, or a sub-folder containing image files (`IMAGE_DATA_PATH`). The columns of the table are used to specify names (keys) of metadata properties, or ETL parameters (e.g. `IMAGE_DATA_PATH`, `SAMPLE_ID`, `ETL_TAG`).
 
-**Valid file types**:
+**Valid file types:**
 Valid files in the folder are any bioimage files that can be handled by Bio-Formats and an OMERO server. This ETL process uses the `omero-py` CLI and remote API to register the input data into an OMERO server.
 
 **Incoming structure overview:**
@@ -424,6 +424,8 @@ dataset_1/Image_2.czi        NCIT_C18113         cell            Zeiss          
 dataset_1/sub_tomo_1.mrc     NCIT_C18113         cell            FEI                        Max Mustermann     01.04.2021
 dataset_2/                   NCIT_C18216         leaf            Zeiss                      Max Mustermann     23.02.2021
 ```
+
+**Description of image-level metadata table:**
 
 column name | description
 --------------|----------------
