@@ -363,7 +363,7 @@ For each biological sample, multiple images (the data files) can be created, so 
 The structure of the input data needs to contain a top (root) folder, named after the corresponding biological sample code, this code (ID) is of type `Q_BIOLOGICAL_SAMPLE`. This data folder must contain a `metadata_table.tsv` file to specify image-level metadata, by defining a table where each row indicates an image data target, i.e. a path to an image file, or a sub-folder containing image files (`IMAGE_DATA_PATH`). The columns of the table are used to specify names (keys) of metadata properties, or ETL parameters (e.g. `IMAGE_DATA_PATH`, `SAMPLE_ID`, `ETL_TAG`).
 
 **Valid file types:**
-Valid files in the folder are any bioimage files that can be handled by Bio-Formats and an OMERO server. This ETL process uses the `omero-py` CLI and remote API to register the input data into an OMERO server.
+Valid files in the folder are any bioimage files that can be handled by Bio-Formats and an OMERO server. This ETL process uses the [`omero-py`](https://github.com/ome/omero-py) CLI and remote API to register the input data into an OMERO server.
 
 **Incoming structure overview:**
 
