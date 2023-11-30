@@ -51,7 +51,7 @@ Formats:
 - [Attachment Data](#attachment-data)
 - [Mass Spectrometry mzML conversion and registration](#mass-spectrometry-mzml-conversion-and-registration)
 - [Mass Spectrometry with preconverted mzML](#mass-spectrometry-with-preconverted-mzml)
-- [Imaging data with an OMERO server instance](#imaging-data-with-an-omero-server-instance)
+- [BioImage data with OMERO server](#bioimage-data-with-omero-server)
 
 ### Illumina NGS single-end / paired-end data
 
@@ -351,37 +351,35 @@ QABCD102A5_20201229145526_20201014_CO_0976StSi_R05
 In this case, existing mass spectrometry metadata is expected to be already stored and the dataset will be attached.
 
 
-### Imaging data with an OMERO server instance
+### BioImage data with OMERO server
 
 **Responsible dropbox:**
 [QBiC-register-omero-metadata](drop-boxes/register-omero-metadata)
 
 **Resulting data model in openBIS**  
-For each tissue sample multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that tissue sample
-...Q_BIOLOGICAL_SAMPLE -> one Q_BMI_GENERIC_IMAGING_RUN per data file
+For each biological sample, multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that biological sample
+...Q_BIOLOGICAL_SAMPLE -> one Q_BMI_GENERIC_IMAGING_RUN per data target (e.g. an image file, or folder containing image files)
 
 **Expected data structure**
-In every use case, the data structure needs to contain a top folder around the respective data in order to accommodate metadata files.
-
-The sample code found in the top folder is of type `Q_BIOLOGICAL_SAMPLE` (tissue imaging).
+The structure of the input data needs to contain a top (root) folder, named after the corresponding biological sample code, this code (ID) is of type `Q_BIOLOGICAL_SAMPLE`. This data folder must contain a `metadata_table.tsv` file to specify image-level metadata, by defining a table where each row indicates an image data target, i.e. a path to an image file, or a sub-folder containing image files (`IMAGE_DATA_PATH`). The columns of the table are used to specify names (keys) of metadata properties, or ETL parameters (e.g. `IMAGE_DATA_PATH`, `SAMPLE_ID`, `ETL_TAG`).
 
 **Valid file types**:
-Valid files in the folder are any imaging files that can be handled by the OMERO server
+Valid files in the folder are any bioimage files that can be handled by Bio-Formats and an OMERO server. This ETL process uses the `omero-py` CLI and remote API to register the input data into an OMERO server.
 
 **Incoming structure overview:**
 
 ```
 QABCD002A8
 |-- QABCD002A8
-|   |-- Est-B1a.lif
+|   |-- Est-B1b.lif
 |   |-- Image_1.czi
 |   |-- dataset_1
-|   |   |-- Est-B1a.lif
+|   |   |-- Est-B2a.lif
 |   |   |-- Image_2.czi
 |   |   |-- sub_tomo_1.mrc
 |   |-- dataset_2
-|   |   |-- Est-B1a.lif
-|   |   |-- Image_2.czi
+|   |   |-- Est-B3c.lif
+|   |   |-- Image_3.czi
 |   |   |-- sub_tomo_1.mrc
 |   |-- tissue_x_marker_1.ome.tiff
 |   `-- metadata_table.tsv
@@ -392,17 +390,45 @@ QABCD002A8
 The metadata annotations are specified in the TSV file `metadata_table.tsv`. This file ends in `.tsv`, it has tab-separated columns that create the following table structure:
 
 ```
-IMAGE_FOLDER_PATH  IMAGING_MODALITY    IMAGED_TISSUE   SAMPLE_ID      OMERO_TAGS      ETL_TAG      INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
+IMAGE_DATA_PATH  IMAGING_MODALITY    IMAGED_TISSUE   SAMPLE_ID      OMERO_TAGS      ETL_TAG      INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
 ./                  NCIT_C18113         cell            *              tag-x,tag-y     *            FEI                        Dr. Horrible       01.03.2021
 dataset_1/          NCIT_C18113         cell            *              tag-y           *            FEI                        Max Mustermann     01.04.2021
 dataset_2/          NCIT_C18216         leaf            QABCD002F5     *               dicom-vol    Zeiss                      Max Mustermann     23.02.2021
 ```
 
-The `SAMPLE_ID` field is used to override the target sample ID for a specific data folder (row in the metadata table). The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the specified tags in the OMERO server (tag values separated by the character `,`). The `ETL_TAG` field is used to specify a modality-specific subprocess within the ETL process for a specific data folder. Modality-specific subprocesses aim to provide additional support for specialized data processing (e.g. transform DICOM fileset into NIfTI file) in a range of bioimaging modalities (e.g. MRI/DICOM, CODEX/MACSima, light-sheet microscopy). The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). If the value `./` is provided for `IMAGE_FOLDER_PATH`, the relative root directory will be asumed.
+The `SAMPLE_ID` field is used to override the target sample ID (`Q_BIOLOGICAL_SAMPLE`) for a specific data sub-folder (row in the metadata table). The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the specified tags in the OMERO server (tag values separated by the character `,`). The `ETL_TAG` field is used to specify a modality-specific subprocess within the ETL process for a specific data sub-folder. Modality-specific subprocesses aim to provide additional support for specialized data processing (e.g. transform DICOM fileset into NIfTI file) in a range of bioimaging modalities (e.g. MRI/DICOM, CODEX/MACSima, light-sheet microscopy). The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). If the value `./` is provided for `IMAGE_DATA_PATH`, the relative root directory will be asumed (targets the root folder).
+
+The following use-case exemplifies a data structure and metadata table with both image file and sub-folder targets:
+
+```
+QABCD002A8
+|-- QABCD002A8
+|   |-- Est-B1a.lif
+|   |-- Image_1.czi
+|   |-- dataset_1
+|   |   |-- Image_2.czi
+|   |   |-- sub_tomo_1.mrc
+|   |-- dataset_2
+|   |   |-- Est-B2c.lif
+|   |   |-- Image_3.czi
+|   |   |-- sub_tomo_2.mrc
+|   `-- metadata_table.tsv
+|-- QABCD002A8.sha256sum
+`-- source_dropbox.txt
+```
+
+```
+IMAGE_DATA_PATH             IMAGING_MODALITY    IMAGED_TISSUE   INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
+Est-B1a.lif                  NCIT_C18113         leaf            FEI                        Dr. Horrible       01.03.2021
+Image_1.czi                  NCIT_C18113         leaf            Zeiss                      Dr. Horrible       01.03.2021
+dataset_1/Image_2.czi        NCIT_C18113         cell            Zeiss                      Max Mustermann     01.04.2021
+dataset_1/sub_tomo_1.mrc     NCIT_C18113         cell            FEI                        Max Mustermann     01.04.2021
+dataset_2/                   NCIT_C18216         leaf            Zeiss                      Max Mustermann     23.02.2021
+```
 
 column name | description
 --------------|----------------
-`IMAGE_FOLDER_PATH`| The path to one of the data folders found in the incoming folder (one data folder per line)
+`IMAGE_DATA_PATH`| The relative path to one of the image files, or data sub-folders found in the incoming root folder (one data target per line)
 `IMAGING_MODALITY`| Ontology Identifier for the imaging modality, currently from the [NCI Thesaurus](https://ncit.nci.nih.gov/ncitbrowser/pages/home.jsf?version=21.02d). For example: NCIT_C18113 (Cryo-Electron Microscopy), NCIT_C18216 (Transmission Electron Microscopy), NCIT_C17753 (Confocal Microscopy)
 `IMAGED_TISSUE` | The imaged tissue or cell type
 `INSTRUMENT_MANUFACTURER` | The imaging instrument manufacturer

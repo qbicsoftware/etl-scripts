@@ -37,7 +37,9 @@ from life.qbic.utils import ImagingMetadataValidator
 # a) Since experiments and samples for the imaging run should not exist yet in openBIS, we expect the previous level's barcode
 #    This should be a tissue sample (Q_BIOLOGICAL_SAMPLE).
 # b) This barcode follows the pattern:
+
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
+
 # c) example: QW12X001AB
 # d) (the checksum digit is correct)
 #
