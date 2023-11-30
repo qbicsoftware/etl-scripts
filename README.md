@@ -357,8 +357,7 @@ In this case, existing mass spectrometry metadata is expected to be already stor
 [QBiC-register-omero-metadata](drop-boxes/register-omero-metadata)
 
 **Resulting data model in openBIS**  
-For each biological sample, multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that biological sample
-...Q_BIOLOGICAL_SAMPLE -> one Q_BMI_GENERIC_IMAGING_RUN per data target (e.g. an image file, or folder containing image files)
+For each biological sample, multiple images (the data files) can be created, so multiple Q_BMI_GENERIC_IMAGING_RUN samples are created and attached to that biological sample, `Q_BIOLOGICAL_SAMPLE` -> one `Q_BMI_GENERIC_IMAGING_RUN` per data target (e.g. an image file, or folder containing image files).
 
 **Expected data structure**
 The structure of the input data needs to contain a top (root) folder, named after the corresponding biological sample code, this code (ID) is of type `Q_BIOLOGICAL_SAMPLE`. This data folder must contain a `metadata_table.tsv` file to specify image-level metadata, by defining a table where each row indicates an image data target, i.e. a path to an image file, or a sub-folder containing image files (`IMAGE_DATA_PATH`). The columns of the table are used to specify names (keys) of metadata properties, or ETL parameters (e.g. `IMAGE_DATA_PATH`, `SAMPLE_ID`, `ETL_TAG`).
