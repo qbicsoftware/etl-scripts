@@ -418,11 +418,11 @@ QABCD002A8
 
 ```
 IMAGE_DATA_PATH             IMAGING_MODALITY    IMAGED_TISSUE   INSTRUMENT_MANUFACTURER    INSTRUMENT_USER    IMAGING_DATE
-Est-B1a.lif                  NCIT_C18113         leaf            FEI                        Dr. Horrible       01.03.2021
-Image_1.czi                  NCIT_C18113         leaf            Zeiss                      Dr. Horrible       01.03.2021
-dataset_1/Image_2.czi        NCIT_C18113         cell            Zeiss                      Max Mustermann     01.04.2021
-dataset_1/sub_tomo_1.mrc     NCIT_C18113         cell            FEI                        Max Mustermann     01.04.2021
-dataset_2/                   NCIT_C18216         leaf            Zeiss                      Max Mustermann     23.02.2021
+Est-B1a.lif                    NCIT_C18113         leaf            FEI                        Dr. Horrible       01.03.2021
+Image_1.czi                    NCIT_C18113         leaf            Zeiss                      Dr. Horrible       01.03.2021
+dataset_1/Image_2.czi          NCIT_C18113         cell            Zeiss                      Max Mustermann     01.04.2021
+dataset_1/sub_tomo_1.mrc       NCIT_C18113         cell            FEI                        Max Mustermann     01.04.2021
+dataset_2/                     NCIT_C18216         leaf            Zeiss                      Max Mustermann     23.02.2021
 ```
 
 **Description of image-level metadata table:**
