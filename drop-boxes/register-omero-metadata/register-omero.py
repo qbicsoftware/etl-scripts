@@ -61,6 +61,9 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
+# For fast validation without parser object
+REQUIRED_PROPPERTY_LIST = ["IMAGE_FOLDER_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+# To filter property list before pushing key-value pair to OMERO server
 PROPPERTY_FILTER_LIST = ["IMAGE_FOLDER_PATH", "INSTRUMENT_USER", "IMAGING_DATE", "SAMPLE_ID", "OMERO_TAGS", "ETL_TAG"]
 # Property value placeholder, to indicate that this property has no valid value in a TSV line (for a datafolder)
 PROPPERTY_PLACEHOLDER = "*"
@@ -189,9 +192,7 @@ def validatePropertyNames(property_names):
 	"""
 
 	# fast validation without parser object
-	required_names = ["IMAGE_FOLDER_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
-
-	for name in required_names:
+	for name in REQUIRED_PROPPERTY_LIST:
 		if not name in property_names:
 			return False
 
