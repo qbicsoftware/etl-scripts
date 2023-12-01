@@ -395,7 +395,13 @@ dataset_1/          NCIT_C18113         cell            *              tag-y    
 dataset_2/          NCIT_C18216         leaf            QABCD002F5     *               dicom-vol    Zeiss                      Max Mustermann     23.02.2021
 ```
 
-The `SAMPLE_ID` field is used to override the target sample ID (`Q_BIOLOGICAL_SAMPLE`) for a specific data sub-folder (row in the metadata table). The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the specified tags in the OMERO server (tag values separated by the character `,`). The `ETL_TAG` field is used to specify a modality-specific subprocess within the ETL process for a specific data sub-folder. Modality-specific subprocesses aim to provide additional support for specialized data processing (e.g. transform DICOM fileset into NIfTI file) in a range of bioimaging modalities (e.g. MRI/DICOM, CODEX/MACSima, light-sheet microscopy). The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). If the value `./` is provided for `IMAGE_DATA_PATH`, the relative root directory will be asumed (targets the root folder).
+The `SAMPLE_ID` field provides a way to override the sample ID parameter (`Q_BIOLOGICAL_SAMPLE`) for a specific data sub-folder (row in the metadata table).
+
+The `OMERO_TAGS` field is used to specify OMERO tags, this will annotate all images in the data folder with the specified tags in the OMERO server (tag values separated by the character `,`).
+
+The `ETL_TAG` field is used to specify a modality-specific subprocess within the ETL process for a specific data sub-folder. Modality-specific subprocesses aim to provide additional support for specialized data processing (e.g. transform DICOM fileset into NIfTI file) in a range of bioimaging modalities (e.g. MRI/DICOM, CODEX/MACSima, light-sheet microscopy).
+
+The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). If the value `./` is provided for `IMAGE_DATA_PATH`, the relative root directory will be asumed (targets the root folder).
 
 **Using file and sub-folder registration targets:**
 The following use-case exemplifies a data structure and metadata table with both image file and sub-folder targets:
