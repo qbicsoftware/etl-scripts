@@ -390,7 +390,6 @@ def process(transaction):
 			if len(properties["SAMPLE_ID"]) == 10:
 				line_project_code = properties["SAMPLE_ID"][:5]
 				line_sample_code = properties["SAMPLE_ID"]
-				log_print("Iteration OMERO dataset name: " + line_sample_code)
 				project_code = line_project_code
 				sample_code = line_sample_code
 				# find specific sample
@@ -410,8 +409,8 @@ def process(transaction):
 			tissueSample = default_tissueSample
 			space = default_space
 			omero_dataset_id = default_omero_dataset_id
+		log_print("Iteration OMERO dataset name: " + sample_code)
 		log_print("Iteration OMERO dataset id: " + str(omero_dataset_id))
-
 
 		# 4. After we have received the omero dataset id, we know where to import the images in OMERO.
 		# We pass the omero dataset id and trigger the image registration process in OMERO.
