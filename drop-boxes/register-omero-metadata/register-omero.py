@@ -64,11 +64,11 @@ INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
 # For fast validation without parser object
-REQUIRED_PROPPERTY_LIST = ["IMAGE_DATA_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+REQUIRED_PROPERTY_LIST = ["IMAGE_DATA_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
 # To filter property list before pushing key-value pair to OMERO server
-PROPPERTY_FILTER_LIST = ["IMAGE_DATA_PATH", "INSTRUMENT_USER", "IMAGING_DATE", "SAMPLE_ID", "OMERO_TAGS", "ETL_TAG"]
+PROPERTY_FILTER_LIST = ["IMAGE_DATA_PATH", "INSTRUMENT_USER", "IMAGING_DATE", "SAMPLE_ID", "OMERO_TAGS", "ETL_TAG"]
 # Property value placeholder, to indicate that this property has no valid value in a TSV line (for a datafolder)
-PROPPERTY_PLACEHOLDER = "*"
+PROPERTY_PLACEHOLDER = "*"
 
 def log_print(msg_string):
 
@@ -201,7 +201,7 @@ def validatePropertyNames(property_names):
 	"""
 
 	# fast validation without parser object
-	for name in REQUIRED_PROPPERTY_LIST:
+	for name in REQUIRED_PROPERTY_LIST:
 		if not name in property_names:
 			return False
 
@@ -222,7 +222,7 @@ def getPropertyMap(line, property_names):
 		value = property_values[i].rstrip('\n').replace(" ", "_")
 
 		# look for placeholder symbol to skip property ("*")
-		if value == PROPPERTY_PLACEHOLDER:
+		if value == PROPERTY_PLACEHOLDER:
 			continue
 
 		properties[name] = value
@@ -442,7 +442,7 @@ def process(transaction):
 		# Annotate with metadata, using OMERO key-value pairs and tags 
 		# one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
-			registrationProcess.registerOmeroKeyValuePairs(img_id, filterOmeroPropertyMap(properties, PROPPERTY_FILTER_LIST))
+			registrationProcess.registerOmeroKeyValuePairs(img_id, filterOmeroPropertyMap(properties, PROPERTY_FILTER_LIST))
 
 		if "OMERO_TAGS" in properties.keys():
 			tag_list = properties["OMERO_TAGS"].split(",")
