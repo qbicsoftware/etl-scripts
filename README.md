@@ -365,22 +365,19 @@ The structure of the input data needs to contain a top (root) folder, named afte
 **Valid file types:**
 Valid files in the folder are any bioimage files that can be handled by Bio-Formats and an OMERO server. This ETL process uses the Python package [`omero-bifrost`](https://github.com/qbicsoftware/omero-bifrost) to register the input data into an OMERO server, this package depends on the [`omero-py`](https://github.com/ome/omero-py) CLI and remote API for image data and metadata transfer.
 
-**Incoming structure overview:**
-
+**Incoming data structure overview:**
 ```
 QABCD002A8
 |-- QABCD002A8
-|   |-- Est-B1b.lif
+|   |-- Est-B1a.lif
 |   |-- Image_1.czi
 |   |-- dataset_1
-|   |   |-- Est-B2a.lif
 |   |   |-- Image_2.czi
 |   |   |-- sub_tomo_1.mrc
 |   |-- dataset_2
-|   |   |-- Est-B3c.lif
+|   |   |-- Est-B2c.lif
 |   |   |-- Image_3.czi
-|   |   |-- sub_tomo_1.mrc
-|   |-- tissue_x_marker_1.ome.tiff
+|   |   |-- sub_tomo_2.mrc
 |   `-- metadata_table.tsv
 |-- QABCD002A8.sha256sum
 `-- source_dropbox.txt
@@ -404,26 +401,7 @@ The `ETL_TAG` field is used to specify a modality-specific subprocess within the
 The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). If the value `./` is provided for `IMAGE_DATA_PATH`, the relative root directory will be asumed (targets the root folder).
 
 **Using file and sub-folder registration targets:**
-The following use-case exemplifies a data structure and metadata table with both image file and sub-folder targets:
-
-***Data structure:***
-
-```
-QABCD002A8
-|-- QABCD002A8
-|   |-- Est-B1a.lif
-|   |-- Image_1.czi
-|   |-- dataset_1
-|   |   |-- Image_2.czi
-|   |   |-- sub_tomo_1.mrc
-|   |-- dataset_2
-|   |   |-- Est-B2c.lif
-|   |   |-- Image_3.czi
-|   |   |-- sub_tomo_2.mrc
-|   `-- metadata_table.tsv
-|-- QABCD002A8.sha256sum
-`-- source_dropbox.txt
-```
+The following use-case exemplifies a metadata table with both image file and sub-folder targets. for the same data structure, it is possible to specify metadata for individual images and sub-folder, using the following metadata file:
 
 ***Metadata table:***
 
