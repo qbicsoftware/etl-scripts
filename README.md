@@ -401,7 +401,7 @@ The `ETL_TAG` field is used to specify a modality-specific subprocess within the
 The placeholder value `*` for a property (table column) is used to indicate that the property has no valid value for the data folder specified in the table row (line in the TSV file). If the value `./` is provided for `IMAGE_DATA_PATH`, the relative root directory will be asumed (targets the root folder).
 
 **Using file and sub-folder registration targets:**
-The following use-case exemplifies a metadata table with both image file and sub-folder targets. for the same data structure, it is possible to specify metadata for individual images and sub-folder, using the following metadata file:
+The following use-case exemplifies a metadata table with both image file and sub-folder targets. For the same data structure (see above), it is possible to specify metadata for individual images and sub-folder, using the following metadata file:
 
 ***Metadata table:***
 
