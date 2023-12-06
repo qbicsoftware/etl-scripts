@@ -37,7 +37,9 @@ from life.qbic.utils import ImagingMetadataValidator
 # a) Since experiments and samples for the imaging run should not exist yet in openBIS, we expect the previous level's barcode
 #    This should be a tissue sample (Q_BIOLOGICAL_SAMPLE).
 # b) This barcode follows the pattern:
+
 barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
+
 # c) example: QW12X001AB
 # d) (the checksum digit is correct)
 #
@@ -61,9 +63,12 @@ barcode_pattern = re.compile('Q[a-zA-Z0-9]{4}[0-9]{3}[A-Z][a-zA-Z0-9]')
 INCOMING_DATE_FORMAT = '%d.%m.%Y'
 OPENBIS_DATE_FORMAT = '%Y-%m-%d'
 
-PROPPERTY_FILTER_LIST = ["IMAGE_FOLDER_PATH", "INSTRUMENT_USER", "IMAGING_DATE", "SAMPLE_ID", "OMERO_TAGS", "ETL_TAG"]
+# For fast validation without parser object
+REQUIRED_PROPERTY_LIST = ["IMAGE_DATA_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
+# To filter property list before pushing key-value pair to OMERO server
+PROPERTY_FILTER_LIST = ["IMAGE_DATA_PATH", "INSTRUMENT_USER", "IMAGING_DATE", "SAMPLE_ID", "OMERO_TAGS", "ETL_TAG"]
 # Property value placeholder, to indicate that this property has no valid value in a TSV line (for a datafolder)
-PROPPERTY_PLACEHOLDER = "*"
+PROPERTY_PLACEHOLDER = "*"
 
 def log_print(msg_string):
 
@@ -127,8 +132,15 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, prope
 			img_run.setPropertyValue(key, value)
 	return img_run
 
-def getImageFolderPathFromLine(line):
-	return line.split("\t")[0]
+def getImageDataTargetPathFromLine(line):
+
+	data_target_path = line.split("\t")[0]
+
+	# The string "./" is set to point to the relative root folder
+	if data_target_path == "./":
+			data_target_path = ""
+
+	return data_target_path
 
 def isSameExperimentMetadata(props1, props2):
 	"""dependent on metadata dictionaries of two different files (data model), decide if new openBIS experiment needs to be created
@@ -189,9 +201,7 @@ def validatePropertyNames(property_names):
 	"""
 
 	# fast validation without parser object
-	required_names = ["IMAGE_FOLDER_PATH", "IMAGING_MODALITY", "IMAGED_TISSUE", "INSTRUMENT_MANUFACTURER", "INSTRUMENT_USER", "IMAGING_DATE"]
-
-	for name in required_names:
+	for name in REQUIRED_PROPERTY_LIST:
 		if not name in property_names:
 			return False
 
@@ -212,7 +222,7 @@ def getPropertyMap(line, property_names):
 		value = property_values[i].rstrip('\n').replace(" ", "_")
 
 		# look for placeholder symbol to skip property ("*")
-		if value == PROPPERTY_PLACEHOLDER:
+		if value == PROPERTY_PLACEHOLDER:
 			continue
 
 		properties[name] = value
@@ -275,7 +285,7 @@ def printPropertyMap(property_map):
 
 def process(transaction):
 	
-	log_print("###########################################")
+	log_print("##################################################")
 	log_print("Starting ETL transaction")
 	"""The main entry point.
 	
@@ -352,7 +362,7 @@ def process(transaction):
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
 
-		log_print("++++++++++++++++++++++++++++++")
+		log_print("++++++++++++++++++++++++++++++++++++++++++++++++++")
 		log_print("Metadata table iteration: " + str(dataset_number))
 
 		# Get modality and other metadata from tsv.
@@ -369,25 +379,23 @@ def process(transaction):
 			registrationProcess = defaultRegistrationProcess
 		
 
-		# Retrieve the image folder path, please no whitespace characters in filename!
+		# Retrieve the path to image data target, an image file or a data folder
+		# Please NO whitespace (or special) characters in path, or filename!
 		# The string "./" is set to point to the relative root folder
-		relativeFolderPath = getImageFolderPathFromLine(line)
-		if relativeFolderPath == "./":
-			relativeFolderPath = ""
+		relativeTargetPath = getImageDataTargetPathFromLine(line)
 
-		log_print("RelativeFolderPath: " + relativeFolderPath)
+		log_print("Relative data target path: " + relativeTargetPath)
 		# Due to the datahandler we need to add another subfolder of the same name to the path
 		basePath = os.path.join(incomingPath, folderName)
-		log_print("BasePath: " + basePath)
-		imageFolderPath = os.path.join(basePath, relativeFolderPath)
-		log_print("Incoming folder path for OMERO import: " + imageFolderPath)
+		log_print("Base path: " + basePath)
+		targetPath = os.path.join(basePath, relativeTargetPath)
+		log_print("Incoming target path for OMERO import: " + targetPath)
 
 		# Look for overriding SAMPLE_ID in line/property map
 		if "SAMPLE_ID" in properties.keys():
 			if len(properties["SAMPLE_ID"]) == 10:
 				line_project_code = properties["SAMPLE_ID"][:5]
 				line_sample_code = properties["SAMPLE_ID"]
-				log_print("Iteration OMERO dataset name: " + line_sample_code)
 				project_code = line_project_code
 				sample_code = line_sample_code
 				# find specific sample
@@ -395,6 +403,7 @@ def process(transaction):
 				space = tissueSample.getSpace()
 				# request OMERO dataset ID
 				omero_dataset_id = registrationProcess.requestOmeroDatasetId(project_code=project_code, sample_code=sample_code)
+				log_print("Overriding SAMPLE_ID ...")
 			else:
 				project_code = default_project_code
 				sample_code = default_sample_code
@@ -407,13 +416,19 @@ def process(transaction):
 			tissueSample = default_tissueSample
 			space = default_space
 			omero_dataset_id = default_omero_dataset_id
+		log_print("Iteration OMERO dataset name: " + sample_code)
 		log_print("Iteration OMERO dataset id: " + str(omero_dataset_id))
-
 
 		# 4. After we have received the omero dataset id, we know where to import the images in OMERO.
 		# We pass the omero dataset id and trigger the image registration process in OMERO.
-		omero_image_ids = registrationProcess.registerImageFolder(imageFolderPath, omero_dataset_id)
-		
+		# We need to find out if the target path is for an image file or a folder containing images
+		omero_image_ids = []
+		if os.path.isfile(targetPath):
+			log_print("Found path file target ...")
+			omero_image_ids = registrationProcess.registerImageFileInOmero(targetPath, omero_dataset_id)
+		elif os.path.isdir(targetPath):
+			log_print("Found path folder target ...")
+			omero_image_ids = registrationProcess.registerImageFolder(targetPath, omero_dataset_id)
 		log_print("Created OMERO image identifiers: " + str(omero_image_ids))
 
 		omero_failed = len(omero_image_ids) < 1
@@ -427,7 +442,7 @@ def process(transaction):
 		# Annotate with metadata, using OMERO key-value pairs and tags 
 		# one file can have many images, iterate over all img ids
 		for img_id in omero_image_ids:
-			registrationProcess.registerOmeroKeyValuePairs(img_id, filterOmeroPropertyMap(properties, PROPPERTY_FILTER_LIST))
+			registrationProcess.registerOmeroKeyValuePairs(img_id, filterOmeroPropertyMap(properties, PROPERTY_FILTER_LIST))
 
 		if "OMERO_TAGS" in properties.keys():
 			tag_list = properties["OMERO_TAGS"].split(",")
