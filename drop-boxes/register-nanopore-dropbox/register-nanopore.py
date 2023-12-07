@@ -169,10 +169,13 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     runExperiment.setPropertyValue("Q_NGS_BASE_CALLER", measurement.getBaseCaller())
     runExperiment.setPropertyValue("Q_NGS_BASE_CALLER_VERSION", measurement.getBaseCallerVersion())
     runExperiment.setPropertyValue("Q_SEQUENCER_DEVICE", measurement.getDeviceType())
+    # TODO flow cell position might not be available for MINION - check for MINION in the future and set to default value
     runExperiment.setPropertyValue("Q_FLOWCELL_BARCODE", measurement.getFlowcellId())
     runExperiment.setPropertyValue("Q_FLOWCELL_POSITION", measurement.getFlowCellPosition())
     runExperiment.setPropertyValue("Q_FLOWCELL_TYPE", measurement.getFlowCellType())
-    runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT", measurement.getLibraryPreparationKit())
+    # TODO parsing issue with new library prep kit: this should be fixed in core-utils-lib!
+    prepkitStripped = measurement.getLibraryPreparationKit().split(":")[0]
+    runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT", prepkitStripped)
     runExperiment.setPropertyValue("Q_NANOPORE_HOSTNAME", measurement.getMachineHost())
     runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
     runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", convertTime(measurement.getStartDate()))
@@ -185,6 +188,7 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         # 3.) Aggregate all log files into an own log folder per measurement
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder, origin)
         createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
+    # TODO find out and fix why this call can lead to nullpointer exception:
     unclassifiedMap = measurement.getUnclassifiedData()
     if containsUnclassifiedData(unclassifiedMap):
         registerUnclassifiedData(transaction, unclassifiedMap, runExperiment, currentPath, measurement.getFlowcellId())
@@ -313,19 +317,8 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     sample.setExperiment(openbisExperiment)
     sample.setParentSampleIdentifiers([parentID])
 
-    # Aggregate the folders fastqfail and fastqpass under a common folder "<sample code>_fastq"
-    topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
-    os.makedirs(topFolderFastq)
-
-    fastqFail = mapWithDataForSample.get("fastqfail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, "fail")
-    fastqPass = mapWithDataForSample.get("fastqpass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, "pass")
-
-    fastQDataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT["fastq"])
-    fastQDataSet.setSample(sample)
-    transaction.moveFile(topFolderFastq, fastQDataSet)
-
+    # If fastq files were transfered, aggregate the folders fastqfail and fastqpass and fastq_skip under a common folder "<sample code>_fastq"
+    registerDataOfType(transaction, incomingPath, currentPath, "fastq", parentSampleCode, sample, mapWithDataForSample)
     # If fast5 files were transfered, aggregate the folders fast5fail and fast5pass and fast5_skip under a common folder "<sample code>_fast5"
     registerDataOfType(transaction, incomingPath, currentPath, "fast5", parentSampleCode, sample, mapWithDataForSample)
     # If pod5 files were transfered, aggregate the folders pod5fail and pod5pass and pod5_skip under a common folder "<sample code>_fast5"
