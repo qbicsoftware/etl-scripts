@@ -105,22 +105,28 @@ def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 			img_exp.setPropertyValue(key, value)
 	return img_exp
 
-def createNewImagingRun(tr, base_sample, exp, omero_image_ids, run_offset, properties):
+def createNewImagingRun(tr, base_sample, exp, omero_image_ids, previousSamplesMap, properties):
+
+	log_print("Creating new Imaging Run Sample in openBIS for base sample "+base_sample.getCode())
 	IMG_RUN_PREFIX = "IMG"
 	IMG_RUN_TYPE = "Q_BMI_GENERIC_IMAGING_RUN"
 	
 	sample_property_map = {}#no specific properties from the metadata file yet
 
-	run = 0
+	offset = 0
 	exists = True
 	new_sample_id = None
 	# respect samples already in openbis
 	while exists:
-		run += 1
-		new_sample_id = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(run) + base_sample.getCode()
+		offset += 1
+		new_sample_id = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(offset) + base_sample.getCode()
+		log_print("Testing if run with id "+new_sample_id +" exists already")
 		exists = tr.getSampleForUpdate(new_sample_id)
 	# add additional offset for samples registered in this call of the ETL script, but before this sample
-	new_sample_id_with_offset = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(run+run_offset) + base_sample.getCode()
+	if base_sample in previousSamplesMap:
+		offset += previousSamplesMap[base_sample]
+	new_sample_id_with_offset = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(offset) + base_sample.getCode()
+	log_print("Creating new run sample "+new_sample_id_with_offset)
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
 	img_run.setParentSampleIdentifiers([base_sample.getSampleIdentifier()])
 	img_run.setExperiment(exp)
@@ -351,12 +357,13 @@ def process(transaction):
 	if not valid_names:
 		raise ValueError("Invalid Property Names.")
 
-	#keep track of number of images for openBIS ID
-	dataset_number = 0
-	#Initialize openBIS imaging experiment
+	# Initialize openBIS imaging experiment
 	imagingExperiment = None
 	previousProps = {}
 	existing_experiment_ids = []
+
+	# remember base sample codes for additional offset
+	previousSamples = {}
 
 	log_print("Starting metadata table iterations")
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
@@ -465,8 +472,10 @@ def process(transaction):
 		previousProps = properties
 		if(not fileBelongsToExistingExperiment):
 			imagingExperiment = createNewImagingExperiment(transaction, space, project_code, properties, existing_experiment_ids)
-		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, dataset_number, properties)
-		# increment id offset for next sample in this loop
-		dataset_number += 1
+		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, previousSamples, properties)
+		if tissueSample in previousSamples:
+			previousSamples[tissueSample] = previousSamples[tissueSample]+1
+		else:
+			previousSamples[tissueSample] = 1
 
 	log_print("Successfully finished ETL process")
