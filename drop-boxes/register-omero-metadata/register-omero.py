@@ -105,7 +105,7 @@ def createNewImagingExperiment(tr, space, project, properties, existing_ids):
 			img_exp.setPropertyValue(key, value)
 	return img_exp
 
-def createNewImagingRun(tr, base_sample, exp, omero_image_ids, properties):
+def createNewImagingRun(tr, base_sample, exp, omero_image_ids, previousSamplesMap, properties):
 
 	log_print("Creating new Imaging Run Sample in openBIS for base sample "+base_sample.getCode())
 	IMG_RUN_PREFIX = "IMG"
@@ -123,6 +123,8 @@ def createNewImagingRun(tr, base_sample, exp, omero_image_ids, properties):
 		log_print("Testing if run with id "+new_sample_id +" exists already")
 		exists = tr.getSampleForUpdate(new_sample_id)
 	# add additional offset for samples registered in this call of the ETL script, but before this sample
+	if base_sample in previousSamplesMap:
+		offset += previousSamplesMap[base_sample]
 	new_sample_id_with_offset = '/' + base_sample.getSpace() + '/' + IMG_RUN_PREFIX + str(offset) + base_sample.getCode()
 	log_print("Creating new run sample "+new_sample_id_with_offset)
 	img_run = tr.createNewSample(new_sample_id_with_offset, IMG_RUN_TYPE)
@@ -355,10 +357,13 @@ def process(transaction):
 	if not valid_names:
 		raise ValueError("Invalid Property Names.")
 
-	#Initialize openBIS imaging experiment
+	# Initialize openBIS imaging experiment
 	imagingExperiment = None
 	previousProps = {}
 	existing_experiment_ids = []
+
+	# remember base sample codes for additional offset
+	previousSamples = {}
 
 	log_print("Starting metadata table iterations")
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
@@ -467,6 +472,10 @@ def process(transaction):
 		previousProps = properties
 		if(not fileBelongsToExistingExperiment):
 			imagingExperiment = createNewImagingExperiment(transaction, space, project_code, properties, existing_experiment_ids)
-		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, properties)
+		imagingSample = createNewImagingRun(transaction, tissueSample, imagingExperiment, omero_image_ids, previousSamples, properties)
+		if tissueSample in previousSamples:
+			previousSamples[tissueSample] = previousSamples[tissueSample]+1
+		else:
+			previousSamples[tissueSample] = 1
 
 	log_print("Successfully finished ETL process")
