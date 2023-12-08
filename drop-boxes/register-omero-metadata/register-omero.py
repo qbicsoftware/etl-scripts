@@ -367,8 +367,9 @@ def process(transaction):
 
 	log_print("Starting metadata table iterations")
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
+	dataset_number = 0
 	for line in metadataFile[1:]:  # (Exclude header)
-
+		dataset_number += 1
 		log_print("++++++++++++++++++++++++++++++++++++++++++++++++++")
 		log_print("Metadata table iteration: " + str(dataset_number))
 
