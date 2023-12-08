@@ -364,11 +364,11 @@ def process(transaction):
 
 	# remember base sample codes for additional offset
 	previousSamples = {}
-
+	dataset_number = 0
 	log_print("Starting metadata table iterations")
 	# Iterate over the metadata entries containing all pre-specified imaging metadata
 	for line in metadataFile[1:]:  # (Exclude header)
-
+		dataset_number += 1
 		log_print("++++++++++++++++++++++++++++++++++++++++++++++++++")
 		log_print("Metadata table iteration: " + str(dataset_number))
 
