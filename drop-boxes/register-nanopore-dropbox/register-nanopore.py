@@ -10,6 +10,7 @@ import checksum
 import re
 import time
 import os
+import errno
 import shutil
 from datetime import datetime
 import ch.systemsx.cisd.etlserver.registrator.api.v2
@@ -54,7 +55,8 @@ NANOPORE_SAMPLE_PREFIX = "NGS"
 NANOPORE_DATASET_CODE_DICT = {
   "fast5": "Q_NGS_NANOPORE_RUN_FAST5", 
   "fastq": "Q_NGS_NANOPORE_RUN_FASTQ", 
-  "pod5": "Q_NGS_NANOPORE_RUN_POD5"
+  "pod5": "Q_NGS_NANOPORE_RUN_POD5",
+  "bam": "Q_NGS_MAPPING_DATA"
 }
 
 # needed for pooled samples with multiple measurements
@@ -172,7 +174,8 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
     runExperiment.setPropertyValue("Q_FLOWCELL_BARCODE", measurement.getFlowcellId())
     runExperiment.setPropertyValue("Q_FLOWCELL_POSITION", measurement.getFlowCellPosition())
     runExperiment.setPropertyValue("Q_FLOWCELL_TYPE", measurement.getFlowCellType())
-    runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT", measurement.getLibraryPreparationKit())
+    prepkitStripped = measurement.getLibraryPreparationKit().split(":")[0]
+    runExperiment.setPropertyValue("Q_LIBRARY_PREPKIT", prepkitStripped)
     runExperiment.setPropertyValue("Q_NANOPORE_HOSTNAME", measurement.getMachineHost())
     runExperiment.setPropertyValue("Q_DATA_GENERATION_FACILITY", origin)
     runExperiment.setPropertyValue("Q_MEASUREMENT_START_DATE", convertTime(measurement.getStartDate()))
@@ -185,9 +188,13 @@ def createExperimentFromMeasurement(transaction, currentPath, space, project, me
         # 3.) Aggregate all log files into an own log folder per measurement
         copyLogFilesTo(measurement.getLogFiles(), currentPath, newLogFolder, origin)
         createSampleWithData(transaction, space, barcode, datamap, runExperiment, currentPath, newLogFolder)
-    unclassifiedMap = measurement.getUnclassifiedData()
-    if containsUnclassifiedData(unclassifiedMap):
-        registerUnclassifiedData(transaction, unclassifiedMap, runExperiment, currentPath, measurement.getFlowcellId())
+    try:
+        unclassifiedMap = measurement.getUnclassifiedData()
+        if containsUnclassifiedData(unclassifiedMap):
+            registerUnclassifiedData(transaction, unclassifiedMap, runExperiment, currentPath, measurement.getFlowcellId())
+    except:
+        print "error while trying to fetch unclassified data, ignoring"
+        pass
 
 # fills the global dictionary containing all checksums for paths from the global checksum file
 def fillChecksumMap(checksumFilePath):
@@ -267,6 +274,26 @@ def prepareBasecallingFolder(incomingPath, currentPath, dataObject):
     checksumFile = createChecksumFileForFolder(incomingPath, sourcePath)
     return sourcePath
 
+# registers folders with specified suffixes. can be used for data that is not part of the validated schema
+def registerFoldersStartingWithFileExtension(transaction, currentPath, sample, parentSampleCode, suffix):
+    foundData = False
+    topFolder = os.path.join(currentPath, parentSampleCode+"_"+suffix)
+    for name in os.listdir(currentPath):
+        namePath = os.path.join(currentPath, name)
+        if name.startswith(suffix) and os.path.isdir(namePath):
+            try:
+                os.makedirs(topFolder)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+            foundData = True
+            destination = os.path.join(topFolder, name)
+            os.rename(namePath, destination)
+    if foundData:
+        dataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT[suffix])
+        dataSet.setSample(sample)
+        transaction.moveFile(topFolder, dataSet)
+
 # test if data contains certain sequencing format, consolidate in top folder and move to destination
 def registerDataOfType(transaction, incomingPath, currentPath, file_extension, parentSampleCode, sample, mapWithDataForSample):
     failData = mapWithDataForSample.get(file_extension+"fail")
@@ -313,24 +340,15 @@ def createSampleWithData(transaction, space, parentSampleCode, mapWithDataForSam
     sample.setExperiment(openbisExperiment)
     sample.setParentSampleIdentifiers([parentID])
 
-    # Aggregate the folders fastqfail and fastqpass under a common folder "<sample code>_fastq"
-    topFolderFastq = os.path.join(currentPath, parentSampleCode+"_fastq")
-    os.makedirs(topFolderFastq)
-
-    fastqFail = mapWithDataForSample.get("fastqfail")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqFail, "fail")
-    fastqPass = mapWithDataForSample.get("fastqpass")
-    prepareDataFolder(incomingPath, currentPath, topFolderFastq, fastqPass, "pass")
-
-    fastQDataSet = transaction.createNewDataSet(NANOPORE_DATASET_CODE_DICT["fastq"])
-    fastQDataSet.setSample(sample)
-    transaction.moveFile(topFolderFastq, fastQDataSet)
-
+    # If fastq files were transfered, aggregate the folders fastqfail and fastqpass and fastq_skip under a common folder "<sample code>_fastq"
+    registerDataOfType(transaction, incomingPath, currentPath, "fastq", parentSampleCode, sample, mapWithDataForSample)
     # If fast5 files were transfered, aggregate the folders fast5fail and fast5pass and fast5_skip under a common folder "<sample code>_fast5"
     registerDataOfType(transaction, incomingPath, currentPath, "fast5", parentSampleCode, sample, mapWithDataForSample)
     # If pod5 files were transfered, aggregate the folders pod5fail and pod5pass and pod5_skip under a common folder "<sample code>_fast5"
-    registerDataOfType(transaction, incomingPath, currentPath, "pod5", parentSampleCode, sample, mapWithDataForSample)
-
+    #registerDataOfType(transaction, incomingPath, currentPath, "pod5", parentSampleCode, sample, mapWithDataForSample)
+    # If other specific data folders were sent, but could not be parsed, use this dirty fix to register them
+    registerFoldersStartingWithFileExtension(transaction, currentPath, sample, parentSampleCode, "pod5")
+    registerFoldersStartingWithFileExtension(transaction, currentPath, sample, parentSampleCode, "bam")
 
     logDataSet = transaction.createNewDataSet(NANOPORE_LOG_CODE)
     logDataSet.setSample(sample)
