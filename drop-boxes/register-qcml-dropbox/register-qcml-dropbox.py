@@ -15,21 +15,21 @@ from java.io import File
 from org.apache.commons.io import FileUtils
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchCriteria
 from ch.systemsx.cisd.openbis.generic.shared.api.v1.dto import SearchSubCriteria
-######## Sample Tracking related import
-from life.qbic.sampletracking import SampleTracker
-from life.qbic.sampletracking import ServiceCredentials
-from java.net import URL
-
-import sample_tracking_helper_qbic as tracking_helper
-#### Setup Sample Tracking service
-SERVICE_CREDENTIALS = ServiceCredentials()
-SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
-SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
-SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
-
-### We need this object to update the sample status later
-SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
+# ######## Sample Tracking related import
+# from life.qbic.sampletracking import SampleTracker
+# from life.qbic.sampletracking import ServiceCredentials
+# from java.net import URL
+#
+# import sample_tracking_helper_qbic as tracking_helper
+# #### Setup Sample Tracking service
+# SERVICE_CREDENTIALS = ServiceCredentials()
+# SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+# SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+# SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+# DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
+#
+# ### We need this object to update the sample status later
+# SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
 
 # ETL script for registration of VCF files
 # expected:
@@ -104,17 +104,17 @@ def process(transaction):
                         os.remove(os.path.realpath(os.path.join(incomingPath,f)))
         transaction.moveFile(incomingPath, dataSet)
 
-        #sample tracking section
-        wait_seconds = 1
-        max_attempts = 3
-        for attempt in range(max_attempts):
-                try:
-                        SAMPLE_TRACKER.updateSampleStatus(parentCode, DATA_AVAILABLE_JSON)
-                        break
-                except:
-                        print "Updating location for sample "+parentCode+" failed on attempt "+str(attempt+1)
-                        if attempt < max_attempts -1:
-                                time.sleep(wait_seconds)
-                                continue
-                        else:
-                                raise
+        # #sample tracking section
+        # wait_seconds = 1
+        # max_attempts = 3
+        # for attempt in range(max_attempts):
+        #         try:
+        #                 SAMPLE_TRACKER.updateSampleStatus(parentCode, DATA_AVAILABLE_JSON)
+        #                 break
+        #         except:
+        #                 print "Updating location for sample "+parentCode+" failed on attempt "+str(attempt+1)
+        #                 if attempt < max_attempts -1:
+        #                         time.sleep(wait_seconds)
+        #                         continue
+        #                 else:
+        #                         raise

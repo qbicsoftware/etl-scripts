@@ -39,21 +39,21 @@ try:
 except AttributeError:
     import pipes
     quote = pipes.quote
-######## Sample Tracking related import
-from life.qbic.sampletracking import SampleTracker
-from life.qbic.sampletracking import ServiceCredentials
-from java.net import URL
-
-import sample_tracking_helper_qbic as tracking_helper
-#### Setup Sample Tracking service
-SERVICE_CREDENTIALS = ServiceCredentials()
-SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
-SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
-SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
-
-### We need this object to update the sample status later
-SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
+# ######## Sample Tracking related import
+# from life.qbic.sampletracking import SampleTracker
+# from life.qbic.sampletracking import ServiceCredentials
+# from java.net import URL
+#
+# import sample_tracking_helper_qbic as tracking_helper
+# #### Setup Sample Tracking service
+# SERVICE_CREDENTIALS = ServiceCredentials()
+# SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+# SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+# SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+# DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
+#
+# ### We need this object to update the sample status later
+# SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -483,20 +483,20 @@ class SampleNotFoundError(Exception):
     def __str__(self):
         return self.value
 
-def handleSampleTracking(barcode):
-    wait_seconds = 1
-    max_attempts = 3
-    for attempt in range(max_attempts):
-        try:
-            SAMPLE_TRACKER.updateSampleStatus(barcode, DATA_AVAILABLE_JSON)
-            break
-        except:
-            print "Updating location for sample "+barcode+" failed on attempt "+str(attempt+1)
-            if attempt < max_attempts -1:
-                time.sleep(wait_seconds)
-                continue
-            else:
-                raise
+# def handleSampleTracking(barcode):
+    # wait_seconds = 1
+    # max_attempts = 3
+    # for attempt in range(max_attempts):
+    #     try:
+    #         SAMPLE_TRACKER.updateSampleStatus(barcode, DATA_AVAILABLE_JSON)
+    #         break
+    #     except:
+    #         print "Updating location for sample "+barcode+" failed on attempt "+str(attempt+1)
+    #         if attempt < max_attempts -1:
+    #             time.sleep(wait_seconds)
+    #             continue
+    #         else:
+    #             raise
 
 def createRawDataSet(transaction, incomingPath, sample, format, time_stamp):
     rawDataSet = transaction.createNewDataSet("Q_MS_RAW_DATA")
@@ -670,7 +670,7 @@ def handleImmunoFiles(transaction):
                 print "test, deleting "+mzml_dest
             createRawDataSet(transaction, raw_path, newMSSample, openbis_format_code, time_stamp)
         # samples have the same parent, so only one iteration is needed, IF all datasets were successfully created
-        handleSampleTracking(parentCode)
+        # handleSampleTracking(parentCode)
     # no metadata file: just one RAW file to convert and attach to samples
     else:
         # TODO allow complex barcodes in dropboxhandler so this can be changed to be more stable
