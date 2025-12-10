@@ -69,26 +69,26 @@ from ch.ethz.sis.openbis.generic.asapi.v3.dto.sample.search import SampleSearchC
 
 import mtbutils
 from mtbutils import Counter
-######## Sample Tracking related import
-from life.qbic.sampletracking import SampleTracker
-from life.qbic.sampletracking import ServiceCredentials
-from java.net import URL
-
-import sample_tracking_helper_qbic as tracking_helper
-#### Setup Sample Tracking service
-SERVICE_CREDENTIALS = ServiceCredentials()
-SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
-SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
-SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
-DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
-
-### We need this object to update the sample status later
-SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
-
-######## Sample Tracking related import
-from life.qbic.sampletracking import SampleTracker
-from life.qbic.sampletracking import ServiceCredentials
-from java.net import URL
+# ######## Sample Tracking related import
+# from life.qbic.sampletracking import SampleTracker
+# from life.qbic.sampletracking import ServiceCredentials
+# from java.net import URL
+#
+# import sample_tracking_helper_qbic as tracking_helper
+# #### Setup Sample Tracking service
+# SERVICE_CREDENTIALS = ServiceCredentials()
+# SERVICE_CREDENTIALS.user = tracking_helper.get_service_user()
+# SERVICE_CREDENTIALS.password = tracking_helper.get_service_password()
+# SERVICE_REGISTRY_URL = URL(tracking_helper.get_service_reg_url())
+# DATA_AVAILABLE_JSON = tracking_helper.get_data_available_status_json()
+#
+# ### We need this object to update the sample status later
+# SAMPLE_TRACKER = SampleTracker.createLocationIndependentSampleTracker(SERVICE_REGISTRY_URL, SERVICE_CREDENTIALS)
+#
+# ######## Sample Tracking related import
+# from life.qbic.sampletracking import SampleTracker
+# from life.qbic.sampletracking import ServiceCredentials
+# from java.net import URL
 
 #############################################################################
 #
@@ -150,23 +150,23 @@ COUNTER = Counter()
 #
 #############################################################################
 
-def update_sample_location_to_qbic(sampleId):
-    """Calls the sample status service and updates the
-    location to QBiC and the status 'DATA AT QBiC'.
-    """
-    wait_seconds = 1
-    max_attempts = 3
-    for attempt in range(max_attempts):
-        try:
-            SAMPLE_TRACKER.updateSampleStatus(sampleId, DATA_AVAILABLE_JSON)
-            break
-        except:
-            print("Updating location for sample " + sampleId + " failed on attempt "+str(attempt+1))
-            if attempt < max_attempts -1:
-                time.sleep(wait_seconds)
-                continue
-            else:
-                raise
+# def update_sample_location_to_qbic(sampleId):
+    # """Calls the sample status service and updates the
+    # location to QBiC and the status 'DATA AT QBiC'.
+    # """
+    # wait_seconds = 1
+    # max_attempts = 3
+    # for attempt in range(max_attempts):
+    #     try:
+    #         SAMPLE_TRACKER.updateSampleStatus(sampleId, DATA_AVAILABLE_JSON)
+    #         break
+    #     except:
+    #         print("Updating location for sample " + sampleId + " failed on attempt "+str(attempt+1))
+    #         if attempt < max_attempts -1:
+    #             time.sleep(wait_seconds)
+    #             continue
+    #         else:
+    #             raise
 
 
 def process(transaction):
@@ -368,7 +368,7 @@ def register_rnaseq(rna_seq_files, transaction):
     transaction.moveFile(registration_dir, data_set)
 
     # Update sample location
-    update_sample_location_to_qbic(new_rna_sample_barcode)
+    # update_sample_location_to_qbic(new_rna_sample_barcode)
 
 
 def register_vcf(in_file, transaction):
@@ -749,4 +749,3 @@ def getsamplev3(qcode):
     if len(samples) > 1:
         raise mtbutils.MTBdropboxerror('More than one sample found with identifier {}'.format(qcode))
     return samples[0]
-    
